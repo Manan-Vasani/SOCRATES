@@ -55,9 +55,6 @@ export default function Logo({
           {/* Glowing Action Blue AI Spark Node */}
           <circle cx="12" cy="12" r="2.25" fill="#0066cc" />
         </svg>
-
-        {/* Small Active Badge Dot */}
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#0066cc] ring-2 ring-white" />
       </div>
 
       {/* Brand Typography with Action Blue Dot */}
