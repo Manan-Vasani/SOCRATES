@@ -128,3 +128,42 @@ export const fetchAiTutorRecommendations = async (req: AiRecommendRequest) => {
     return null
   }
 }
+
+// Real Backend Tutor & Schedule API Endpoints
+export const fetchTutorDetailsApi = async (tutorId: string) => {
+  try {
+    const response = await api.get(`/tutors/${tutorId}`)
+    return response.data?.data || null
+  } catch (error) {
+    return null
+  }
+}
+
+export const fetchTutorBookingsApi = async (tutorId: string) => {
+  try {
+    const response = await api.get(`/tutors/${tutorId}/bookings`)
+    return response.data?.data || []
+  } catch (error) {
+    return []
+  }
+}
+
+export const createTutorBookingApi = async (
+  tutorId: string,
+  bookingData: {
+    studentName: string
+    date: string
+    time: string
+    subject: string
+    duration: number
+    topic?: string
+    fee: number
+  }
+) => {
+  try {
+    const response = await api.post(`/tutors/${tutorId}/book`, bookingData)
+    return response.data
+  } catch (error) {
+    return { success: false, message: 'Could not connect to backend server for booking.' }
+  }
+}

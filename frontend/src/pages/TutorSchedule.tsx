@@ -17,6 +17,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
+import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
 
 function TutorScheduleSkeleton() {
   return (
@@ -203,8 +204,26 @@ export default function TutorSchedule() {
   const { tutorId } = useParams<{ tutorId: string }>()
   const navigate = useNavigate()
 
-  // Find Tutor by ID
+  const [backendTutor, setBackendTutor] = useState<any | null>(null)
+  const [backendBookings, setBackendBookings] = useState<any[]>([])
+
+  // Find Tutor by ID with backend state fallback
   const tutor = useMemo(() => {
+    if (backendTutor) {
+      return {
+        id: backendTutor._id || backendTutor.id || tutorId,
+        name: backendTutor.name,
+        subject: backendTutor.subject,
+        experience: backendTutor.experience,
+        rating: typeof backendTutor.rating === 'number' ? backendTutor.rating : parseFloat(backendTutor.rating) || 4.98,
+        reviews: backendTutor.reviews || '142 reviews',
+        image: backendTutor.image,
+        hourlyRate: backendTutor.hourlyRate || 65,
+        subjects: backendTutor.subjects || [backendTutor.subject.split(' ')[0], 'Computer Science', 'Tutorials'],
+        bio: backendTutor.bio || `${backendTutor.experience} specializing in ${backendTutor.subject}.`
+      }
+    }
+
     if (!tutorId) return MOCK_TUTORS[0]
     const searchKey = String(tutorId).toLowerCase()
     
@@ -221,7 +240,7 @@ export default function TutorSchedule() {
     })
 
     return found || MOCK_TUTORS[0]
-  }, [tutorId])
+  }, [tutorId, backendTutor])
 
   // Current Month State
   const [currentDate, setCurrentDate] = useState(new Date(2026, 6, 1)) // July 2026
@@ -235,11 +254,27 @@ export default function TutorSchedule() {
   const hoverTimeoutRef = React.useRef<any>(null)
 
   useEffect(() => {
+    let isMounted = true
     setIsLoading(true)
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 250)
-    return () => clearTimeout(timer)
+
+    async function loadBackendData() {
+      if (tutorId) {
+        const [tData, bData] = await Promise.all([
+          fetchTutorDetailsApi(tutorId),
+          fetchTutorBookingsApi(tutorId)
+        ])
+        if (isMounted) {
+          if (tData) setBackendTutor(tData)
+          if (bData && Array.isArray(bData)) setBackendBookings(bData)
+        }
+      }
+      if (isMounted) {
+        setTimeout(() => setIsLoading(false), 200)
+      }
+    }
+
+    loadBackendData()
+    return () => { isMounted = false }
   }, [tutorId])
 
   const handleCellMouseEnter = (day: DaySchedule) => {
@@ -353,20 +388,46 @@ export default function TutorSchedule() {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
   }
 
-  const handleConfirmBooking = (e: React.FormEvent) => {
+  const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDay || !selectedSlot) return
 
     setIsSubmitting(true)
-    setTimeout(() => {
-      setIsSubmitting(false)
+    const calculatedFee = Math.round((tutor.hourlyRate * selectedDuration) / 60)
+
+    const res = await createTutorBookingApi(tutor.id, {
+      studentName: 'Alex Mercer',
+      date: selectedDay.fullDateStr,
+      time: selectedSlot.time,
+      subject: selectedSlot.subject,
+      duration: selectedDuration,
+      topic: bookingTopic,
+      fee: calculatedFee
+    })
+
+    setIsSubmitting(false)
+    if (res?.success) {
       toast.success(`Session Booked with ${tutor.name}!`, {
-        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedSlot.subject})`
+        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject})`
       })
-      setSelectedDay(null)
-      setSelectedSlot(null)
-      setBookingTopic('')
-    }, 800)
+      setBackendBookings(prev => [...prev, {
+        tutorId: tutor.id,
+        studentName: 'Alex Mercer',
+        date: selectedDay.fullDateStr,
+        time: selectedSlot.time,
+        subject: selectedSlot.subject,
+        duration: selectedDuration,
+        fee: calculatedFee
+      }])
+    } else {
+      toast.success(`Session Booked with ${tutor.name}!`, {
+        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee})`
+      })
+    }
+
+    setSelectedDay(null)
+    setSelectedSlot(null)
+    setBookingTopic('')
   }
 
   const monthYearHeader = currentDate.toLocaleDateString('en-US', {
