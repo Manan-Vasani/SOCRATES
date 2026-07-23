@@ -382,7 +382,7 @@ export default function Tutors() {
                   options={subjectDropdownOptions}
                   value={selectedSubject}
                   onChange={(val: string) => setSelectedSubject(val)}
-                  buttonClassName="py-1.5"
+                  buttonClassName="py-1.5 w-[210px] sm:w-[220px] justify-between"
                   align="center"
                 />
 
@@ -409,15 +409,16 @@ export default function Tutors() {
                   options={ratingOptions}
                   value={minRating}
                   onChange={(val: number) => setMinRating(val)}
-                  buttonClassName="py-1.5"
+                  buttonClassName="py-1.5 w-[130px] sm:w-[135px] justify-between"
+                  align="center"
                 />
 
                 <CustomDropdown<number>
                   options={priceOptions}
                   value={maxPrice}
                   onChange={(val: number) => setMaxPrice(val)}
-                  buttonClassName="py-1.5"
-                  align="right"
+                  buttonClassName="py-1.5 w-[145px] sm:w-[155px] justify-between"
+                  align="center"
                 />
               </div>
             </div>

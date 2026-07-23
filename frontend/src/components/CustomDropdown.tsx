@@ -1,4 +1,4 @@
-  import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -78,16 +78,13 @@ export default function CustomDropdown<T extends string | number>({
   useEffect(() => {
     if (isOpen) {
       updateCoords()
-      const raf = requestAnimationFrame(() => {
-        updateCoords()
-      })
       window.addEventListener('resize', updateCoords)
       window.addEventListener('scroll', updateCoords, true)
-      return () => {
-        cancelAnimationFrame(raf)
-        window.removeEventListener('resize', updateCoords)
-        window.removeEventListener('scroll', updateCoords, true)
-      }
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCoords)
+      window.removeEventListener('scroll', updateCoords, true)
     }
   }, [isOpen, align])
 
