@@ -185,6 +185,14 @@ export default function Tutors() {
   const [bookingTime, setBookingTime] = useState('14:00')
   const [bookingTopic, setBookingTopic] = useState('')
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false)
+  const [expandedCardIds, setExpandedCardIds] = useState<Record<string, boolean>>({})
+
+  const toggleExpandCard = (id: string) => {
+    setExpandedCardIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }))
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -460,11 +468,13 @@ export default function Tutors() {
                   <div className="space-y-4">
                     {/* Top Card Header */}
                     <div className="flex items-start gap-3.5">
-                      <img
-                        src={tutor.image}
-                        alt={tutor.name}
-                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#0066cc]/10 border border-[#d2d2d7] shadow-xs shrink-0"
-                      />
+                      <div className="relative shrink-0">
+                        <img
+                          src={tutor.image}
+                          alt={tutor.name}
+                          className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0"
+                        />
+                      </div>
 
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">
@@ -513,22 +523,38 @@ export default function Tutors() {
                       {tutor.bio}
                     </p>
 
-                    {/* Subject Badges (Max 3 visible + +N overflow tag) */}
-                    <div className="flex flex-wrap gap-1.5 pt-1 items-center">
-                      {tutor.subjects.slice(0, 3).map((sub, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e5e5e7] text-[11px] font-medium text-[#525252]"
-                        >
-                          {sub}
-                        </span>
-                      ))}
-                      {tutor.subjects.length > 3 && (
-                        <span className="px-2 py-1 rounded-lg bg-[#f0f0f2] border border-[#e0e0e0] text-[10px] font-semibold text-[#6e6e73]">
-                          +{tutor.subjects.length - 3} more
-                        </span>
-                      )}
-                    </div>
+                    {/* Subject Badges (Expandable Pill Chips) */}
+                    {(() => {
+                      const isExpanded = expandedCardIds[tutor.id] || false
+                      const visibleSubjects = isExpanded ? tutor.subjects : tutor.subjects.slice(0, 3)
+                      const hiddenCount = tutor.subjects.length - 3
+
+                      return (
+                        <div className="flex flex-wrap gap-1.5 pt-1 items-center">
+                          {visibleSubjects.map((sub, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e5e5e7] text-[11px] font-medium text-[#525252]"
+                            >
+                              {sub}
+                            </span>
+                          ))}
+                          {tutor.subjects.length > 3 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleExpandCard(tutor.id)
+                              }}
+                              className="px-2 py-1 rounded-lg bg-[#0066cc]/10 hover:bg-[#0066cc]/20 text-[#0066cc] border border-[#0066cc]/25 text-[10px] font-bold cursor-pointer transition-colors select-none"
+                              title={isExpanded ? 'Collapse subjects' : 'Show all subjects'}
+                            >
+                              {isExpanded ? 'Show less' : `+${hiddenCount} more`}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Bottom Action Footer */}
