@@ -239,6 +239,29 @@ export default function Tutors() {
     }))
   }, [allSubjects])
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.12,
+        delayChildren: 0.05,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 24 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    },
+  }
+
   return (
     <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-24">
       {/* Background Subtle Gradient */}
@@ -248,15 +271,30 @@ export default function Tutors() {
       <Navbar />
 
       {/* Hero Header Section */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pt-12 pb-8 text-center space-y-4">
-        <h1 className="text-4xl sm:text-5xl font-display font-bold tracking-tight text-[#1d1d1f]">
-          Top Rated Tutors & Peer Mentors
-        </h1>
+      <motion.section
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full"
+      >
+        <motion.h1 
+          variants={itemVariants} 
+          className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
+        >
+          <span>Find your mentor.</span>
+          <br className="hidden sm:inline" />
+          <span className="block mt-1 sm:mt-2 text-[#0066cc]">
+            Top Rated Tutors & Peer Mentors.
+          </span>
+        </motion.h1>
 
-        <p className="text-sm sm:text-base text-[#7a7a7a] max-w-2xl mx-auto font-normal leading-relaxed">
+        <motion.p 
+          variants={itemVariants}
+          className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
+        >
           Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
-        </p>
-      </section>
+        </motion.p>
+      </motion.section>
 
       {/* Search & Filter Control Bar */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 mb-10">
