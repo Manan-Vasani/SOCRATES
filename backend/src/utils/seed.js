@@ -6,6 +6,8 @@ const PlatformStat = require('../models/PlatformStat');
 const FAQ = require('../models/FAQ');
 const Testimonial = require('../models/Testimonial');
 
+const User = require('../models/User');
+
 const connStr = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/socrates';
 
 async function seedDB() {
@@ -14,12 +16,34 @@ async function seedDB() {
     console.log('[Seed] Connected to MongoDB for seeding...');
 
     await Promise.all([
+      User.deleteMany({}),
       Tutor.deleteMany({}),
       StudyRoom.deleteMany({}),
       Category.deleteMany({}),
       PlatformStat.deleteMany({}),
       FAQ.deleteMany({}),
       Testimonial.deleteMany({}),
+    ]);
+
+    await User.create([
+      {
+        name: 'Alex Rivera',
+        email: 'student@socrates.edu',
+        password: 'password123',
+        role: 'student',
+        bio: 'Computer Science Major exploring AI and Distributed Systems.',
+        subjects: ['Algorithms', 'Python', 'React'],
+      },
+      {
+        name: 'Dr. Evelyn Reed',
+        email: 'tutor@socrates.edu',
+        password: 'password123',
+        role: 'tutor',
+        bio: 'Stanford PhD in Computer Science with 8+ years teaching experience.',
+        subjects: ['Algorithms & Data Structures', 'Machine Learning'],
+        hourlyRate: 65,
+        isVerified: true,
+      },
     ]);
 
     await PlatformStat.insertMany([
