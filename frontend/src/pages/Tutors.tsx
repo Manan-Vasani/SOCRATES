@@ -546,7 +546,7 @@ export default function Tutors() {
                                 e.stopPropagation()
                                 toggleExpandCard(tutor.id)
                               }}
-                              className="px-2 py-1 rounded-lg bg-[#0066cc]/10 hover:bg-[#0066cc]/20 text-[#0066cc] border border-[#0066cc]/25 text-[10px] font-bold cursor-pointer transition-colors select-none"
+                              className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] border border-[#e5e5e7] text-[11px] font-medium cursor-pointer transition-colors select-none"
                               title={isExpanded ? 'Collapse subjects' : 'Show all subjects'}
                             >
                               {isExpanded ? 'Show less' : `+${hiddenCount} more`}
