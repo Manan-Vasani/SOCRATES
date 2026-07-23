@@ -447,7 +447,7 @@ export default function TutorSchedule() {
                     </div>
 
                     <div className="text-[10px] sm:text-xs font-semibold truncate opacity-90">
-                      {day.isPast && 'Unavailable'}
+                      {day.isPast && 'Passed'}
                       {!day.isPast && day.status === 'green' && `${day.slots.length} slots`}
                       {!day.isPast && day.status === 'yellow' && `${day.slots.filter(s => !s.isBooked).length} left`}
                       {!day.isPast && day.status === 'red' && 'Booked'}
@@ -468,7 +468,7 @@ export default function TutorSchedule() {
                             day.status === 'yellow' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                             'bg-rose-50 text-rose-600 border-rose-200'
                           }`}>
-                            {day.isPast ? 'Unavailable' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : 'Fully Booked'}
+                            {day.isPast ? 'Passed' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : 'Fully Booked'}
                           </span>
                           <button
                             type="button"
