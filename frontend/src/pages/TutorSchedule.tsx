@@ -49,7 +49,7 @@ function TutorScheduleSkeleton() {
       {/* Tutor Profile Banner Skeleton */}
       <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#e5e5e7] shrink-0" />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#e5e5e7] shrink-0" />
           <div className="space-y-2">
             <div className="w-48 h-6 bg-[#e5e5e7] rounded-lg" />
             <div className="w-36 h-4 bg-[#e5e5e7] rounded-md" />
@@ -509,7 +509,7 @@ export default function TutorSchedule() {
             <img 
               src={tutor.image} 
               alt={tutor.name} 
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-[#e0e0e0] shadow-xs"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-[#e0e0e0] shadow-md shrink-0 transform-gpu"
             />
             <div className="space-y-1">
               <div className="flex items-center gap-2">

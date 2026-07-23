@@ -136,7 +136,7 @@ function TutorCardSkeleton() {
       <div className="space-y-4">
         {/* Top Header */}
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#e5e5e7]/60 shrink-0 border border-[#e0e0e0]" />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#e5e5e7]/60 shrink-0 border border-[#e0e0e0]" />
           <div className="space-y-1.5 flex-1 pt-0.5">
             <div className="h-5 bg-[#e5e5e7]/80 rounded-md w-3/4" />
             <div className="h-3.5 bg-[#e5e5e7]/50 rounded-md w-1/2" />
@@ -468,12 +468,12 @@ export default function Tutors() {
                 >
                   <div className="space-y-4">
                     {/* Top Card Header */}
-                    <div className="flex items-start gap-3.5">
+                    <div className="flex items-start gap-4">
                       <div className="relative shrink-0">
                         <img
                           src={tutor.image}
                           alt={tutor.name}
-                          className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0 transform-gpu"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0 transform-gpu"
                         />
                       </div>
 
