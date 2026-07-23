@@ -8,6 +8,7 @@ require('dotenv').config();
 const connectDB = require('./config/db');
 const homepageRoutes = require('./routes/homepageRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // API Routes
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/homepage', homepageRoutes);
 app.use('/api/v1/ai', aiRoutes);
 
