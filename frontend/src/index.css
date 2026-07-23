@@ -25,3 +25,11 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Sonner Toast Close Button Top-Right Position */
+[data-sonner-toast] [data-close-button] {
+  top: 8px !important;
+  right: 8px !important;
+  left: auto !important;
+  transform: none !important;
+}
