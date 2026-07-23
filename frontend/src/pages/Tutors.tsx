@@ -244,19 +244,19 @@ export default function Tutors() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.12,
-        delayChildren: 0.05,
+        staggerChildren: 0.08,
+        delayChildren: 0,
       },
     },
   }
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
+    hidden: { opacity: 0, y: 18 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.8,
+        duration: 0.55,
         ease: [0.16, 1, 0.3, 1],
       },
     },
@@ -267,20 +267,20 @@ export default function Tutors() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1,
+        staggerChildren: 0.05,
+        delayChildren: 0,
       },
     },
   }
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 35, scale: 0.96 },
+    hidden: { opacity: 0, y: 22, scale: 0.98 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 1.0,
+        duration: 0.55,
         ease: [0.16, 1, 0.3, 1],
       },
     },
