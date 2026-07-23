@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import Home from './pages/Home'
@@ -14,14 +14,31 @@ import './App.css'
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
+  const prevPathnameRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!hash) {
-      window.scrollTo(0, 0)
-    } else {
-      const element = document.getElementById(hash.replace('#', ''))
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' })
+    // Initial mount/refresh: preserve browser's native scroll position unless hash target exists
+    if (prevPathnameRef.current === null) {
+      prevPathnameRef.current = pathname
+      if (hash) {
+        const element = document.getElementById(hash.replace('#', ''))
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+      return
+    }
+
+    // Only scroll to top when navigating to a new route pathname
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname
+      if (!hash) {
+        window.scrollTo(0, 0)
+      } else {
+        const element = document.getElementById(hash.replace('#', ''))
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
       }
     }
   }, [pathname, hash])
