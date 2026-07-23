@@ -38,24 +38,17 @@ export default function Navbar() {
             <div className="flex items-center gap-3">
               <Link
                 to="/profile"
-                className="flex items-center gap-2.5 px-3 py-1 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#e0e0e0]/50 transition-all group"
+                className="flex items-center gap-2 text-[#1d1d1f] hover:text-[#0066cc] transition-colors group cursor-pointer"
+                title="View Profile"
               >
                 <img
                   src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                   alt={user.name}
-                  className="w-6 h-6 rounded-full object-cover border border-[#0066cc]/40"
+                  className="w-7 h-7 rounded-full object-cover"
                 />
-                <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[100px] truncate">
+                <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[120px] truncate">
                   {user.name}
                 </span>
-              </Link>
-
-              <Link
-                to="/profile"
-                className="px-3.5 py-1.5 rounded-full bg-[#0066cc] text-white font-medium hover:bg-[#0077ed] transition-colors flex items-center gap-1.5 shadow-sm"
-              >
-                <User size={13} />
-                Profile
               </Link>
 
               <button
