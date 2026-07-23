@@ -262,6 +262,30 @@ export default function Tutors() {
     },
   }
 
+  const gridVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.1,
+      },
+    },
+  }
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.97 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.6,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    },
+  }
+
   return (
     <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-24">
       {/* Background Subtle Gradient */}
@@ -297,7 +321,12 @@ export default function Tutors() {
       </motion.section>
 
       {/* Search & Filter Control Bar */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 mb-10">
+      <motion.section
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative z-10 max-w-6xl mx-auto px-6 mb-10"
+      >
         <div className="p-4 rounded-3xl bg-white border border-[#e5e5e7] shadow-sm space-y-4">
           {/* Main Search Input */}
           <div className="relative">
@@ -367,7 +396,7 @@ export default function Tutors() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Tutors Grid Section */}
       <section className="relative z-10 max-w-6xl mx-auto px-6">
@@ -397,10 +426,16 @@ export default function Tutors() {
             <p className="text-xs text-[#7a7a7a]">Try adjusting your search query or subject filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={gridVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {filteredTutors.map((tutor) => (
               <motion.div
                 key={tutor.id}
+                variants={cardVariants}
                 whileHover={{ y: -4 }}
                 transition={{ duration: 0.2 }}
                 className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs hover:shadow-md hover:border-[#0066cc]/40 transition-all group"
@@ -493,7 +528,7 @@ export default function Tutors() {
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </section>
 
