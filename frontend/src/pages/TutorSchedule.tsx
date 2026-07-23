@@ -141,6 +141,28 @@ export default function TutorSchedule() {
   const [selectedDuration, setSelectedDuration] = useState<20 | 30 | 60>(60)
   const [bookingTopic, setBookingTopic] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const hoverTimeoutRef = React.useRef<any>(null)
+
+  const handleCellMouseEnter = (day: DaySchedule) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    setHoveredDay(day)
+  }
+
+  const handleCellMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredDay(null)
+    }, 450)
+  }
+
+  const handlePopoverMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+  }
+
+  const handlePopoverMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredDay(null)
+    }, 300)
+  }
 
   // Generate Calendar Days for Current Month
   const calendarDays = useMemo(() => {
@@ -438,8 +460,8 @@ export default function TutorSchedule() {
                         setSelectedSlot(day.slots.find(s => !s.isBooked) || day.slots[0] || null)
                       }
                     }}
-                    onMouseEnter={() => setHoveredDay(day)}
-                    onMouseLeave={() => setHoveredDay(null)}
+                    onMouseEnter={() => handleCellMouseEnter(day)}
+                    onMouseLeave={handleCellMouseLeave}
                     className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left select-none ${statusStyles[day.status]}`}
                   >
                     <div className="flex items-center justify-between w-full">
@@ -457,9 +479,13 @@ export default function TutorSchedule() {
 
                   {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned intelligently with explicit X Close Button) */}
                   {hoveredDay?.date === day.date && (
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${
-                      day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
-                    } w-72 p-4 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto space-y-3 border border-[#e5e5e7] animate-in fade-in duration-150`}>
+                    <div 
+                      onMouseEnter={handlePopoverMouseEnter}
+                      onMouseLeave={handlePopoverMouseLeave}
+                      className={`absolute top-1/2 -translate-y-1/2 ${
+                        day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
+                      } w-72 p-4 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto space-y-3 border border-[#e5e5e7] animate-in fade-in duration-150`}
+                    >
                       <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2.5">
                         <span className="font-bold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>
                         <div className="flex items-center gap-2">
@@ -475,6 +501,7 @@ export default function TutorSchedule() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
+                              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
                               setHoveredDay(null)
                             }}
                             className="p-1.5 rounded-full text-[#7a7a7a] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:bg-[#e8e8ed] transition-colors duration-150 cursor-pointer select-none shrink-0 transform-gpu"
