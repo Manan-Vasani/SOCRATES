@@ -499,7 +499,7 @@ export default function TutorSchedule() {
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1 font-mono font-semibold text-[11px]">
+                              <span className="flex items-center gap-1 font-sans font-bold text-xs tracking-tight">
                                 <Clock size={11} className={slot.isBooked ? 'text-red-600' : 'text-[#0066cc]'} />
                                 {slot.time}
                               </span>
@@ -634,7 +634,7 @@ export default function TutorSchedule() {
                               : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5'
                           }`}
                         >
-                          <div className="flex items-center justify-between font-mono font-bold">
+                          <div className="flex items-center justify-between font-sans font-bold text-xs tracking-tight">
                             <span>{slot.time}</span>
                             {isSelected ? (
                               <CheckCircle2 size={13} className="text-white" />
