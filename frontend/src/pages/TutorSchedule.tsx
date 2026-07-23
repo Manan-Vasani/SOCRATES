@@ -116,8 +116,9 @@ interface DaySchedule {
   date: number
   dayOfWeek: number
   fullDateStr: string
-  status: 'green' | 'yellow' | 'red'
+  status: 'green' | 'yellow' | 'red' | 'past'
   label: string
+  isPast: boolean
   slots: TimeSlot[]
 }
 
@@ -154,14 +155,21 @@ export default function TutorSchedule() {
     }
 
     // Populate month days with deterministic mock schedules
+    const today = new Date(2026, 6, 23) // Current simulated date (July 23, 2026)
+
     for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
       const dayOfWeek = (firstDayIndex + dayNum - 1) % 7
+      const dateObj = new Date(year, month, dayNum)
+      const isPast = dateObj < today
       
       // Deterministic availability pattern
-      let status: 'green' | 'yellow' | 'red' = 'green'
+      let status: 'green' | 'yellow' | 'red' | 'past' = 'green'
       let label = 'High Availability'
 
-      if (dayOfWeek === 0) { // Sunday
+      if (isPast) {
+        status = 'past'
+        label = 'Past Date (Closed)'
+      } else if (dayOfWeek === 0) { // Sunday
         status = 'red'
         label = 'Fully Booked'
       } else if (dayNum % 5 === 0 || dayNum % 7 === 0) {
@@ -192,7 +200,6 @@ export default function TutorSchedule() {
         })
       })
 
-      const dateObj = new Date(year, month, dayNum)
       const dateString = dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
@@ -206,6 +213,7 @@ export default function TutorSchedule() {
         fullDateStr: dateString,
         status,
         label,
+        isPast,
         slots
       })
     }
@@ -293,6 +301,10 @@ export default function TutorSchedule() {
           {/* Legend Badges */}
           <div className="flex items-center gap-4 text-xs font-medium bg-white px-4 py-2 rounded-2xl border border-[#e5e5e7] shadow-xs">
             <span className="text-[#7a7a7a]">Status Legend:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#a1a1a6]" />
+              <span className="text-[#7a7a7a]">Past</span>
+            </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
               <span className="text-[#1d1d1f]">Available</span>
@@ -397,29 +409,32 @@ export default function TutorSchedule() {
 
               // Color styles based on status
               const statusStyles = {
-                green: 'bg-emerald-50/70 border-emerald-200/80 text-emerald-950 hover:bg-emerald-100/80 hover:border-emerald-300',
-                yellow: 'bg-amber-50/70 border-amber-200/80 text-amber-950 hover:bg-amber-100/80 hover:border-amber-300',
-                red: 'bg-rose-50/50 border-rose-200/50 text-rose-400 cursor-not-allowed opacity-75'
+                green: 'bg-emerald-50/70 border-emerald-200/80 text-emerald-950 hover:bg-emerald-100/80 hover:border-emerald-300 cursor-pointer',
+                yellow: 'bg-amber-50/70 border-amber-200/80 text-amber-950 hover:bg-amber-100/80 hover:border-amber-300 cursor-pointer',
+                red: 'bg-rose-50/50 border-rose-200/50 text-rose-400 cursor-not-allowed opacity-75',
+                past: 'bg-[#f0f0f2]/70 border-[#e0e0e3] text-[#a1a1a6] opacity-45 cursor-not-allowed filter grayscale'
               }
 
               const badgeStyles = {
                 green: 'bg-emerald-500',
                 yellow: 'bg-amber-500',
-                red: 'bg-rose-500'
+                red: 'bg-rose-500',
+                past: 'bg-gray-400'
               }
 
               return (
                 <div key={day.date} className="relative group">
                   <button
+                    disabled={day.isPast || day.status === 'red'}
                     onClick={() => {
-                      if (day.status !== 'red') {
+                      if (!day.isPast && day.status !== 'red') {
                         setSelectedDay(day)
                         setSelectedSlot(day.slots.find(s => !s.isBooked) || day.slots[0] || null)
                       }
                     }}
                     onMouseEnter={() => setHoveredDay(day)}
                     onMouseLeave={() => setHoveredDay(null)}
-                    className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left cursor-pointer select-none ${statusStyles[day.status]}`}
+                    className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left select-none ${statusStyles[day.status]}`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs sm:text-sm font-semibold">{day.date}</span>
@@ -427,9 +442,10 @@ export default function TutorSchedule() {
                     </div>
 
                     <div className="text-[10px] sm:text-xs font-medium truncate opacity-90">
-                      {day.status === 'green' && `${day.slots.length} slots`}
-                      {day.status === 'yellow' && `${day.slots.filter(s => !s.isBooked).length} left`}
-                      {day.status === 'red' && 'Booked'}
+                      {day.isPast && 'Past Date'}
+                      {!day.isPast && day.status === 'green' && `${day.slots.length} slots`}
+                      {!day.isPast && day.status === 'yellow' && `${day.slots.filter(s => !s.isBooked).length} left`}
+                      {!day.isPast && day.status === 'red' && 'Booked'}
                     </div>
                   </button>
 
@@ -441,11 +457,12 @@ export default function TutorSchedule() {
                       <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
                         <span className="font-semibold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          day.isPast ? 'bg-gray-100 text-gray-600 border-gray-200' :
                           day.status === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                           day.status === 'yellow' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                           'bg-rose-50 text-rose-600 border-rose-200'
                         }`}>
-                          {day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : 'Fully Booked'}
+                          {day.isPast ? 'Past Date' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : 'Fully Booked'}
                         </span>
                       </div>
 
