@@ -130,9 +130,42 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
   },
 ]
 
+function TutorCardSkeleton() {
+  return (
+    <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs animate-pulse min-h-[340px]">
+      <div className="space-y-4">
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#e5e5e7]/60 shrink-0" />
+          <div className="space-y-2 flex-1 pt-1">
+            <div className="h-4 bg-[#e5e5e7]/80 rounded-md w-3/4" />
+            <div className="h-3 bg-[#e5e5e7]/50 rounded-md w-1/2" />
+            <div className="h-3 bg-[#e5e5e7]/40 rounded-md w-1/3" />
+          </div>
+        </div>
+        <div className="h-9 bg-[#f0f0f2] rounded-xl w-full" />
+        <div className="space-y-2 pt-1">
+          <div className="h-3 bg-[#e5e5e7]/60 rounded-md w-full" />
+          <div className="h-3 bg-[#e5e5e7]/50 rounded-md w-4/5" />
+          <div className="h-3 bg-[#e5e5e7]/40 rounded-md w-2/3" />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <div className="h-6 bg-[#f0f0f2] rounded-lg w-16" />
+          <div className="h-6 bg-[#f0f0f2] rounded-lg w-20" />
+          <div className="h-6 bg-[#f0f0f2] rounded-lg w-14" />
+        </div>
+      </div>
+      <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between">
+        <div className="h-5 bg-[#e5e5e7]/70 rounded-md w-14" />
+        <div className="h-8 bg-[#0066cc]/20 rounded-xl w-32" />
+      </div>
+    </div>
+  )
+}
+
 export default function Tutors() {
   const navigate = useNavigate()
   const [tutorsList, setTutorsList] = useState<ExtendedTutor[]>(INITIAL_TOP_TUTORS)
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('All')
   const [minRating, setMinRating] = useState(0)
@@ -146,35 +179,42 @@ export default function Tutors() {
   useEffect(() => {
     let isMounted = true
     async function loadBackendTutors() {
-      const data = await fetchFeaturedTutors()
-      if (data && data.length > 0 && isMounted) {
-        // Merge backend data with default rich profiles
-        const merged = data.map((t, idx) => ({
-          id: 'fetched_' + idx,
-          name: t.name,
-          subject: t.subject,
-          experience: t.experience,
-          rating: typeof t.rating === 'number' ? t.rating : parseFloat(t.rating) || 4.9,
-          reviews: t.reviews,
-          image: t.image,
-          hourlyRate: (t as any).hourlyRate || 55,
-          bio: (t as any).bio || `${t.experience} specializing in ${t.subject}.`,
-          subjects: [t.subject.split(' ')[0], 'Computer Science', 'Tutorials'],
-          isOnline: idx % 2 === 0,
-          isVerified: true,
-          institution: 'Top Academic Institution',
-          totalStudents: 85 + idx * 12,
-        }))
-        // Ensure no duplicates
-        setTutorsList((prev) => {
-          const combined = [...prev]
-          merged.forEach((m) => {
-            if (!combined.some((c) => c.name === m.name)) {
-              combined.push(m)
-            }
+      setIsLoading(true)
+      try {
+        const data = await fetchFeaturedTutors()
+        if (data && data.length > 0 && isMounted) {
+          // Merge backend data with default rich profiles
+          const merged = data.map((t, idx) => ({
+            id: 'fetched_' + idx,
+            name: t.name,
+            subject: t.subject,
+            experience: t.experience,
+            rating: typeof t.rating === 'number' ? t.rating : parseFloat(t.rating) || 4.9,
+            reviews: t.reviews,
+            image: t.image,
+            hourlyRate: (t as any).hourlyRate || 55,
+            bio: (t as any).bio || `${t.experience} specializing in ${t.subject}.`,
+            subjects: [t.subject.split(' ')[0], 'Computer Science', 'Tutorials'],
+            isOnline: idx % 2 === 0,
+            isVerified: true,
+            institution: 'Top Academic Institution',
+            totalStudents: 85 + idx * 12,
+          }))
+          // Ensure no duplicates
+          setTutorsList((prev) => {
+            const combined = [...prev]
+            merged.forEach((m) => {
+              if (!combined.some((c) => c.name === m.name)) {
+                combined.push(m)
+              }
+            })
+            return combined
           })
-          return combined
-        })
+        }
+      } finally {
+        if (isMounted) {
+          setTimeout(() => setIsLoading(false), 200)
+        }
       }
     }
     loadBackendTutors()
@@ -268,7 +308,12 @@ export default function Tutors() {
       <Navbar />
 
       {/* Hero Header Section */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full">
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full"
+      >
         <h1 className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-tight leading-[1.08] text-[#1d1d1f]">
           <span>Find your mentor.</span>
           <br className="hidden sm:inline" />
@@ -280,7 +325,7 @@ export default function Tutors() {
         <p className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed">
           Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
         </p>
-      </section>
+      </motion.section>
 
       {/* Unified Search & Tutor Grid Motion Container */}
       <motion.div
@@ -382,7 +427,13 @@ export default function Tutors() {
             )}
           </div>
 
-          {filteredTutors.length === 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <TutorCardSkeleton key={n} />
+              ))}
+            </div>
+          ) : filteredTutors.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-3xl border border-[#e5e5e7] space-y-3">
               <UserCheck size={36} className="mx-auto text-[#7a7a7a]" />
               <h3 className="text-lg font-display font-semibold text-[#1d1d1f]">No tutors matched your criteria</h3>

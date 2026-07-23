@@ -53,7 +53,12 @@ export default function Hero() {
         <div className="w-[800px] h-[500px] bg-radial from-[#0066cc]/[0.035] via-transparent to-transparent rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center w-full">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center w-full"
+      >
         {/* Headline */}
         <h1 className="mt-4 mb-6 text-4xl sm:text-6xl md:text-7xl lg:text-[76px] font-semibold tracking-tight leading-[1.08] text-[#1d1d1f]">
           <span>Learn from the source.</span>
@@ -163,7 +168,7 @@ export default function Hero() {
             </div>
           </motion.div>
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   )
 }
