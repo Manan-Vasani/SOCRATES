@@ -13,10 +13,69 @@ import {
   Star,
   X
 } from 'lucide-react'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
+
+function TutorScheduleSkeleton() {
+  return (
+    <div className="relative z-10 max-w-6xl mx-auto px-6 pt-8 space-y-8 animate-pulse">
+      {/* Top Header & Legend Skeleton */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="w-36 h-4 bg-[#e5e5e7] rounded-md" />
+        <div className="w-64 h-9 bg-white border border-[#e5e5e7] rounded-2xl p-2 flex items-center gap-2">
+          <div className="w-full h-4 bg-[#e5e5e7] rounded-md" />
+        </div>
+      </div>
+
+      {/* Tutor Profile Banner Skeleton */}
+      <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#e5e5e7] shrink-0" />
+          <div className="space-y-2">
+            <div className="w-48 h-6 bg-[#e5e5e7] rounded-lg" />
+            <div className="w-36 h-4 bg-[#e5e5e7] rounded-md" />
+            <div className="w-28 h-4 bg-[#e5e5e7] rounded-md" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-20 h-6 bg-[#e5e5e7] rounded-xl" />
+          <div className="w-24 h-6 bg-[#e5e5e7] rounded-xl" />
+          <div className="w-16 h-6 bg-[#e5e5e7] rounded-xl" />
+        </div>
+      </div>
+
+      {/* Calendar Grid Skeleton */}
+      <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 sm:p-8 space-y-6">
+        <div className="flex justify-between items-center pb-6 border-b border-[#f0f0f2]">
+          <div className="w-48 h-7 bg-[#e5e5e7] rounded-lg" />
+          <div className="flex gap-2">
+            <div className="w-8 h-8 bg-[#e5e5e7] rounded-xl" />
+            <div className="w-8 h-8 bg-[#e5e5e7] rounded-xl" />
+          </div>
+        </div>
+
+        {/* Days of Week Header */}
+        <div className="grid grid-cols-7 gap-3 text-center pb-2">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="h-4 bg-[#e5e5e7] rounded-md mx-auto w-8" />
+          ))}
+        </div>
+
+        {/* 35 Calendar Cells Skeleton */}
+        <div className="grid grid-cols-7 gap-3 sm:gap-4">
+          {[...Array(35)].map((_, i) => (
+            <div key={i} className="w-full h-20 sm:h-24 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] p-3 flex flex-col justify-between">
+              <div className="w-5 h-4 bg-[#e5e5e7] rounded-md" />
+              <div className="w-12 h-3 bg-[#e5e5e7] rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Mock Tutor Dataset (fallback for route lookup)
 const MOCK_TUTORS = [
@@ -137,7 +196,16 @@ export default function TutorSchedule() {
   const [selectedDuration, setSelectedDuration] = useState<20 | 30 | 60>(60)
   const [bookingTopic, setBookingTopic] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const hoverTimeoutRef = React.useRef<any>(null)
+
+  useEffect(() => {
+    setIsLoading(true)
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [tutorId])
 
   const handleCellMouseEnter = (day: DaySchedule) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
@@ -295,12 +363,15 @@ export default function TutorSchedule() {
       {/* Global Navbar */}
       <Navbar />
 
-      <motion.main 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-10 max-w-6xl mx-auto px-6 pt-8 space-y-8"
-      >
+      {isLoading ? (
+        <TutorScheduleSkeleton />
+      ) : (
+        <motion.main 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative z-10 max-w-6xl mx-auto px-6 pt-8 space-y-8"
+        >
         {/* Back Link & Header */}
         <motion.div variants={cardVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <button
@@ -572,6 +643,7 @@ export default function TutorSchedule() {
           </div>
         </motion.div>
       </motion.main>
+      )}
 
       {/* SLOT BOOKING MODAL */}
       <AnimatePresence>
