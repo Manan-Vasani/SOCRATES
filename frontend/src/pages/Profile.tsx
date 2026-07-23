@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   GraduationCap,
   BookOpen,
@@ -16,13 +16,21 @@ import {
   Layers,
   TrendingUp,
   Bookmark,
+  LogOut,
 } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import { updateUserProfileApi } from '../services/api'
 import { toast } from 'sonner'
 
 export default function Profile() {
-  const { user, updateUser, activePerspective, setPerspective } = useAuthStore()
+  const { user, updateUser, activePerspective, setPerspective, logout } = useAuthStore()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    toast.success('Signed out successfully')
+    navigate('/')
+  }
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -93,7 +101,7 @@ export default function Profile() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link
             to="/"
             className="text-xs font-medium text-[#525252] hover:text-[#0066cc] transition-colors"
@@ -106,6 +114,14 @@ export default function Profile() {
           >
             <Edit3 size={14} />
             Edit Profile
+          </button>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-medium text-xs transition-all cursor-pointer"
+            title="Sign Out of Account"
+          >
+            <LogOut size={14} />
+            Sign Out
           </button>
         </div>
       </header>

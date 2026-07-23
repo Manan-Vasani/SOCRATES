@@ -35,30 +35,20 @@ export default function Navbar() {
 
         <div className="flex items-center gap-4">
           {user ? (
-            <div className="flex items-center gap-3">
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 text-[#1d1d1f] hover:text-[#0066cc] transition-colors group cursor-pointer"
-                title="View Profile"
-              >
-                <img
-                  src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-                  alt={user.name}
-                  className="w-7 h-7 rounded-full object-cover"
-                />
-                <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[120px] truncate">
-                  {user.name}
-                </span>
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="p-1.5 rounded-full text-[#6e6e73] hover:text-[#dc2626] hover:bg-[#dc2626]/10 transition-colors"
-                title="Sign Out"
-              >
-                <LogOut size={16} />
-              </button>
-            </div>
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 text-[#1d1d1f] hover:text-[#0066cc] transition-colors group cursor-pointer"
+              title="View Profile"
+            >
+              <img
+                src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                alt={user.name}
+                className="w-7 h-7 rounded-full object-cover"
+              />
+              <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[140px] truncate">
+                {user.name}
+              </span>
+            </Link>
           ) : (
             <div className="flex items-center gap-4">
               <Link 
