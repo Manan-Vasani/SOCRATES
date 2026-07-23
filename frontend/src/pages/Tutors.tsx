@@ -274,13 +274,13 @@ export default function Tutors() {
   }
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.97 },
+    hidden: { opacity: 0, y: 35, scale: 0.96 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.6,
+        duration: 1.0,
         ease: [0.16, 1, 0.3, 1],
       },
     },
@@ -322,7 +322,7 @@ export default function Tutors() {
 
       {/* Search & Filter Control Bar */}
       <motion.section
-        variants={itemVariants}
+        variants={cardVariants}
         initial="hidden"
         animate="visible"
         className="relative z-10 max-w-6xl mx-auto px-6 mb-10"
