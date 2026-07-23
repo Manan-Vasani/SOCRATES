@@ -100,7 +100,7 @@ function TutorScheduleSkeleton() {
 // Mock Tutor Dataset (fallback for route lookup)
 const MOCK_TUTORS = [
   {
-    id: '1',
+    id: 'tut_101',
     name: 'Dr. Evelyn Reed',
     subject: 'Algorithms & Data Structures',
     experience: '8+ yrs exp • Stanford PhD',
@@ -112,7 +112,7 @@ const MOCK_TUTORS = [
     bio: 'Specialized in Graph Theory, Dynamic Programming, and High-Performance Algorithm Design for CS majors.'
   },
   {
-    id: '2',
+    id: 'tut_102',
     name: 'Marcus Chen',
     subject: 'Linear Algebra & AI Foundations',
     experience: '6+ yrs exp • MIT Alum',
@@ -124,7 +124,7 @@ const MOCK_TUTORS = [
     bio: 'Passionate about demystifying Matrix Decompositions, Vector Calculus, and Deep Learning models.'
   },
   {
-    id: '3',
+    id: 'tut_103',
     name: 'Sophia Williams',
     subject: 'Quantum Mechanics & Physics',
     experience: '10+ yrs exp • Cambridge Postdoc',
@@ -136,7 +136,7 @@ const MOCK_TUTORS = [
     bio: 'Theoretical Physicist helping university students master Quantum Computing and Electromagnetism.'
   },
   {
-    id: '4',
+    id: 'tut_104',
     name: 'Alexandre Dubois',
     subject: 'Full-Stack React & Node Systems',
     experience: '7+ yrs exp • Senior Staff Engineer',
@@ -148,7 +148,7 @@ const MOCK_TUTORS = [
     bio: 'Building real-world scalable web applications, TypeScript architecture, and cloud database backends.'
   },
   {
-    id: '5',
+    id: 'tut_105',
     name: 'Priya Sharma',
     subject: 'Statistics & Data Science',
     experience: '5+ yrs exp • UC Berkeley MS',
@@ -160,7 +160,7 @@ const MOCK_TUTORS = [
     bio: 'Expert in Applied Probability, Hypothesis Testing, Pandas, Data Visualization, and Econometrics.'
   },
   {
-    id: '6',
+    id: 'tut_106',
     name: 'David Vance',
     subject: 'Organic Chemistry & Biochemistry',
     experience: '9+ yrs exp • Johns Hopkins MD',
@@ -203,9 +203,24 @@ export default function TutorSchedule() {
   const { tutorId } = useParams<{ tutorId: string }>()
   const navigate = useNavigate()
 
-  // Find Tutor
+  // Find Tutor by ID
   const tutor = useMemo(() => {
-    return MOCK_TUTORS.find(t => t.id === tutorId) || MOCK_TUTORS[0]
+    if (!tutorId) return MOCK_TUTORS[0]
+    const searchKey = String(tutorId).toLowerCase()
+    
+    // Direct match or alias match
+    const found = MOCK_TUTORS.find(t => {
+      const idLower = t.id.toLowerCase()
+      const rawNum = idLower.replace('tut_', '')
+      return (
+        idLower === searchKey ||
+        searchKey === rawNum ||
+        searchKey.includes(idLower) ||
+        searchKey.includes(rawNum)
+      )
+    })
+
+    return found || MOCK_TUTORS[0]
   }, [tutorId])
 
   // Current Month State
