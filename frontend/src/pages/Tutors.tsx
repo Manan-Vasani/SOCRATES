@@ -239,13 +239,13 @@ export default function Tutors() {
     }))
   }, [allSubjects])
 
-  const pageContainerVariants = {
+  const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.12,
-        delayChildren: 0.05,
+        staggerChildren: 0.08,
+        delayChildren: 0,
       },
     },
   }
@@ -257,7 +257,7 @@ export default function Tutors() {
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.7,
+        duration: 0.6,
         ease: [0.16, 1, 0.3, 1],
       },
     },
@@ -271,40 +271,40 @@ export default function Tutors() {
       {/* Global Navbar */}
       <Navbar />
 
-      <motion.main
-        variants={pageContainerVariants}
+      {/* Hero Header Section */}
+      <motion.section
+        variants={containerVariants}
         initial="hidden"
         animate="visible"
+        className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full"
       >
-        {/* Hero Header Section */}
-        <section className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full">
-          <motion.h1 
-            variants={cardVariants} 
-            className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
-          >
-            <span>Find your mentor.</span>
-            <br className="hidden sm:inline" />
-            <span className="block mt-1 sm:mt-2 text-[#0066cc]">
-              Top Rated Tutors & Peer Mentors.
-            </span>
-          </motion.h1>
+        <motion.h1 
+          variants={cardVariants} 
+          className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
+        >
+          <span>Find your mentor.</span>
+          <br className="hidden sm:inline" />
+          <span className="block mt-1 sm:mt-2 text-[#0066cc]">
+            Top Rated Tutors & Peer Mentors.
+          </span>
+        </motion.h1>
 
-          <motion.p 
-            variants={cardVariants}
-            className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
-          >
-            Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
-          </motion.p>
-        </section>
+        <motion.p 
+          variants={cardVariants}
+          className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
+        >
+          Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
+        </motion.p>
+      </motion.section>
 
       {/* Search & Filter Control Bar */}
       <motion.section
-        variants={cardVariants}
+        variants={containerVariants}
         initial="hidden"
         animate="visible"
         className="relative z-10 max-w-6xl mx-auto px-6 mb-10"
       >
-        <div className="p-4 rounded-3xl bg-white border border-[#e5e5e7] shadow-sm space-y-4">
+        <motion.div variants={cardVariants} className="p-4 rounded-3xl bg-white border border-[#e5e5e7] shadow-sm space-y-4">
           {/* Main Search Input */}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a7a] w-4 h-4" />
@@ -372,7 +372,7 @@ export default function Tutors() {
               />
             </div>
           </div>
-        </div>
+        </motion.div>
       </motion.section>
 
       {/* Tutors Grid Section */}
@@ -404,7 +404,7 @@ export default function Tutors() {
           </div>
         ) : (
           <motion.div
-            variants={gridVariants}
+            variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -508,7 +508,6 @@ export default function Tutors() {
           </motion.div>
         )}
       </section>
-      </motion.main>
 
       {/* BOOKING MODAL */}
       {selectedTutorForBooking && (
