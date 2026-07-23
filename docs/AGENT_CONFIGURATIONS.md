@@ -4,6 +4,17 @@ This document maps all AI agent configuration directories, guidelines, rules, an
 
 ---
 
+## 🏗️ System Architecture & Service Allocation
+
+- **Frontend App**: [frontend/](file:///d:/SOCRATES/frontend) (React 19 + TypeScript + Vite + Tailwind CSS v4)
+- **Primary Backend API**: [backend/](file:///d:/SOCRATES/backend) (Express.js + Node.js + MongoDB + Socket.IO - Port 5000)
+- **AI Microservice**: [ai-service/](file:///d:/SOCRATES/ai-service) (Python FastAPI + PyTorch/Gemini + RAG Vector Engine - Port 8000)
+- **Documentation Directory**: [docs/](file:///d:/SOCRATES/docs)
+- **Design Guidelines**: [DESIGN-apple.md](file:///d:/SOCRATES/DESIGN-apple.md)
+- **Strict CSS Performance Rules**: [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt)
+
+---
+
 ## 📂 Agent & IDE Configuration Directories
 
 ### 1. `.agent/` (Generic Agent Configuration)
@@ -62,7 +73,7 @@ This document maps all AI agent configuration directories, guidelines, rules, an
 - **Root Link**: [.vscode/](file:///d:/SOCRATES/.vscode)
 - **Files**:
   - [settings.json](file:///d:/SOCRATES/docs/.vscode/settings.json) - Tailwind CSS v4 support & auto-format setup.
-  - [tasks.json](file:///d:/SOCRATES/docs/.vscode/tasks.json) - Quick VS Code execution tasks.
+  - [tasks.json](file:///d:/SOCRATES/docs/.vscode/tasks.json) - Quick VS Code execution tasks (Frontend, Express Backend, FastAPI AI service).
   - [launch.json](file:///d:/SOCRATES/docs/.vscode/launch.json) - Node backend & Chrome frontend debug configurations.
   - [extensions.json](file:///d:/SOCRATES/docs/.vscode/extensions.json) - Recommended VS Code workspace extensions.
 
@@ -74,4 +85,5 @@ This document maps all AI agent configuration directories, guidelines, rules, an
 - **Apple UI/UX Design System**: [DESIGN-apple.md](file:///d:/SOCRATES/DESIGN-apple.md)
 - **Frontend App Directory**: [frontend/](file:///d:/SOCRATES/frontend)
 - **Backend API Directory**: [backend/](file:///d:/SOCRATES/backend)
+- **AI Microservice Directory**: [ai-service/](file:///d:/SOCRATES/ai-service)
 - **Documentation Directory**: [docs/](file:///d:/SOCRATES/docs)

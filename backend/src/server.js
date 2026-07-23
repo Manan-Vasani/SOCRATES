@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const homepageRoutes = require('./routes/homepageRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,7 @@ app.use(morgan('dev'));
 
 // API Routes
 app.use('/api/v1/homepage', homepageRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 // Healthcheck Route
 app.get('/health', (req, res) => {
@@ -56,4 +58,3 @@ server.on('error', (err) => {
     console.error('[SOCRATES Backend Error]', err);
   }
 });
-
