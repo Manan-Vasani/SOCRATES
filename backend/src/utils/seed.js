@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Tutor = require('../models/Tutor');
 const StudyRoom = require('../models/StudyRoom');
