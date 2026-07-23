@@ -112,7 +112,6 @@ export default function Signup() {
   return (
     <AuthLayout>
       <div className="w-full max-w-[440px] flex flex-col items-start gap-4">
-        <BackToHome />
         <AuthCard>
           <AuthHeader
             title="Create Account"

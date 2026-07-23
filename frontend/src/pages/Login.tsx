@@ -88,7 +88,6 @@ export default function Login() {
   return (
     <AuthLayout>
       <div className="w-full max-w-[420px] flex flex-col items-start gap-4">
-        <BackToHome />
         <AuthCard>
           <AuthHeader
             title="Welcome Back"
