@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
-import { User, Mail, CheckCircle2, AlertCircle } from 'lucide-react'
+import { User, Mail, CheckCircle2, AlertCircle, GraduationCap, UserCheck, Repeat } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 
@@ -24,6 +24,7 @@ const signupSchema = z
       .string()
       .min(1, 'Email address is required')
       .email('Please enter a valid email address'),
+    role: z.enum(['student', 'tutor', 'both']),
     password: z
       .string()
       .min(1, 'Password is required')
@@ -46,17 +47,20 @@ export default function Signup() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<SignupFields>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       fullName: '',
       email: '',
+      role: 'student',
       password: '',
       confirmPassword: '',
     },
   })
 
+  const selectedRole = watch('role', 'student')
   const passwordValue = watch('password', '')
   const confirmPasswordValue = watch('confirmPassword', '')
 
@@ -69,12 +73,13 @@ export default function Signup() {
       const response = await api.post('/auth/signup', {
         name: data.fullName,
         email: data.email,
+        role: data.role,
         password: data.password,
       })
 
       if (response.data?.success && response.data?.token) {
         setAuth(response.data.user, response.data.token)
-        toast.success(`Account created successfully! Welcome to SOCRATES, ${response.data.user.name}.`)
+        toast.success(`Account created! Welcome to SOCRATES, ${response.data.user.name}.`)
         navigate('/profile')
       } else {
         toast.error(response.data?.message || 'Registration failed')
@@ -85,12 +90,12 @@ export default function Signup() {
         _id: 'new_user_' + Date.now(),
         name: data.fullName,
         email: data.email,
-        role: 'student' as const,
+        role: data.role,
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        bio: 'New student on SOCRATES platform.',
+        bio: 'Member on SOCRATES peer learning platform.',
         subjects: ['Computer Science', 'Algorithms'],
-        hourlyRate: 45,
-        isVerified: true,
+        hourlyRate: data.role === 'student' ? 0 : 45,
+        isVerified: data.role === 'student', // Students are auto-verified; tutors require credential review
       }
       setAuth(newUser, 'demo_jwt_token_signup_123')
       toast.success(`Account created! Welcome, ${newUser.name}.`)
@@ -102,20 +107,20 @@ export default function Signup() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-[420px] flex flex-col items-start gap-4">
+      <div className="w-full max-w-[440px] flex flex-col items-start gap-4">
         <BackToHome />
         <AuthCard>
           <AuthHeader
             title="Create Account"
-            description="Create your SOCRATES account."
+            description="Join SOCRATES as a student, tutor, or peer-to-peer scholar."
           />
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <InputField
               label="Full Name"
               type="text"
               icon={User}
-              placeholder="Enter your name"
+              placeholder="Enter your full name"
               autoComplete="name"
               error={errors.fullName?.message}
               {...register('fullName')}
@@ -130,6 +135,53 @@ export default function Signup() {
               error={errors.email?.message}
               {...register('email')}
             />
+
+            {/* Account Role / Identity Choice */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-[#1d1d1f]">
+                I am joining SOCRATES as a:
+              </label>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setValue('role', 'student')}
+                  className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                    selectedRole === 'student'
+                      ? 'border-[#0066cc] bg-[#0066cc]/5 text-[#0066cc] font-semibold shadow-xs'
+                      : 'border-[#e0e0e0] text-[#525252] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <GraduationCap size={16} />
+                  <span className="text-[11px]">Student</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setValue('role', 'tutor')}
+                  className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                    selectedRole === 'tutor'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-700 font-semibold shadow-xs'
+                      : 'border-[#e0e0e0] text-[#525252] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <UserCheck size={16} />
+                  <span className="text-[11px]">Tutor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setValue('role', 'both')}
+                  className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                    selectedRole === 'both'
+                      ? 'border-purple-600 bg-purple-50 text-purple-700 font-semibold shadow-xs'
+                      : 'border-[#e0e0e0] text-[#525252] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <Repeat size={16} />
+                  <span className="text-[11px]">Peer (Both)</span>
+                </button>
+              </div>
+            </div>
 
             <PasswordInput
               label="Password"
@@ -184,7 +236,7 @@ export default function Signup() {
             </motion.button>
           </form>
 
-          <div className="mt-8 text-center text-xs select-none text-[#6e6e73]">
+          <div className="mt-6 text-center text-xs select-none text-[#6e6e73]">
             <span>Already have an account? </span>
             <Link
               to="/login"
