@@ -462,7 +462,7 @@ export default function Tutors() {
               {filteredTutors.map((tutor) => (
                 <div
                   key={tutor.id}
-                  className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-colors duration-150 group"
+                  className="bg-white rounded-3xl border border-[#e5e5e7] p-6 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-colors duration-150 group transform-gpu select-none"
                 >
                   <div className="space-y-4">
                     {/* Top Card Header */}
@@ -471,23 +471,23 @@ export default function Tutors() {
                         <img
                           src={tutor.image}
                           alt={tutor.name}
-                          className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0"
+                          className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0 transform-gpu"
                         />
                       </div>
 
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">
-                          <h3 className="text-base font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors truncate tracking-tight">
+                          <h3 className="text-base font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors truncate tracking-tight select-none">
                             {tutor.name}
                           </h3>
                           <div className="flex items-center gap-1 shrink-0">
                             {tutor.aiMatchScore && tutor.aiMatchScore >= 75 && (
-                              <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[10px] font-bold border border-[#0066cc]/20">
+                              <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[10px] font-bold border border-[#0066cc]/20 select-none">
                                 {tutor.aiMatchScore}% Match
                               </span>
                             )}
                             {tutor.isVerified && (
-                              <span title="Verified Educator" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-[10px] font-bold">
+                              <span title="Verified Educator" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-[10px] font-bold select-none">
                                 <ShieldCheck size={12} className="text-[#0066cc]" />
                                 <span>Verified</span>
                               </span>
@@ -495,11 +495,11 @@ export default function Tutors() {
                           </div>
                         </div>
 
-                        <p className="text-[13px] text-[#6e6e73] font-medium truncate leading-snug">
+                        <p className="text-[13px] text-[#6e6e73] font-medium truncate leading-snug select-none">
                           {tutor.experience}
                         </p>
 
-                        <div className="flex items-center gap-2 pt-0.5">
+                        <div className="flex items-center gap-2 pt-0.5 select-none">
                           <div className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-700 border border-amber-500/25 px-2 py-0.5 rounded-lg text-xs font-semibold">
                             <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
                             <span>{tutor.rating}</span>
@@ -512,13 +512,13 @@ export default function Tutors() {
                     </div>
 
                     {/* Primary Domain Tag */}
-                    <div className="p-3 rounded-xl bg-[#0066cc]/5 border border-[#0066cc]/15 text-xs font-semibold text-[#0066cc] flex items-center gap-2">
+                    <div className="p-3 rounded-xl bg-[#0066cc]/5 border border-[#0066cc]/15 text-xs font-semibold text-[#0066cc] flex items-center gap-2 select-none">
                       <BookOpen size={14} className="text-[#0066cc]" />
                       <span className="truncate">{tutor.subject}</span>
                     </div>
 
                     {/* Bio Statement */}
-                    <p className="text-xs text-[#525252] leading-relaxed line-clamp-3 font-normal">
+                    <p className="text-xs text-[#525252] leading-relaxed line-clamp-3 font-normal select-none">
                       {tutor.bio}
                     </p>
 
@@ -529,11 +529,11 @@ export default function Tutors() {
                       const hiddenCount = tutor.subjects.length - 3
 
                       return (
-                        <div className="flex flex-wrap gap-1.5 pt-1 items-center">
+                        <div className="flex flex-wrap gap-1.5 pt-1 items-center min-h-[30px]">
                           {visibleSubjects.map((sub, idx) => (
                             <span
                               key={idx}
-                              className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e5e5e7] text-[11px] font-medium text-[#525252]"
+                              className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e5e5e7] text-[11px] font-medium text-[#525252] select-none"
                             >
                               {sub}
                             </span>
@@ -542,10 +542,11 @@ export default function Tutors() {
                             <button
                               type="button"
                               onClick={(e) => {
+                                e.preventDefault()
                                 e.stopPropagation()
                                 toggleExpandCard(tutor.id)
                               }}
-                              className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] border border-[#e5e5e7] text-[11px] font-medium cursor-pointer transition-colors select-none"
+                              className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] hover:bg-[#e8e8ed] active:bg-[#e0e0e5] text-[#525252] border border-[#e5e5e7] text-[11px] font-medium cursor-pointer transition-colors duration-150 select-none transform-gpu"
                               title={isExpanded ? 'Collapse subjects' : 'Show all subjects'}
                             >
                               {isExpanded ? 'Show less' : `+${hiddenCount} more`}
@@ -558,14 +559,15 @@ export default function Tutors() {
 
                   {/* Bottom Action Footer */}
                   <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-3 mt-4">
-                    <div className="flex items-baseline gap-0.5">
+                    <div className="flex items-baseline gap-0.5 select-none">
                       <span className="text-xl font-bold text-[#1d1d1f] tracking-tight">${tutor.hourlyRate}</span>
                       <span className="text-xs font-medium text-[#6e6e73]">/hr</span>
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => navigate(`/tutors/${tutor.id}/schedule`)}
-                      className="px-4 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-semibold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-98 select-none shrink-0"
+                      className="px-4 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-semibold transition-colors duration-150 shadow-xs flex items-center gap-1.5 cursor-pointer select-none shrink-0 transform-gpu"
                     >
                       <Calendar size={13} />
                       <span>Check Availability</span>

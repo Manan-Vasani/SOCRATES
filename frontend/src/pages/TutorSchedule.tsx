@@ -574,13 +574,6 @@ export default function TutorSchedule() {
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <span className="font-semibold text-[#1d1d1f]">{selectedDay.fullDateStr}</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedDay(null)}
-                        className="text-[#0066cc] hover:underline font-semibold text-[11px]"
-                      >
-                        (Change Date)
-                      </button>
                       <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[10px] font-bold border border-[#0066cc]/20 flex items-center gap-1">
                         <Globe size={10} />
                         IST (UTC+5:30)
