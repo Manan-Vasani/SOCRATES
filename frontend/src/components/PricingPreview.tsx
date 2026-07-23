@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 
@@ -99,16 +100,16 @@ export default function PricingPreview() {
               </div>
 
               <div className="pt-8">
-                <button
-                  type="button"
-                  className={`w-full py-3 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+                <Link
+                  to="/login"
+                  className={`block text-center w-full py-3 rounded-full text-sm font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] ${
                     plan.popular
                       ? 'bg-[#0066cc] text-white hover:bg-[#0077ed]'
                       : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e0e0e0]'
                   }`}
                 >
                   {plan.cta}
-                </button>
+                </Link>
               </div>
             </motion.div>
           ))}
