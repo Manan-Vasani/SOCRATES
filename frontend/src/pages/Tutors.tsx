@@ -19,7 +19,7 @@ import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
 import { fetchFeaturedTutors, TutorItem } from '../services/api'
 
-export interface ExtendedTutor extends TutorItem {
+export interface ExtendedTutor extends Omit<TutorItem, 'reviews'> {
   id: string
   bio: string
   subjects: string[]
@@ -28,6 +28,7 @@ export interface ExtendedTutor extends TutorItem {
   isVerified: boolean
   institution: string
   totalStudents: number
+  reviews: number | string
   aiMatchScore?: number
 }
 
@@ -38,7 +39,7 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     subject: 'Algorithms & Data Structures',
     experience: '8+ yrs exp • Stanford PhD',
     rating: 4.98,
-    reviews: '142 reviews',
+    reviews: 142,
     image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 65,
     bio: 'Specialized in Graph Theory, Dynamic Programming, and High-Performance Algorithm Design for CS majors and competitive coders.',
@@ -54,8 +55,8 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     subject: 'Linear Algebra & AI Foundations',
     experience: '6+ yrs exp • MIT Alum',
     rating: 4.95,
-    reviews: '98 reviews',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+    reviews: 98,
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 55,
     bio: 'Passionate about demystifying Matrix Decompositions, Vector Calculus, Neural Networks, and PyTorch deep learning frameworks.',
     subjects: ['Linear Algebra', 'PyTorch', 'Machine Learning', 'Python'],
@@ -70,7 +71,7 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     subject: 'Quantum Mechanics & Physics',
     experience: '10+ yrs exp • Cambridge Postdoc',
     rating: 5.0,
-    reviews: '210 reviews',
+    reviews: 210,
     image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 70,
     bio: 'Theoretical Physicist helping university students master Quantum Computing, Electromagnetism, and Classical Mechanics.',
@@ -86,7 +87,7 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     subject: 'Full-Stack React & Node Systems',
     experience: '7+ yrs exp • Senior Staff Engineer',
     rating: 4.92,
-    reviews: '76 reviews',
+    reviews: 76,
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 60,
     bio: 'Building real-world scalable web applications, TypeScript architecture, State Management, and MongoDB cloud databases.',
@@ -102,7 +103,7 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     subject: 'Statistics & Data Science',
     experience: '5+ yrs exp • UC Berkeley MS',
     rating: 4.97,
-    reviews: '115 reviews',
+    reviews: 115,
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 50,
     bio: 'Expert in Applied Probability, Hypothesis Testing, R, Pandas, Data Visualization, and Econometrics.',
@@ -118,10 +119,10 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     subject: 'Organic Chemistry & Biochemistry',
     experience: '9+ yrs exp • Johns Hopkins MD',
     rating: 4.99,
-    reviews: '184 reviews',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
+    reviews: 184,
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 65,
-    bio: 'Helping pre-med and chemistry scholars conquer Reaction Mechanisms, Synthesis, Spectroscopy, and Enzymology.',
+    bio: 'Helping pre-med and chemistry scholars conquer Reaction Mechanisms, Synthesis, and Spectroscopy.',
     subjects: ['Organic Chemistry', 'Biochemistry', 'MCAT Prep'],
     isOnline: true,
     isVerified: true,
@@ -458,31 +459,22 @@ export default function Tutors() {
                 >
                   <div className="space-y-4">
                     {/* Top Card Header */}
-                    <div className="flex items-start gap-4">
-                      <div className="relative shrink-0">
-                        <img
-                          src={tutor.image}
-                          alt={tutor.name}
-                          className="w-16 h-16 rounded-2xl object-cover border border-[#e5e5e7] shadow-2xs"
-                        />
-                        {tutor.isOnline && (
-                          <span
-                            className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"
-                            title="Online & Ready for Live Session"
-                          />
-                        )}
-                      </div>
+                    <div className="flex items-start gap-3.5">
+                      <img
+                        src={tutor.image}
+                        alt={tutor.name}
+                        className="w-14 h-14 rounded-2xl object-cover border border-[#e5e5e7] shrink-0"
+                      />
 
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h3 className="text-base font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors truncate">
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <h3 className="text-base font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors truncate tracking-tight">
                             {tutor.name}
                           </h3>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             {tutor.aiMatchScore && tutor.aiMatchScore >= 75 && (
-                              <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[10px] font-bold flex items-center gap-1 border border-[#0066cc]/20">
-                                <Sparkles size={10} />
-                                <span>{tutor.aiMatchScore}% Match</span>
+                              <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[10px] font-bold border border-[#0066cc]/20">
+                                {tutor.aiMatchScore}% Match
                               </span>
                             )}
                             {tutor.isVerified && (
@@ -493,12 +485,16 @@ export default function Tutors() {
                           </div>
                         </div>
 
-                        <div className="text-xs text-[#7a7a7a] font-medium truncate">{tutor.experience}</div>
+                        <p className="text-[13px] text-[#6e6e73] font-normal truncate leading-snug">
+                          {tutor.experience}
+                        </p>
 
-                        <div className="flex items-center gap-1.5 text-xs pt-0.5">
-                          <Star size={13} className="text-amber-500 fill-amber-500" />
+                        <div className="flex items-center gap-1.5 text-[13px] pt-0.5">
+                          <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
                           <span className="font-semibold text-[#1d1d1f]">{tutor.rating}</span>
-                          <span className="text-[#7a7a7a] font-normal">({tutor.reviews} reviews)</span>
+                          <span className="text-[#6e6e73] font-normal">
+                            ({typeof tutor.reviews === 'number' ? tutor.reviews : String(tutor.reviews).replace(/reviews/gi, '').trim()} reviews)
+                          </span>
                         </div>
                       </div>
                     </div>
