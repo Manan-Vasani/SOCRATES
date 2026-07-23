@@ -11,6 +11,15 @@ This file defines project-specific rules, style guidelines, and behavioral const
 - **Frontend App**: [frontend/](file:///d:/SOCRATES/frontend)
 - **Backend API**: [backend/](file:///d:/SOCRATES/backend)
 
+## 🚨 HIGHEST PRIORITY RULE: ZERO TEXT LAG & ZERO FONT INCONSISTENCY (MANDATORY)
+
+- **Absolute Zero Typography Lag on Buttons & Interactive Elements**:
+  - Every button, tab, link, or interactive element MUST HAVE 100% stable, lag-free font rendering during all state changes (`:hover`, `:focus`, `:active`, click).
+  - **No Font Weight or Size Shifts**: NEVER animate `font-weight`, `font-size`, `letter-spacing`, or layout dimensions (`width`, `height`, `margin`, `padding`) on hover or click state.
+  - **Subpixel & Antialiasing Lock**: Ensure all text has `-webkit-font-smoothing: antialiased` and `-moz-osx-font-smoothing: grayscale` locked globally.
+  - **GPU Layer Lock**: All animated interactive elements MUST use `transform: translateZ(0)` & `backface-visibility: hidden` (`transform-gpu`) to prevent subpixel text blurring or rasterization flickering.
+  - **Click Text Lock (`select-none`)**: Apply `select-none` on all buttons to eliminate accidental text selection or text highlight flickering during multi-clicks.
+
 ## User Interface & Design Rules
 
 - **Do Not Use Raw Emojis as UI Icons**: Never use raw Unicode emojis (e.g., 🔒, 🚀, ⭐, 📁, etc.) as icons in the website's user interface. Instead, use clean, professionally designed vector/SVG icons from `lucide-react` or `react-icons`, matching the design system.
@@ -51,4 +60,3 @@ This file defines project-specific rules, style guidelines, and behavioral const
 - Frontend dev server: `cd frontend && npm run dev`
 - Backend dev server: `cd backend && npm run dev`
 - Database seed: `cd backend && npm run seed`
-
