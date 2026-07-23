@@ -26,11 +26,11 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden md:flex items-center gap-8 text-[#1d1d1f]/80">
-          <a href="#why-socrates" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Why SOCRATES</a>
-          <a href="#ai-tutor" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">AI Tutor</a>
-          <a href="#how-it-works" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">How It Works</a>
+          <a href="/#why-socrates" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Why SOCRATES</a>
+          <a href="/#ai-tutor" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">AI Tutor</a>
+          <a href="/#how-it-works" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">How It Works</a>
           <Link to="/tutors" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Tutors</Link>
-          <a href="#pricing" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Pricing</a>
+          <a href="/#pricing" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Pricing</a>
         </div>
 
         <div className="flex items-center gap-4">
