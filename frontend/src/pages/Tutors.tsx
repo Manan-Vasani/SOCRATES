@@ -239,48 +239,25 @@ export default function Tutors() {
     }))
   }, [allSubjects])
 
-  const containerVariants = {
+  const pageContainerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 18 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.55,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  }
-
-  const gridVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0,
+        staggerChildren: 0.12,
+        delayChildren: 0.05,
       },
     },
   }
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 22, scale: 0.98 },
+    hidden: { opacity: 0, y: 28, scale: 0.97 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.55,
+        duration: 0.7,
         ease: [0.16, 1, 0.3, 1],
       },
     },
@@ -294,31 +271,31 @@ export default function Tutors() {
       {/* Global Navbar */}
       <Navbar />
 
-      {/* Hero Header Section */}
-      <motion.section
-        variants={containerVariants}
+      <motion.main
+        variants={pageContainerVariants}
         initial="hidden"
         animate="visible"
-        className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full"
       >
-        <motion.h1 
-          variants={itemVariants} 
-          className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
-        >
-          <span>Find your mentor.</span>
-          <br className="hidden sm:inline" />
-          <span className="block mt-1 sm:mt-2 text-[#0066cc]">
-            Top Rated Tutors & Peer Mentors.
-          </span>
-        </motion.h1>
+        {/* Hero Header Section */}
+        <section className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full">
+          <motion.h1 
+            variants={cardVariants} 
+            className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
+          >
+            <span>Find your mentor.</span>
+            <br className="hidden sm:inline" />
+            <span className="block mt-1 sm:mt-2 text-[#0066cc]">
+              Top Rated Tutors & Peer Mentors.
+            </span>
+          </motion.h1>
 
-        <motion.p 
-          variants={itemVariants}
-          className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
-        >
-          Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
-        </motion.p>
-      </motion.section>
+          <motion.p 
+            variants={cardVariants}
+            className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
+          >
+            Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
+          </motion.p>
+        </section>
 
       {/* Search & Filter Control Bar */}
       <motion.section
@@ -531,6 +508,7 @@ export default function Tutors() {
           </motion.div>
         )}
       </section>
+      </motion.main>
 
       {/* BOOKING MODAL */}
       {selectedTutorForBooking && (
