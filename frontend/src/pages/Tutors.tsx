@@ -132,31 +132,40 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
 
 function TutorCardSkeleton() {
   return (
-    <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs animate-pulse min-h-[340px]">
+    <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs animate-pulse">
       <div className="space-y-4">
+        {/* Top Header */}
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#e5e5e7]/60 shrink-0" />
-          <div className="space-y-2 flex-1 pt-1">
-            <div className="h-4 bg-[#e5e5e7]/80 rounded-md w-3/4" />
-            <div className="h-3 bg-[#e5e5e7]/50 rounded-md w-1/2" />
-            <div className="h-3 bg-[#e5e5e7]/40 rounded-md w-1/3" />
+          <div className="w-16 h-16 rounded-2xl bg-[#e5e5e7]/60 shrink-0 border border-[#e0e0e0]" />
+          <div className="space-y-1.5 flex-1 pt-0.5">
+            <div className="h-5 bg-[#e5e5e7]/80 rounded-md w-3/4" />
+            <div className="h-3.5 bg-[#e5e5e7]/50 rounded-md w-1/2" />
+            <div className="h-3.5 bg-[#e5e5e7]/40 rounded-md w-1/3" />
           </div>
         </div>
-        <div className="h-9 bg-[#f0f0f2] rounded-xl w-full" />
+
+        {/* Primary Domain */}
+        <div className="h-[42px] bg-[#f5f5f7] border border-[#e5e5e7] rounded-xl w-full" />
+
+        {/* Bio Statement */}
         <div className="space-y-2 pt-1">
-          <div className="h-3 bg-[#e5e5e7]/60 rounded-md w-full" />
-          <div className="h-3 bg-[#e5e5e7]/50 rounded-md w-4/5" />
-          <div className="h-3 bg-[#e5e5e7]/40 rounded-md w-2/3" />
+          <div className="h-3.5 bg-[#e5e5e7]/60 rounded-md w-full" />
+          <div className="h-3.5 bg-[#e5e5e7]/50 rounded-md w-11/12" />
+          <div className="h-3.5 bg-[#e5e5e7]/40 rounded-md w-3/4" />
         </div>
-        <div className="flex gap-2 pt-1">
-          <div className="h-6 bg-[#f0f0f2] rounded-lg w-16" />
-          <div className="h-6 bg-[#f0f0f2] rounded-lg w-20" />
-          <div className="h-6 bg-[#f0f0f2] rounded-lg w-14" />
+
+        {/* Subject Badges */}
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="h-7 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg w-20" />
+          <div className="h-7 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg w-24" />
+          <div className="h-7 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg w-16" />
         </div>
       </div>
-      <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between">
-        <div className="h-5 bg-[#e5e5e7]/70 rounded-md w-14" />
-        <div className="h-8 bg-[#0066cc]/20 rounded-xl w-32" />
+
+      {/* Bottom Action Footer */}
+      <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-3 mt-4">
+        <div className="h-6 bg-[#e5e5e7]/70 rounded-md w-16" />
+        <div className="h-8 bg-[#0066cc]/20 rounded-xl w-36" />
       </div>
     </div>
   )
