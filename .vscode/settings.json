@@ -13,5 +13,16 @@
   "tailwindCSS.includeLanguages": {
     "typescript": "javascript",
     "typescriptreact": "javascript"
-  }
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/ai-service/.venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/ai-service",
+    "${workspaceFolder}/ai-service/.venv/Lib/site-packages"
+  ],
+  "python.analysis.autoSearchPaths": true,
+  "pyrefly.pythonPath": "${workspaceFolder}/ai-service/.venv/Scripts/python.exe",
+  "pyrefly.searchPaths": [
+    "${workspaceFolder}/ai-service",
+    "${workspaceFolder}/ai-service/.venv/Lib/site-packages"
+  ]
 }

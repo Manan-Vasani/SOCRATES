@@ -1,0 +1,7 @@
+[tool.pyrefly]
+search-path = ["ai-service/.venv/Lib/site-packages", "ai-service"]
+
+[tool.pyright]
+venvPath = "ai-service"
+venv = ".venv"
+extraPaths = ["ai-service"]
