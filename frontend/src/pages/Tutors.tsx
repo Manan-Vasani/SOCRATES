@@ -3,7 +3,6 @@ import {
   BookOpen,
   Calendar,
   DollarSign,
-  Filter,
   Search,
   ShieldCheck,
   Sparkles,
@@ -383,8 +382,8 @@ export default function Tutors() {
                   options={subjectDropdownOptions}
                   value={selectedSubject}
                   onChange={(val: string) => setSelectedSubject(val)}
-                  icon={<Filter size={13} />}
-                  buttonClassName="py-1.5"
+                  buttonClassName="py-1.5 w-[210px] sm:w-[220px] justify-between"
+                  align="center"
                 />
 
                 <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto">

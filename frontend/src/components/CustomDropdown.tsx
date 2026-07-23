@@ -20,7 +20,7 @@ interface CustomDropdownProps<T extends string | number> {
   className?: string
   buttonClassName?: string
   menuClassName?: string
-  align?: 'left' | 'right'
+  align?: 'left' | 'right' | 'center'
 }
 
 export default function CustomDropdown<T extends string | number>({
@@ -52,7 +52,12 @@ export default function CustomDropdown<T extends string | number>({
       const rect = buttonRef.current.getBoundingClientRect()
       const menuWidth = menuRef.current?.offsetWidth || Math.max(rect.width, 180)
       
-      let left = align === 'right' ? rect.right - menuWidth : rect.left
+      let left = rect.left
+      if (align === 'right') {
+        left = rect.right - menuWidth
+      } else if (align === 'center') {
+        left = rect.left + (rect.width / 2) - (menuWidth / 2)
+      }
 
       // Ensure dropdown does not overflow viewport edges
       if (left + menuWidth > window.innerWidth - 12) {
