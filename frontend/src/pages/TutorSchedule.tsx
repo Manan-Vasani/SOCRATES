@@ -262,16 +262,8 @@ export default function TutorSchedule() {
   }
 
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 24, scale: 0.98 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1] as const
-      }
-    }
+    hidden: { opacity: 1, y: 0 },
+    visible: { opacity: 1, y: 0 }
   }
 
   return (

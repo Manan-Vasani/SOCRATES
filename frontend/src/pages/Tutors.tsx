@@ -254,16 +254,8 @@ export default function Tutors() {
   }
 
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 28, scale: 0.97 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1] as const,
-      },
-    },
+    hidden: { opacity: 1, y: 0 },
+    visible: { opacity: 1, y: 0 }
   }
 
   return (
@@ -275,30 +267,19 @@ export default function Tutors() {
       <Navbar />
 
       {/* Hero Header Section */}
-      <motion.section
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full"
-      >
-        <motion.h1 
-          variants={cardVariants} 
-          className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
-        >
+      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-10 text-center flex flex-col items-center w-full">
+        <h1 className="mt-2 mb-4 text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]">
           <span>Find your mentor.</span>
           <br className="hidden sm:inline" />
           <span className="block mt-1 sm:mt-2 text-[#0066cc]">
             Top Rated Tutors & Peer Mentors.
           </span>
-        </motion.h1>
+        </h1>
 
-        <motion.p 
-          variants={cardVariants}
-          className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
-        >
+        <p className="max-w-2xl mx-auto text-base sm:text-lg text-[#7a7a7a] font-normal leading-relaxed tracking-normal">
           Connect 1-on-1 with verified academic scholars, PhD researchers, and peer educators for live Socratic tutoring and code reviews.
-        </motion.p>
-      </motion.section>
+        </p>
+      </section>
 
       {/* Unified Search & Tutor Grid Motion Container */}
       <motion.div

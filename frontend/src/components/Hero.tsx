@@ -23,15 +23,8 @@ export default function Hero() {
   }
 
   const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
+    hidden: { opacity: 1, y: 0 },
+    visible: { opacity: 1, y: 0 }
   }
 
   const mockupVariants: Variants = {
@@ -67,24 +60,18 @@ export default function Hero() {
         className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center w-full"
       >
         {/* Headline */}
-        <motion.h1 
-          variants={itemVariants} 
-          className="mt-4 mb-6 text-4xl sm:text-6xl md:text-7xl lg:text-[76px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]"
-        >
+        <h1 className="mt-4 mb-6 text-4xl sm:text-6xl md:text-7xl lg:text-[76px] font-semibold tracking-[-0.035em] leading-[1.08] text-[#1d1d1f]">
           <span>Learn from the source.</span>
           <br className="hidden sm:inline" />
           <span className="block mt-1 sm:mt-2 text-[#1d1d1f]">
             AI + Human Tutors, together.
           </span>
-        </motion.h1>
+        </h1>
 
         {/* Description */}
-        <motion.p 
-          variants={itemVariants}
-          className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-[#7a7a7a] font-normal leading-relaxed tracking-normal"
-        >
+        <p className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-[#7a7a7a] font-normal leading-relaxed tracking-normal">
           Master every subject through personalized tutoring, AI-powered guidance, live video sessions, and collaborative learning—all in one platform.
-        </motion.p>
+        </p>
 
         {/* Buttons */}
         <motion.div 
