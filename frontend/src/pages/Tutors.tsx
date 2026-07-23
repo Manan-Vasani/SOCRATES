@@ -429,8 +429,12 @@ export default function Tutors() {
         {/* Tutors Grid Section */}
         <section className="relative z-10 max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="text-xs font-semibold text-[#7a7a7a]">
-              Showing <span className="text-[#1d1d1f]">{filteredTutors.length}</span> Verified Tutors
+            <div className="text-xs font-semibold text-[#7a7a7a] flex items-center gap-1.5 select-none">
+              <span>Showing</span>
+              <span className="font-bold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5e7] px-2 py-0.5 rounded-md text-[11px]">
+                {filteredTutors.length}
+              </span>
+              <span>Verified Tutors</span>
             </div>
             {(selectedSubject !== 'All' || searchQuery || minRating > 0 || maxPrice < 100) && (
               <button
@@ -489,9 +493,8 @@ export default function Tutors() {
                               </span>
                             )}
                             {tutor.isVerified && (
-                              <span title="Verified Educator" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-[10px] font-bold select-none">
-                                <ShieldCheck size={12} className="text-[#0066cc]" />
-                                <span>Verified</span>
+                              <span title="Verified Educator" className="inline-flex items-center shrink-0 select-none">
+                                <ShieldCheck size={18} className="text-[#0066cc]" />
                               </span>
                             )}
                           </div>
