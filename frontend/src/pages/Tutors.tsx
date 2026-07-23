@@ -460,10 +460,9 @@ export default function Tutors() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTutors.map((tutor) => (
-                <motion.div
+                <div
                   key={tutor.id}
-                  variants={cardVariants}
-                  className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-all duration-200 group"
+                  className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-5 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-colors duration-150 group"
                 >
                   <div className="space-y-4">
                     {/* Top Card Header */}
@@ -572,7 +571,7 @@ export default function Tutors() {
                       <span>Check Availability</span>
                     </button>
                   </div>
-                </motion.div>
+                </div>
             ))}
           </div>
         )}
