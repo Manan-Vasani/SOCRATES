@@ -666,7 +666,7 @@ export default function TutorSchedule() {
                     onChange={(e) => setBookingTopic(e.target.value)}
                     placeholder="e.g. Graph Traversal algorithms, BFS vs DFS prep..."
                     rows={3}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
                   />
                 </div>
 
