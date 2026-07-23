@@ -21,6 +21,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore'
 import { updateUserProfileApi } from '../services/api'
 import { toast } from 'sonner'
+import Navbar from '../components/Navbar'
 
 export default function Profile() {
   const { user, updateUser, activePerspective, setPerspective, logout } = useAuthStore()
@@ -90,41 +91,8 @@ export default function Profile() {
       {/* Background Subtle Gradient */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,102,204,0.04)_0%,_transparent_60%)] pointer-events-none z-0" />
 
-      {/* Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-[#e0e0e0]/80 px-6 py-4 flex items-center justify-between shadow-xs">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-[#0066cc] flex items-center justify-center text-white font-bold text-lg shadow-md shadow-[#0066cc]/20 group-hover:scale-105 transition-transform">
-            S
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight text-[#1d1d1f]">
-            SOCRATES
-          </span>
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <Link
-            to="/"
-            className="text-xs font-medium text-[#525252] hover:text-[#0066cc] transition-colors"
-          >
-            Home
-          </Link>
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium text-xs transition-all transform active:scale-95 shadow-md shadow-[#0066cc]/20 cursor-pointer"
-          >
-            <Edit3 size={14} />
-            Edit Profile
-          </button>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-medium text-xs transition-all cursor-pointer"
-            title="Sign Out of Account"
-          >
-            <LogOut size={14} />
-            Sign Out
-          </button>
-        </div>
-      </header>
+      {/* Global Navbar */}
+      <Navbar />
 
       <main className="max-w-6xl mx-auto px-6 pt-10 relative z-10 space-y-8">
         {/* Profile Hero Card */}
@@ -494,6 +462,21 @@ export default function Profile() {
             </div>
           </section>
         )}
+
+        {/* Sign Out Action Section at the bottom of the page */}
+        <section className="pt-8 border-t border-[#e5e5e7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-display font-semibold text-[#1d1d1f]">Account Session</h4>
+            <p className="text-xs text-[#7a7a7a]">Sign out of your active SOCRATES session on this browser.</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+          >
+            <LogOut size={15} />
+            Sign Out of Account
+          </button>
+        </section>
       </main>
 
       {/* EDIT PROFILE LIGHT MODAL */}
