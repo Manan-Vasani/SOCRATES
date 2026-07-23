@@ -480,9 +480,9 @@ export default function TutorSchedule() {
                       onMouseLeave={handlePopoverMouseLeave}
                       className={`absolute top-1/2 -translate-y-1/2 ${
                         day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
-                      } w-72 p-3.5 space-y-2.5 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
+                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
                     >
-                      <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2.5">
+                      <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
                         <span className="font-bold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>
                         <div className="flex items-center gap-2">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -509,7 +509,7 @@ export default function TutorSchedule() {
                         </div>
                       </div>
 
-                                      <div className="space-y-1.5 pt-0.5">
+                      <div className="flex flex-col gap-1.5">
                         <p className="text-[10px] text-[#7a7a7a] font-semibold uppercase tracking-wider">
                           Time Slots & Reservations:
                         </p>
