@@ -9,6 +9,6 @@ SOCRATES is a full-stack platform comprising:
 - Strict CSS Anti-Jank Rules: [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt)
 
 ## Operational Directives
-- Follow code style guidelines defined in [code-style.md](file:///d:/SOCRATES/.kilo/rules/code-style.md).
-- Follow project constraints in [project-rules.md](file:///d:/SOCRATES/.kilo/rules/project-rules.md).
+- Follow code style guidelines defined in [code-style.md](file:///d:/SOCRATES/docs/.kilo/rules/code-style.md).
+- Follow project constraints in [project-rules.md](file:///d:/SOCRATES/docs/.kilo/rules/project-rules.md).
 - Maintain clean modular file structures and prevent bloated monolithic files.
