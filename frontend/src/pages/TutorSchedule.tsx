@@ -358,8 +358,8 @@ export default function TutorSchedule() {
 
       slotTimes.forEach((time, idx) => {
         const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
-        // Enable Group Split for booked slots by default (only 1 late slot private for variety)
-        const allowGroup = isSlotBooked ? idx !== 3 : true
+        // Dynamic realistic balance: mix of Group Split (yellow) and Private 1-on-1 (red)
+        const allowGroup = isSlotBooked ? (dayNum + idx) % 3 !== 0 : true
         slots.push({
           time,
           subject: availableSubjects[idx % availableSubjects.length],
