@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   GraduationCap,
   BookOpen,
@@ -18,12 +19,72 @@ import {
   Bookmark,
   LogOut,
   Repeat,
+  Calendar,
+  AlertTriangle,
+  Users,
+  Lock,
+  Tag,
 } from 'lucide-react'
 import { useAuthStore, ProfilePerspective } from '../store/useAuthStore'
 import { updateUserProfileApi } from '../services/api'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
+
+export interface ProfileSessionItem {
+  id: string
+  tutorName: string
+  studentName: string
+  subject: string
+  topic?: string
+  dateStr: string
+  timeStr: string
+  duration: number
+  fee: number
+  isGroupSplit: boolean
+  status: 'Upcoming' | 'Completed' | 'Cancelled'
+}
+
+const INITIAL_PROFILE_SESSIONS: ProfileSessionItem[] = [
+  {
+    id: 'sess-101',
+    tutorName: 'Dr. Evelyn Reed',
+    studentName: 'Alex Mercer',
+    subject: 'Algorithms & Data Structures',
+    topic: 'Graph Traversals & BFS',
+    dateStr: 'Sat, Jul 25, 2026',
+    timeStr: '01:30 PM',
+    duration: 60,
+    fee: 33,
+    isGroupSplit: true,
+    status: 'Upcoming'
+  },
+  {
+    id: 'sess-102',
+    tutorName: 'Marcus Chen',
+    studentName: 'Alex Mercer',
+    subject: 'Machine Learning',
+    topic: 'PyTorch Model Optimization',
+    dateStr: 'Sun, Jul 26, 2026',
+    timeStr: '11:30 AM',
+    duration: 60,
+    fee: 65,
+    isGroupSplit: false,
+    status: 'Upcoming'
+  },
+  {
+    id: 'sess-103',
+    tutorName: 'Dr. Evelyn Reed',
+    studentName: 'Alex Mercer',
+    subject: 'Linear Algebra',
+    dateStr: 'Wed, Jul 22, 2026',
+    timeStr: '04:00 PM',
+    duration: 30,
+    fee: 28,
+    isGroupSplit: true,
+    status: 'Completed'
+  }
+]
 
 export default function Profile() {
   const { user, updateUser, logout } = useAuthStore()
@@ -59,6 +120,22 @@ export default function Profile() {
     subjectsText: user?.subjects ? user.subjects.join(', ') : '',
   })
   const [isSaving, setIsSaving] = useState(false)
+
+  // Booked Sessions State & Cancellation System
+  const [sessions, setSessions] = useState<ProfileSessionItem[]>(INITIAL_PROFILE_SESSIONS)
+  const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
+  const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
+
+  const confirmCancelSession = () => {
+    if (!cancellingSession) return
+    setSessions((prev) => prev.filter((s) => s.id !== cancellingSession.id))
+    toast.success('Session Cancelled Successfully', {
+      description: `Your reservation on ${cancellingSession.dateStr} at ${cancellingSession.timeStr} has been cancelled. Full refund of $${cancellingSession.fee} issued.`,
+    })
+    setCancellingSession(null)
+  }
+
+  const filteredSessions = sessions.filter((s) => s.status === sessionFilter)
 
   useEffect(() => {
     if (user) {
@@ -237,6 +314,133 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* BOOKED SESSIONS & SCHEDULE MANAGEMENT SECTION */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
+            <div>
+              <span className="text-[11px] uppercase tracking-widest font-semibold text-[#0066cc]">
+                Active Schedule & Reservations
+              </span>
+              <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                <Calendar className="text-[#0066cc]" size={22} /> My Booked Tutoring Sessions
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSessionFilter('Upcoming')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  sessionFilter === 'Upcoming'
+                    ? 'bg-[#0066cc] text-white shadow-xs'
+                    : 'bg-white border border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
+                }`}
+              >
+                Upcoming ({sessions.filter((s) => s.status === 'Upcoming').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSessionFilter('Completed')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  sessionFilter === 'Completed'
+                    ? 'bg-[#0066cc] text-white shadow-xs'
+                    : 'bg-white border border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
+                }`}
+              >
+                Completed ({sessions.filter((s) => s.status === 'Completed').length})
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredSessions.length > 0 ? (
+              filteredSessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`p-5 rounded-2xl bg-white border space-y-3.5 transition-all shadow-xs relative overflow-hidden ${
+                    session.isGroupSplit
+                      ? 'border-amber-200 hover:border-amber-300'
+                      : 'border-[#e5e5e7] hover:border-[#0066cc]/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display font-bold text-sm text-[#1d1d1f]">
+                          {session.dateStr}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs">
+                          {session.timeStr}
+                        </span>
+                      </div>
+                      <div className="text-xs font-medium text-[#525252] flex items-center gap-1.5 pt-0.5">
+                        <BookOpen size={13} className="text-[#0066cc]" />
+                        <span>Subject: <strong className="text-[#1d1d1f] font-semibold">{session.subject}</strong></span>
+                      </div>
+                    </div>
+
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 ${
+                      session.isGroupSplit
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                    }`}>
+                      {session.isGroupSplit ? <Users size={11} /> : <Lock size={11} />}
+                      {session.isGroupSplit ? 'Group Split (50% Off)' : 'Private 1-on-1'}
+                    </span>
+                  </div>
+
+                  {session.topic && (
+                    <div className="p-2.5 rounded-xl bg-[#fafafc] border border-[#f0f0f2] text-xs text-[#525252] flex items-start gap-1.5">
+                      <Tag size={12} className="text-[#0066cc] shrink-0 mt-0.5" />
+                      <span>Topic: <strong className="text-[#1d1d1f] font-medium">{session.topic}</strong></span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
+                    <div className="text-[#7a7a7a]">
+                      {userRole === 'tutor' ? (
+                        <span>Student: <strong className="text-[#1d1d1f] font-semibold">{session.studentName}</strong></span>
+                      ) : (
+                        <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{session.tutorName}</strong></span>
+                      )}
+                      <span className="ml-2 text-[#a1a1a6]">({session.duration} min • ${session.fee})</span>
+                    </div>
+
+                    {session.status === 'Upcoming' ? (
+                      <button
+                        type="button"
+                        onClick={() => setCancellingSession(session)}
+                        className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none active:scale-95 flex items-center gap-1"
+                      >
+                        <X size={12} /> Cancel Session
+                      </button>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-[11px]">
+                        Completed
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full p-8 rounded-2xl bg-white border border-[#e5e5e7] text-center space-y-2">
+                <Calendar className="mx-auto text-[#a1a1a6]" size={32} />
+                <h4 className="text-sm font-bold text-[#1d1d1f]">No {sessionFilter.toLowerCase()} sessions found</h4>
+                <p className="text-xs text-[#7a7a7a]">
+                  {sessionFilter === 'Upcoming' ? 'You have no active tutoring reservations.' : 'No completed tutoring session history.'}
+                </p>
+                {sessionFilter === 'Upcoming' && (
+                  <Link
+                    to="/tutors"
+                    className="inline-block mt-2 px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-semibold transition-all"
+                  >
+                    Browse Tutors & Book Session
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* PERSPECTIVE SECTION 1: STUDENT VIEW (IF STUDENT OR BOTH) */}
         {(viewPerspective === 'both' || viewPerspective === 'student') && (
@@ -659,6 +863,71 @@ export default function Profile() {
           </div>
         </div>
       )}
+      {/* CANCEL SESSION CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {cancellingSession && (
+          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs -z-10"
+              onClick={() => setCancellingSession(null)}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1d1d1f]">
+                    Cancel Tutoring Session?
+                  </h3>
+                  <p className="text-xs text-[#7a7a7a]">
+                    Confirm cancellation for {cancellingSession.dateStr} at {cancellingSession.timeStr}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100 space-y-2 text-xs text-red-950">
+                <div className="font-semibold flex items-center justify-between">
+                  <span>Session: {cancellingSession.subject}</span>
+                  <span className="font-bold">${cancellingSession.fee}</span>
+                </div>
+                <p className="text-[#525252] leading-relaxed">
+                  Cancelling will remove this reservation from your schedule and notify {userRole === 'tutor' ? cancellingSession.studentName : cancellingSession.tutorName}. A full refund of ${cancellingSession.fee} will be issued to your payment method.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#f0f0f2]">
+                <button
+                  type="button"
+                  onClick={() => setCancellingSession(null)}
+                  className="px-4 py-2 rounded-xl border border-[#e5e5e7] hover:bg-[#f5f5f7] text-xs font-semibold text-[#525252] transition-colors cursor-pointer select-none"
+                >
+                  Keep Session
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmCancelSession}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors shadow-xs cursor-pointer select-none active:scale-95"
+                >
+                  Yes, Cancel Session
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
