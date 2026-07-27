@@ -261,21 +261,15 @@ export default function TutorSchedule() {
   const [groupSplitModalSlot, setGroupSplitModalSlot] = useState<{ day: DaySchedule; slot: TimeSlot } | null>(null)
   const hoverTimeoutRef = React.useRef<any>(null)
 
-  // Prevent background page scrolling & prevent layout shift when modal is open
+  // Prevent background page scrolling when modal is open
   useEffect(() => {
     if (selectedDay || groupSplitModalSlot) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
       document.body.style.overflow = 'hidden'
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`
-      }
     } else {
       document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
     }
     return () => {
       document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
     }
   }, [selectedDay, groupSplitModalSlot])
 
@@ -852,30 +846,13 @@ export default function TutorSchedule() {
       {/* SLOT BOOKING MODAL */}
       <AnimatePresence>
         {selectedDay && (
-          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-start sm:items-center">
-            {/* Backdrop Fade */}
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: "linear" }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs -z-10 transform-gpu"
-              onClick={() => setSelectedDay(null)}
-            />
-
-            {/* Modal Card Scale & Fade */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased my-auto"
-              style={{
-                WebkitFontSmoothing: 'antialiased',
-                MozOsxFontSmoothing: 'grayscale',
-                willChange: 'transform, opacity'
-              }}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-6 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none"
             >
               {/* Header */}
               <div className="flex items-start justify-between border-b border-[#e5e5e7] pb-4">
@@ -1134,30 +1111,13 @@ export default function TutorSchedule() {
       {/* GROUP SESSION & FEE SHARING MODAL */}
       <AnimatePresence>
         {groupSplitModalSlot && (
-          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-start sm:items-center">
-            {/* Backdrop Fade */}
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: "linear" }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs -z-10 transform-gpu"
-              onClick={() => setGroupSplitModalSlot(null)}
-            />
-
-            {/* Modal Card Scale & Fade */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased my-auto"
-              style={{
-                WebkitFontSmoothing: 'antialiased',
-                MozOsxFontSmoothing: 'grayscale',
-                willChange: 'transform, opacity'
-              }}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none"
             >
               {/* Header */}
               <div className="flex items-start justify-between border-b border-[#e5e5e7] pb-4">
