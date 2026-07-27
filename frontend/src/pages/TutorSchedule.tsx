@@ -21,6 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
+import { getStoredProfileSessions, saveStoredProfileSessions, ProfileSessionItem } from './Profile'
 
 function TutorScheduleSkeleton() {
   return (
@@ -435,14 +436,16 @@ export default function TutorSchedule() {
     })
 
     setIsSubmitting(false)
+    selectedSlot.isBooked = true
+    selectedSlot.bookedBy = 'Alex Mercer'
+    selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
+    selectedSlot.allowGroupSplit = allowGroupSplitBooking
+
+    toast.success(`Session Booked with ${tutor.name}!`, {
+      description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject} • ${allowGroupSplitBooking ? 'Group Enabled' : 'Private Session'})`
+    })
+
     if (res?.success) {
-      selectedSlot.isBooked = true
-      selectedSlot.bookedBy = 'Alex Mercer'
-      selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
-      selectedSlot.allowGroupSplit = allowGroupSplitBooking
-      toast.success(`Session Booked with ${tutor.name}!`, {
-        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject} • ${allowGroupSplitBooking ? 'Group Enabled' : 'Private Session'})`
-      })
       setBackendBookings(prev => [...prev, {
         tutorId: tutor.id,
         studentName: 'Alex Mercer',
@@ -452,15 +455,24 @@ export default function TutorSchedule() {
         duration: selectedDuration,
         fee: calculatedFee
       }])
-    } else {
-      selectedSlot.isBooked = true
-      selectedSlot.bookedBy = 'Alex Mercer'
-      selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
-      selectedSlot.allowGroupSplit = allowGroupSplitBooking
-      toast.success(`Session Booked with ${tutor.name}!`, {
-        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee})`
-      })
     }
+
+    // Save booked session to localStorage so Profile page updates instantly
+    const newProfileSession: ProfileSessionItem = {
+      id: `sess-${Date.now()}`,
+      tutorName: tutor.name,
+      studentName: 'Alex Mercer',
+      subject: selectedSlot.subject,
+      topic: bookingTopic ? bookingTopic.trim() : undefined,
+      dateStr: selectedDay.fullDateStr,
+      timeStr: selectedSlot.time,
+      duration: selectedDuration,
+      fee: calculatedFee,
+      isGroupSplit: allowGroupSplitBooking,
+      status: 'Upcoming'
+    }
+    const storedSessions = getStoredProfileSessions()
+    saveStoredProfileSessions([newProfileSession, ...storedSessions])
 
     setBookingRefreshKey(prev => prev + 1)
     setSelectedDay(null)
@@ -1224,7 +1236,22 @@ export default function TutorSchedule() {
                     toast.success(`Group Session Confirmed with ${hostName}!`, {
                       description: `Joined ${groupSplitModalSlot.slot.subject} on ${groupSplitModalSlot.day.fullDateStr} at ${groupSplitModalSlot.slot.time}. Your split fee: $${splitFee}.`
                     })
-                    groupSplitModalSlot.slot.bookedBy = `${hostName} & You (Grouped • $${splitFee}/ea)`
+                    const newGroupProfileSession: ProfileSessionItem = {
+                      id: `sess-${Date.now()}`,
+                      tutorName: tutor.name,
+                      studentName: 'Alex Mercer',
+                      subject: groupSplitModalSlot.slot.subject,
+                      topic: groupSplitModalSlot.slot.topic,
+                      dateStr: groupSplitModalSlot.day.fullDateStr,
+                      timeStr: groupSplitModalSlot.slot.time,
+                      duration: 60,
+                      fee: splitFee,
+                      isGroupSplit: true,
+                      status: 'Upcoming'
+                    }
+                    const storedSessions = getStoredProfileSessions()
+                    saveStoredProfileSessions([newGroupProfileSession, ...storedSessions])
+                    setBookingRefreshKey(prev => prev + 1)
                     setGroupSplitModalSlot(null)
                   }}
                   className="flex-2 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer select-none"

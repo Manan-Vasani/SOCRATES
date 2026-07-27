@@ -86,6 +86,29 @@ const INITIAL_PROFILE_SESSIONS: ProfileSessionItem[] = [
   }
 ]
 
+export const getStoredProfileSessions = (): ProfileSessionItem[] => {
+  try {
+    const stored = localStorage.getItem('socrates_booked_sessions')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
+    }
+  } catch (e) {
+    console.error(e)
+  }
+  return INITIAL_PROFILE_SESSIONS
+}
+
+export const saveStoredProfileSessions = (sessions: ProfileSessionItem[]) => {
+  try {
+    localStorage.setItem('socrates_booked_sessions', JSON.stringify(sessions))
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 export default function Profile() {
   const { user, updateUser, logout } = useAuthStore()
   const navigate = useNavigate()
@@ -122,13 +145,17 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false)
 
   // Booked Sessions State & Cancellation System
-  const [sessions, setSessions] = useState<ProfileSessionItem[]>(INITIAL_PROFILE_SESSIONS)
+  const [sessions, setSessions] = useState<ProfileSessionItem[]>(() => getStoredProfileSessions())
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
 
   const confirmCancelSession = () => {
     if (!cancellingSession) return
-    setSessions((prev) => prev.filter((s) => s.id !== cancellingSession.id))
+    setSessions((prev) => {
+      const updated = prev.filter((s) => s.id !== cancellingSession.id)
+      saveStoredProfileSessions(updated)
+      return updated
+    })
     toast.success('Session Cancelled Successfully', {
       description: `Your reservation on ${cancellingSession.dateStr} at ${cancellingSession.timeStr} has been cancelled. Full refund of $${cancellingSession.fee} issued.`,
     })
