@@ -189,6 +189,7 @@ const MOCK_STUDENT_NAMES = [
 interface TimeSlot {
   time: string
   subject: string
+  topic?: string
   availableDurations?: string
   isBooked: boolean
   bookedBy?: string
@@ -356,13 +357,17 @@ export default function TutorSchedule() {
         ? ['10:00 AM', '01:30 PM', '04:00 PM']
         : ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
 
+      const mockTopics = ['Graph Traversals & BFS', 'Dynamic Programming Prep', 'Tree Recursion & Heaps']
       slotTimes.forEach((time, idx) => {
         const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
         // Dynamic realistic balance: mix of Group Split (yellow) and Private 1-on-1 (red)
         const allowGroup = isSlotBooked ? (dayNum + idx) % 3 !== 0 : true
+        const topic = isSlotBooked && idx % 2 === 0 ? mockTopics[(dayNum + idx) % mockTopics.length] : undefined
+
         slots.push({
           time,
           subject: availableSubjects[idx % availableSubjects.length],
+          topic,
           availableDurations: '20, 30, 60 min',
           isBooked: isSlotBooked,
           bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined,
@@ -420,6 +425,7 @@ export default function TutorSchedule() {
     if (res?.success) {
       selectedSlot.isBooked = true
       selectedSlot.bookedBy = 'Alex Mercer'
+      selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
       selectedSlot.allowGroupSplit = allowGroupSplitBooking
       toast.success(`Session Booked with ${tutor.name}!`, {
         description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject} • ${allowGroupSplitBooking ? 'Group Enabled' : 'Private Session'})`
@@ -775,6 +781,12 @@ export default function TutorSchedule() {
                                       </span>
                                     )}
                                   </div>
+                                  {slot.topic && (
+                                    <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate pt-0.5">
+                                      <BookOpen size={10} className="text-[#6e6e73] shrink-0" />
+                                      <span className="truncate">Topic: <strong className="font-semibold text-[#1d1d1f]">{slot.topic}</strong></span>
+                                    </div>
+                                  )}
 
                                   {slot.allowGroupSplit && (
                                     <button
@@ -798,17 +810,19 @@ export default function TutorSchedule() {
                                   )}
                                 </div>
                               ) : (
-                              <div className="space-y-0.5 pt-0.5">
-                                <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
-                                  <BookOpen size={10} className="text-[#6e6e73] shrink-0" />
-                                  <span className="truncate">Subject: <strong className="font-semibold text-[#1d1d1f]">{slot.subject}</strong></span>
+                                <div className="space-y-0.5 pt-0.5">
+                                  {slot.topic && (
+                                    <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
+                                      <BookOpen size={10} className="text-[#6e6e73] shrink-0" />
+                                      <span className="truncate">Topic: <strong className="font-semibold text-[#1d1d1f]">{slot.topic}</strong></span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
+                                    <Clock size={10} className="text-[#0066cc] shrink-0" />
+                                    <span className="truncate">Session: <strong className="font-semibold text-[#0066cc]">{slot.availableDurations || '20, 30, 60 min'}</strong></span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
-                                  <Clock size={10} className="text-[#0066cc] shrink-0" />
-                                  <span className="truncate">Session: <strong className="font-semibold text-[#0066cc]">{slot.availableDurations || '20, 30, 60 min'}</strong></span>
-                                </div>
-                              </div>
-                            )}
+                              )}
                           </div>
                         )})}
                       </div>
