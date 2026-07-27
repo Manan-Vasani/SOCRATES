@@ -809,18 +809,7 @@ export default function TutorSchedule() {
                                     </button>
                                   )}
                                 </div>
-                              ) : (
-                                <div className="space-y-0.5 pt-0.5">
-                                  <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
-                                    <BookOpen size={10} className="text-[#6e6e73] shrink-0" />
-                                    <span className="truncate">{slot.topic ? 'Topic' : 'Subject'}: <strong className="font-semibold text-[#1d1d1f]">{slot.topic || slot.subject}</strong></span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
-                                    <Clock size={10} className="text-[#0066cc] shrink-0" />
-                                    <span className="truncate">Session: <strong className="font-semibold text-[#0066cc]">{slot.availableDurations || '20, 30, 60 min'}</strong></span>
-                                  </div>
-                                </div>
-                              )}
+                              ) : null}
                           </div>
                         )})}
                       </div>
