@@ -687,14 +687,14 @@ export default function TutorSchedule() {
                     </div>
                   </button>
 
-                  {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned to always grow downwards, preventing calendar jump) */}
+                  {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned intelligently with explicit X Close Button) */}
                   {hoveredDay?.date === day.date && (
                     <div 
                       onMouseEnter={handlePopoverMouseEnter}
                       onMouseLeave={handlePopoverMouseLeave}
-                      className={`absolute top-0 ${
+                      className={`absolute top-1/2 -translate-y-1/2 ${
                         day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
-                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150 transform-gpu`}
+                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
                     >
                       <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
                         <span className="font-bold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>
@@ -804,13 +804,13 @@ export default function TutorSchedule() {
                       {/* Tooltip Side Pointer Arrow */}
                       {day.dayOfWeek >= 5 ? (
                         <>
-                          <div className="absolute top-5 left-full -ml-[1px] border-4 border-transparent border-l-[#e5e5e7]" />
-                          <div className="absolute top-5 left-full -ml-[2px] border-4 border-transparent border-l-white" />
+                          <div className="absolute top-1/2 -translate-y-1/2 left-full -ml-[1px] border-4 border-transparent border-l-[#e5e5e7]" />
+                          <div className="absolute top-1/2 -translate-y-1/2 left-full -ml-[2px] border-4 border-transparent border-l-white" />
                         </>
                       ) : (
                         <>
-                          <div className="absolute top-5 right-full -mr-[1px] border-4 border-transparent border-r-[#e5e5e7]" />
-                          <div className="absolute top-5 right-full -mr-[2px] border-4 border-transparent border-r-white" />
+                          <div className="absolute top-1/2 -translate-y-1/2 right-full -mr-[1px] border-4 border-transparent border-r-[#e5e5e7]" />
+                          <div className="absolute top-1/2 -translate-y-1/2 right-full -mr-[2px] border-4 border-transparent border-r-white" />
                         </>
                       )}
                     </div>
@@ -922,7 +922,7 @@ export default function TutorSchedule() {
                       Duration: <strong className="text-[#1d1d1f]">{selectedDuration} min per slot</strong>
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {selectedDay.slots.map((slot, idx) => {
                       const isSelected = selectedSlot?.time === slot.time
                       const isGroupableBooked = slot.isBooked && slot.allowGroupSplit
@@ -945,23 +945,23 @@ export default function TutorSchedule() {
                             isPrivateBooked
                               ? 'bg-[#f5f5f7] border-[#e0e0e0] text-[#a1a1a6] cursor-not-allowed opacity-60'
                               : isGroupableBooked
-                              ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-400'
+                              ? 'bg-amber-50/80 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300'
                               : isSelected
                               ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
                               : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5'
                           }`}
                         >
                           <div className="space-y-1 min-w-0 flex-1">
-                            <div className="font-sans font-bold text-xs tracking-tight flex items-center gap-1.5">
-                              <span>{slot.time}</span>
+                            <div className="font-sans font-bold text-xs tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+                              <span className="whitespace-nowrap">{slot.time}</span>
                               {isGroupableBooked && (
-                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-600 text-white">
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300/60 shrink-0 whitespace-nowrap">
                                   Group 50% Off
                                 </span>
                               )}
                             </div>
                             <div className={`text-[11px] font-semibold truncate ${
-                              isSelected ? 'text-white/95' : isGroupableBooked ? 'text-emerald-900 font-bold' : 'text-[#3a3a3c]'
+                              isSelected ? 'text-white/95' : isGroupableBooked ? 'text-amber-900 font-bold' : 'text-[#3a3a3c]'
                             }`}>
                               {isGroupableBooked ? `Booked by ${slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}` : slot.subject}
                             </div>
@@ -969,7 +969,7 @@ export default function TutorSchedule() {
 
                           <div className="shrink-0 flex items-center justify-center">
                             {isGroupableBooked ? (
-                              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-600 text-white shadow-2xs">
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs whitespace-nowrap">
                                 Join (${Math.round(tutor.hourlyRate / 2)})
                               </span>
                             ) : isSelected ? (
