@@ -781,16 +781,12 @@ export default function TutorSchedule() {
                                       </span>
                                     )}
                                   </div>
-                                  <div className={`flex items-center gap-1.5 text-[10px] font-medium truncate pt-0.5 ${
-                                    isGroupSplit ? 'text-amber-900' : 'text-red-900'
-                                  }`}>
-                                    <BookOpen size={10} className={`shrink-0 ${
-                                      isGroupSplit ? 'text-amber-600' : 'text-red-600'
-                                    }`} />
-                                    <span className="truncate">{slot.topic ? 'Topic' : 'Subject'}: <strong className={`font-semibold ${
-                                      isGroupSplit ? 'text-amber-950' : 'text-red-950'
-                                    }`}>{slot.topic || slot.subject}</strong></span>
-                                  </div>
+                                  {isGroupSplit && (
+                                    <div className="flex items-center gap-1.5 text-[10px] text-amber-900 font-medium truncate pt-0.5">
+                                      <BookOpen size={10} className="text-amber-600 shrink-0" />
+                                      <span className="truncate">{slot.topic ? 'Topic' : 'Subject'}: <strong className="font-semibold text-amber-950">{slot.topic || slot.subject}</strong></span>
+                                    </div>
+                                  )}
 
                                   {slot.allowGroupSplit && (
                                     <button
