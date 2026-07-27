@@ -687,14 +687,14 @@ export default function TutorSchedule() {
                     </div>
                   </button>
 
-                  {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned intelligently with explicit X Close Button) */}
+                  {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned to always grow downwards, preventing calendar jump) */}
                   {hoveredDay?.date === day.date && (
                     <div 
                       onMouseEnter={handlePopoverMouseEnter}
                       onMouseLeave={handlePopoverMouseLeave}
-                      className={`absolute top-1/2 -translate-y-1/2 ${
+                      className={`absolute top-0 ${
                         day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
-                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
+                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150 transform-gpu`}
                     >
                       <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
                         <span className="font-bold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>
@@ -804,13 +804,13 @@ export default function TutorSchedule() {
                       {/* Tooltip Side Pointer Arrow */}
                       {day.dayOfWeek >= 5 ? (
                         <>
-                          <div className="absolute top-1/2 -translate-y-1/2 left-full -ml-[1px] border-4 border-transparent border-l-[#e5e5e7]" />
-                          <div className="absolute top-1/2 -translate-y-1/2 left-full -ml-[2px] border-4 border-transparent border-l-white" />
+                          <div className="absolute top-5 left-full -ml-[1px] border-4 border-transparent border-l-[#e5e5e7]" />
+                          <div className="absolute top-5 left-full -ml-[2px] border-4 border-transparent border-l-white" />
                         </>
                       ) : (
                         <>
-                          <div className="absolute top-1/2 -translate-y-1/2 right-full -mr-[1px] border-4 border-transparent border-r-[#e5e5e7]" />
-                          <div className="absolute top-1/2 -translate-y-1/2 right-full -mr-[2px] border-4 border-transparent border-r-white" />
+                          <div className="absolute top-5 right-full -mr-[1px] border-4 border-transparent border-r-[#e5e5e7]" />
+                          <div className="absolute top-5 right-full -mr-[2px] border-4 border-transparent border-r-white" />
                         </>
                       )}
                     </div>
