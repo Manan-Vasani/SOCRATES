@@ -330,10 +330,10 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setSessionFilter('Upcoming')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer select-none transform-gpu ${
                   sessionFilter === 'Upcoming'
-                    ? 'bg-[#0066cc] text-white shadow-xs'
-                    : 'bg-white border border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
+                    ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
+                    : 'bg-white border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
                 }`}
               >
                 Upcoming ({sessions.filter((s) => s.status === 'Upcoming').length})
@@ -341,10 +341,10 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setSessionFilter('Completed')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer select-none transform-gpu ${
                   sessionFilter === 'Completed'
-                    ? 'bg-[#0066cc] text-white shadow-xs'
-                    : 'bg-white border border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
+                    ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
+                    : 'bg-white border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
                 }`}
               >
                 Completed ({sessions.filter((s) => s.status === 'Completed').length})
@@ -352,7 +352,7 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[190px] items-start">
             {filteredSessions.length > 0 ? (
               filteredSessions.map((session) => (
                 <div
