@@ -852,19 +852,23 @@ export default function TutorSchedule() {
       {/* SLOT BOOKING MODAL */}
       <AnimatePresence>
         {selectedDay && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-start sm:items-center p-4 sm:p-6 py-8 sm:py-12 overflow-y-auto transform-gpu"
-            onClick={() => setSelectedDay(null)}
-          >
+          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-start sm:items-center">
+            {/* Backdrop Fade */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "linear" }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs -z-10 transform-gpu"
+              onClick={() => setSelectedDay(null)}
+            />
+
+            {/* Modal Card Scale & Fade */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased my-auto"
               style={{
@@ -1123,26 +1127,30 @@ export default function TutorSchedule() {
                 </div>
               </form>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       {/* GROUP SESSION & FEE SHARING MODAL */}
       <AnimatePresence>
         {groupSplitModalSlot && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-start sm:items-center p-4 sm:p-6 py-8 sm:py-12 overflow-y-auto transform-gpu"
-            onClick={() => setGroupSplitModalSlot(null)}
-          >
+          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-start sm:items-center">
+            {/* Backdrop Fade */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "linear" }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs -z-10 transform-gpu"
+              onClick={() => setGroupSplitModalSlot(null)}
+            />
+
+            {/* Modal Card Scale & Fade */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased my-auto"
               style={{
@@ -1245,7 +1253,7 @@ export default function TutorSchedule() {
                 </button>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
