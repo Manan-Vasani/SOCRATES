@@ -962,14 +962,14 @@ export default function TutorSchedule() {
                               setSelectedSlot(slot)
                             }
                           }}
-                          className={`p-3 rounded-2xl border text-xs font-medium text-left transition-all duration-150 cursor-pointer select-none transform-gpu flex flex-col justify-between ${
+                          className={`p-3 rounded-2xl border text-xs font-medium text-left transition-all duration-150 select-none transform-gpu flex flex-col justify-between ${
                             isPrivateBooked
-                              ? 'bg-red-50/80 border-red-200 text-red-950 cursor-not-allowed opacity-90 min-h-[76px]'
+                              ? 'bg-red-50/80 border-red-200 text-red-950 cursor-not-allowed opacity-80 min-h-[76px]'
                               : isGroupableBooked
-                              ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300 min-h-[76px]'
+                              ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300 cursor-pointer min-h-[76px]'
                               : isSelected
-                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs min-h-[76px]'
-                              : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5 min-h-[76px]'
+                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs cursor-pointer min-h-[76px]'
+                              : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5 cursor-pointer min-h-[76px]'
                           }`}
                         >
                           {isPrivateBooked ? (
