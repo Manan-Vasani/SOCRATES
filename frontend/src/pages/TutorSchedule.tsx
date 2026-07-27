@@ -722,11 +722,19 @@ export default function TutorSchedule() {
                           return (
                             <div 
                               key={sIdx} 
-                              className={`p-2.5 rounded-xl border text-[11px] space-y-1 min-h-[46px] flex flex-col justify-center ${
+                              onClick={(e) => {
+                                if (isGroupSplit) {
+                                  e.stopPropagation()
+                                  if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+                                  setHoveredDay(null)
+                                  setGroupSplitModalSlot({ day, slot })
+                                }
+                              }}
+                              className={`p-2.5 rounded-xl border text-[11px] space-y-1 min-h-[46px] flex flex-col justify-center transition-all ${
                                 isGroupSplit
-                                  ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                                  ? 'bg-amber-50/80 border-amber-200 text-amber-950 hover:bg-amber-100/80 cursor-pointer'
                                   : isPrivateBooked 
-                                  ? 'bg-red-50/60 border-red-200/80 text-red-950' 
+                                  ? 'bg-red-50/60 border-red-200/80 text-red-950 cursor-not-allowed select-none' 
                                   : 'bg-[#fafafc] border-[#e8e8ed] text-[#1d1d1f]'
                               }`}
                             >
@@ -750,8 +758,8 @@ export default function TutorSchedule() {
                                 <div className={`space-y-1.5 pt-0.5 border-t mt-1 ${isGroupSplit ? 'border-amber-200/70' : 'border-red-100/80'}`}>
                                   <div 
                                     title={slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}
-                                    className={`flex items-center justify-between text-[10px] font-medium truncate cursor-help ${
-                                      isGroupSplit ? 'text-amber-900' : 'text-red-900'
+                                    className={`flex items-center justify-between text-[10px] font-medium truncate ${
+                                      isGroupSplit ? 'text-amber-900 cursor-pointer' : 'text-red-900 cursor-not-allowed'
                                     }`}
                                   >
                                     <div className="flex items-center gap-1.5 truncate">
