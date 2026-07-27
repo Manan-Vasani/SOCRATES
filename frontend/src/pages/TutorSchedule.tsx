@@ -261,6 +261,18 @@ export default function TutorSchedule() {
   const [groupSplitModalSlot, setGroupSplitModalSlot] = useState<{ day: DaySchedule; slot: TimeSlot } | null>(null)
   const hoverTimeoutRef = React.useRef<any>(null)
 
+  // Prevent background page scrolling when modal is open
+  useEffect(() => {
+    if (selectedDay || groupSplitModalSlot) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [selectedDay, groupSplitModalSlot])
+
   useEffect(() => {
     let isMounted = true
     setIsLoading(true)
@@ -839,7 +851,7 @@ export default function TutorSchedule() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto transform-gpu"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-start sm:items-center p-4 sm:p-6 py-8 sm:py-12 overflow-y-auto transform-gpu"
             onClick={() => setSelectedDay(null)}
           >
             <motion.div 
@@ -848,7 +860,7 @@ export default function TutorSchedule() {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased max-h-[88vh] overflow-y-auto my-auto scrollbar-thin"
+              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased my-auto"
               style={{
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
@@ -1117,7 +1129,7 @@ export default function TutorSchedule() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto transform-gpu"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-start sm:items-center p-4 sm:p-6 py-8 sm:py-12 overflow-y-auto transform-gpu"
             onClick={() => setGroupSplitModalSlot(null)}
           >
             <motion.div 
@@ -1126,7 +1138,7 @@ export default function TutorSchedule() {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased max-h-[88vh] overflow-y-auto my-auto scrollbar-thin"
+              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased my-auto"
               style={{
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
