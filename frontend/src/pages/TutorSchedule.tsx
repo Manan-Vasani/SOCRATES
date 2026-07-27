@@ -839,7 +839,7 @@ export default function TutorSchedule() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 transform-gpu"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto transform-gpu"
             onClick={() => setSelectedDay(null)}
           >
             <motion.div 
@@ -848,7 +848,7 @@ export default function TutorSchedule() {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-6 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased"
+              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased max-h-[88vh] overflow-y-auto my-auto scrollbar-thin"
               style={{
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
@@ -1117,7 +1117,7 @@ export default function TutorSchedule() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 transform-gpu"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto transform-gpu"
             onClick={() => setGroupSplitModalSlot(null)}
           >
             <motion.div 
@@ -1126,7 +1126,7 @@ export default function TutorSchedule() {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased"
+              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased max-h-[88vh] overflow-y-auto my-auto scrollbar-thin"
               style={{
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
