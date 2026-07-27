@@ -942,6 +942,8 @@ export default function TutorSchedule() {
                             }
                           }}
                           className={`p-3.5 rounded-2xl border text-xs font-medium text-left flex items-center justify-between gap-3 transition-all duration-150 cursor-pointer select-none transform-gpu ${
+                            isGroupableBooked ? 'col-span-full' : ''
+                          } ${
                             isPrivateBooked
                               ? 'bg-[#f5f5f7] border-[#e0e0e0] text-[#a1a1a6] cursor-not-allowed opacity-60'
                               : isGroupableBooked
@@ -952,10 +954,10 @@ export default function TutorSchedule() {
                           }`}
                         >
                           <div className="space-y-1 min-w-0 flex-1">
-                            <div className="font-sans font-bold text-xs tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+                            <div className="font-sans font-bold text-xs tracking-tight flex items-center gap-2">
                               <span className="whitespace-nowrap">{slot.time}</span>
                               {isGroupableBooked && (
-                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300/60 shrink-0 whitespace-nowrap">
+                                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300/60 shrink-0 whitespace-nowrap">
                                   Group 50% Off
                                 </span>
                               )}
@@ -969,8 +971,8 @@ export default function TutorSchedule() {
 
                           <div className="shrink-0 flex items-center justify-center">
                             {isGroupableBooked ? (
-                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs whitespace-nowrap">
-                                Join (${Math.round(tutor.hourlyRate / 2)})
+                              <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs whitespace-nowrap">
+                                Join & Split (${Math.round(tutor.hourlyRate / 2)})
                               </span>
                             ) : isSelected ? (
                               <CheckCircle2 size={18} className="text-white shrink-0" />
