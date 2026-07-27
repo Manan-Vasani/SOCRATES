@@ -952,20 +952,26 @@ export default function TutorSchedule() {
                           }`}
                         >
                           {isGroupableBooked ? (
-                            <div className="w-full space-y-1">
+                            <div className="w-full space-y-1.5">
                               <div className="flex items-center justify-between gap-1 w-full">
                                 <span className="font-bold text-xs text-[#1d1d1f] tracking-tight">{slot.time}</span>
                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300/60 shrink-0">
-                                  50% Off
+                                  Group Split
                                 </span>
                               </div>
                               <div className="text-[10px] font-semibold text-amber-900 truncate">
                                 Booked by <strong className="font-bold text-amber-950">{slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}</strong>
                               </div>
-                              <div className="w-full pt-1">
-                                <span className="w-full block text-center text-[10px] font-bold py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs transition-colors">
-                                  Join & Split (${Math.round(tutor.hourlyRate / 2)})
-                                </span>
+                              <div className="w-full pt-0.5">
+                                <div className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200 text-emerald-900 text-[10px] font-bold transition-all select-none">
+                                  <span className="flex items-center gap-1">
+                                    <Users size={11} className="text-emerald-600 shrink-0" />
+                                    <span>Join & Split Fee</span>
+                                  </span>
+                                  <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                    ${Math.round(tutor.hourlyRate / 2)} (50% Off)
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           ) : (
