@@ -965,7 +965,7 @@ export default function TutorSchedule() {
                           }`}
                         >
                           {isPrivateBooked ? (
-                            <div className="w-full space-y-1">
+                            <div className="w-full space-y-1.5 my-auto">
                               <div className="flex items-center justify-between gap-1 w-full">
                                 <span className="font-bold text-xs text-red-950 tracking-tight">{slot.time}</span>
                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200/80 shrink-0">
