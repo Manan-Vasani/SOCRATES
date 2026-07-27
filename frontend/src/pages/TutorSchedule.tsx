@@ -672,7 +672,7 @@ export default function TutorSchedule() {
               if (!day.isPast) {
                 if (openSlotsCount === 0) {
                   computedStatus = 'red'
-                } else if (openSlotsCount <= 2) {
+                } else if (openSlotsCount < day.slots.length) {
                   computedStatus = 'yellow'
                 } else {
                   computedStatus = 'green'
