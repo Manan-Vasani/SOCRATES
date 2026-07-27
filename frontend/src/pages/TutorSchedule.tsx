@@ -11,6 +11,9 @@ import {
   Lock,
   ShieldCheck,
   Star,
+  User,
+  Users,
+  Video,
   X
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -186,8 +189,10 @@ const MOCK_STUDENT_NAMES = [
 interface TimeSlot {
   time: string
   subject: string
+  availableDurations?: string
   isBooked: boolean
   bookedBy?: string
+  allowGroupSplit?: boolean
 }
 
 interface DaySchedule {
@@ -249,8 +254,10 @@ export default function TutorSchedule() {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<20 | 30 | 60>(60)
   const [bookingTopic, setBookingTopic] = useState('')
+  const [allowGroupSplitBooking, setAllowGroupSplitBooking] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [groupSplitModalSlot, setGroupSplitModalSlot] = useState<{ day: DaySchedule; slot: TimeSlot } | null>(null)
   const hoverTimeoutRef = React.useRef<any>(null)
 
   useEffect(() => {
@@ -351,11 +358,14 @@ export default function TutorSchedule() {
 
       slotTimes.forEach((time, idx) => {
         const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
+        const allowGroup = isSlotBooked ? idx % 2 === 0 : true
         slots.push({
           time,
           subject: availableSubjects[idx % availableSubjects.length],
+          availableDurations: '20, 30, 60 min',
           isBooked: isSlotBooked,
-          bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined
+          bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined,
+          allowGroupSplit: allowGroup
         })
       })
 
@@ -407,8 +417,11 @@ export default function TutorSchedule() {
 
     setIsSubmitting(false)
     if (res?.success) {
+      selectedSlot.isBooked = true
+      selectedSlot.bookedBy = 'Alex Mercer'
+      selectedSlot.allowGroupSplit = allowGroupSplitBooking
       toast.success(`Session Booked with ${tutor.name}!`, {
-        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject})`
+        description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject} • ${allowGroupSplitBooking ? 'Group Enabled' : 'Private Session'})`
       })
       setBackendBookings(prev => [...prev, {
         tutorId: tutor.id,
@@ -503,38 +516,54 @@ export default function TutorSchedule() {
         {/* Tutor Info Banner */}
         <motion.div 
           variants={cardVariants}
-          className="bg-white rounded-3xl border border-[#e5e5e7] p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6"
+          className="bg-white rounded-3xl border border-[#e5e5e7] p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6 relative select-none"
         >
-          <div className="flex items-center gap-5">
-            <img 
-              src={tutor.image} 
-              alt={tutor.name} 
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-[#e0e0e0] shadow-md shrink-0 transform-gpu"
-            />
+          <div className="flex items-start sm:items-center gap-4 sm:gap-5 z-10">
+            {/* Avatar with Ring */}
+            <div className="relative shrink-0">
+              <img 
+                src={tutor.image} 
+                alt={tutor.name} 
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0 transform-gpu"
+              />
+            </div>
+
+            {/* Profile Info */}
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">{tutor.name}</h1>
-                <span title="Verified Educator" className="inline-flex items-center">
-                  <ShieldCheck size={18} className="text-[#0066cc]" />
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">{tutor.name}</h1>
+                <span title="Verified Educator" className="inline-flex items-center shrink-0">
+                  <ShieldCheck size={20} className="text-[#0066cc]" />
                 </span>
               </div>
-              <p className="text-xs text-[#7a7a7a] font-medium">{tutor.experience}</p>
-              <div className="flex items-center gap-3 text-xs pt-1">
-                <span className="flex items-center gap-1 text-amber-600 font-semibold">
-                  <Star size={13} className="text-amber-500" />
-                  {tutor.rating} ({tutor.reviews} reviews)
+
+              <p className="text-[13px] text-[#6e6e73] font-medium leading-snug">
+                {tutor.experience}
+              </p>
+
+              {/* Rating & Rate Display */}
+              <div className="flex items-center gap-2.5 pt-1 text-xs flex-wrap">
+                <div className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-700 border border-amber-500/25 px-2 py-0.5 rounded-lg text-xs font-semibold">
+                  <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
+                  <span>{tutor.rating}</span>
+                </div>
+                <span className="text-xs text-[#6e6e73] font-normal">
+                  ({String(tutor.reviews || '142').replace(/\s*reviews\s*/gi, '').trim()} reviews)
                 </span>
-                <span className="text-[#e0e0e0]">•</span>
-                <span className="text-[#0066cc] font-semibold">${tutor.hourlyRate}/hr</span>
+                <span className="text-[#d2d2d7]">•</span>
+                <span className="text-[#0066cc] font-extrabold text-sm tracking-tight">
+                  ${tutor.hourlyRate}<span className="text-xs text-[#6e6e73] font-normal">/hr</span>
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Subject Badges */}
+          <div className="flex flex-wrap gap-1.5 z-10 md:max-w-[40%] md:justify-end items-center">
             {tutor.subjects.map(sub => (
               <span 
                 key={sub} 
-                className="px-3 py-1 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs text-[#1d1d1f] font-medium"
+                className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-medium text-[#525252]"
               >
                 {sub}
               </span>
@@ -613,30 +642,41 @@ export default function TutorSchedule() {
                 past: 'bg-gray-400'
               }
 
+              const hasGroupableSlot = day.slots.some(s => s.isBooked && s.allowGroupSplit)
+              const isDateDisabled = day.isPast || (day.status === 'red' && !hasGroupableSlot)
+
               return (
                 <div key={day.date} className="relative group">
                   <button
-                    disabled={day.isPast || day.status === 'red'}
+                    disabled={isDateDisabled}
                     onClick={() => {
-                      if (!day.isPast && day.status !== 'red') {
+                      if (!isDateDisabled) {
                         setSelectedDay(day)
-                        setSelectedSlot(day.slots.find(s => !s.isBooked) || day.slots[0] || null)
+                        setSelectedSlot(day.slots.find(s => !s.isBooked) || day.slots.find(s => s.allowGroupSplit) || day.slots[0] || null)
                       }
                     }}
                     onMouseEnter={() => handleCellMouseEnter(day)}
                     onMouseLeave={handleCellMouseLeave}
-                    className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left select-none ${statusStyles[day.status]}`}
+                    className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left select-none ${
+                      hasGroupableSlot && day.status === 'red'
+                        ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950 hover:bg-emerald-100/90 cursor-pointer'
+                        : statusStyles[day.status]
+                    }`}
                   >
                     <div className="flex items-center justify-between w-full">
                       <span className="text-xs sm:text-sm font-bold">{day.date}</span>
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${badgeStyles[day.status]}`} />
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                        hasGroupableSlot && day.status === 'red' ? 'bg-emerald-600' : badgeStyles[day.status]
+                      }`} />
                     </div>
 
                     <div className="text-[10px] sm:text-xs font-semibold truncate opacity-90">
                       {day.isPast && 'Passed'}
                       {!day.isPast && day.status === 'green' && `${day.slots.length} slots`}
                       {!day.isPast && day.status === 'yellow' && `${day.slots.filter(s => !s.isBooked).length} left`}
-                      {!day.isPast && day.status === 'red' && 'Booked'}
+                      {!day.isPast && day.status === 'red' && (
+                        hasGroupableSlot ? 'Group 50% Off' : 'Booked'
+                      )}
                     </div>
                   </button>
 
@@ -656,9 +696,10 @@ export default function TutorSchedule() {
                             day.isPast ? 'bg-gray-100 text-gray-600 border-gray-200' :
                             day.status === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                             day.status === 'yellow' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                            hasGroupableSlot ? 'bg-amber-50 text-amber-700 border-amber-200' :
                             'bg-red-50 text-red-700 border-red-200'
                           }`}>
-                            {day.isPast ? 'Passed' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : 'Fully Booked'}
+                            {day.isPast ? 'Passed' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : hasGroupableSlot ? 'Group Split' : 'Fully Booked'}
                           </span>
                           <button
                             type="button"
@@ -680,43 +721,95 @@ export default function TutorSchedule() {
                         <p className="text-[10px] text-[#7a7a7a] font-semibold uppercase tracking-wider">
                           Time Slots & Reservations:
                         </p>
-                        {day.slots.map((slot, sIdx) => (
-                          <div 
-                            key={sIdx} 
-                            className={`p-2.5 rounded-xl border text-[11px] space-y-1 min-h-[46px] flex flex-col justify-center ${
-                              slot.isBooked 
-                                ? 'bg-red-50/60 border-red-200/80 text-red-950' 
-                                : 'bg-[#fafafc] border-[#e8e8ed] text-[#1d1d1f]'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1 font-sans font-bold text-xs tracking-tight">
-                                <Clock size={11} className={slot.isBooked ? 'text-red-600' : 'text-[#0066cc]'} />
-                                {slot.time}
-                              </span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                slot.isBooked ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100/70 text-emerald-700'
-                              }`}>
-                                {slot.isBooked ? 'Reserved' : 'Open'}
-                              </span>
-                            </div>
+                        {day.slots.map((slot, sIdx) => {
+                          const isGroupSplit = slot.isBooked && slot.allowGroupSplit
+                          const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit
 
-                            {slot.isBooked ? (
-                              <div 
-                                title={slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}
-                                className="flex items-center gap-1.5 text-[10px] text-red-900 font-medium truncate pt-0.5 cursor-help"
-                              >
-                                <Lock size={10} className="text-red-600 shrink-0" />
-                                <span className="truncate">Booked by <strong className="font-semibold text-red-950">{slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}</strong></span>
+                          return (
+                            <div 
+                              key={sIdx} 
+                              className={`p-2.5 rounded-xl border text-[11px] space-y-1 min-h-[46px] flex flex-col justify-center ${
+                                isGroupSplit
+                                  ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                                  : isPrivateBooked 
+                                  ? 'bg-red-50/60 border-red-200/80 text-red-950' 
+                                  : 'bg-[#fafafc] border-[#e8e8ed] text-[#1d1d1f]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1 font-sans font-bold text-xs tracking-tight">
+                                  <Clock size={11} className={isGroupSplit ? 'text-amber-600' : isPrivateBooked ? 'text-red-600' : 'text-[#0066cc]'} />
+                                  {slot.time}
+                                </span>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                  isGroupSplit 
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                                    : isPrivateBooked 
+                                    ? 'bg-red-100 text-red-800 border border-red-200' 
+                                    : 'bg-emerald-100/70 text-emerald-700'
+                                }`}>
+                                  {isGroupSplit ? 'Group Split' : isPrivateBooked ? 'Reserved' : 'Open'}
+                                </span>
                               </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate pt-0.5">
-                                <BookOpen size={10} className="text-[#6e6e73] shrink-0" />
-                                <span className="truncate">Subject: <strong className="font-semibold text-[#1d1d1f]">{slot.subject}</strong></span>
+
+                              {slot.isBooked ? (
+                                <div className={`space-y-1.5 pt-0.5 border-t mt-1 ${isGroupSplit ? 'border-amber-200/70' : 'border-red-100/80'}`}>
+                                  <div 
+                                    title={slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}
+                                    className={`flex items-center justify-between text-[10px] font-medium truncate cursor-help ${
+                                      isGroupSplit ? 'text-amber-900' : 'text-red-900'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      {isGroupSplit ? (
+                                        <Users size={10} className="text-amber-600 shrink-0" />
+                                      ) : (
+                                        <Lock size={10} className="text-red-600 shrink-0" />
+                                      )}
+                                      <span className="truncate">Booked by <strong className={`font-semibold ${isGroupSplit ? 'text-amber-950' : 'text-red-950'}`}>{slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}</strong></span>
+                                    </div>
+                                    {isPrivateBooked && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 shrink-0">
+                                        Private
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {slot.allowGroupSplit && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+                                        setHoveredDay(null)
+                                        setGroupSplitModalSlot({ day, slot })
+                                      }}
+                                      className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200 text-emerald-900 text-[10px] font-bold transition-all cursor-pointer select-none"
+                                    >
+                                      <span className="flex items-center gap-1">
+                                        <Users size={11} className="text-emerald-600 shrink-0" />
+                                        <span>Join & Split Fee</span>
+                                      </span>
+                                      <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                        ${Math.round(tutor.hourlyRate / 2)} (50% Off)
+                                      </span>
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                              <div className="space-y-0.5 pt-0.5">
+                                <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
+                                  <BookOpen size={10} className="text-[#6e6e73] shrink-0" />
+                                  <span className="truncate">Subject: <strong className="font-semibold text-[#1d1d1f]">{slot.subject}</strong></span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-[#525252] font-medium truncate">
+                                  <Clock size={10} className="text-[#0066cc] shrink-0" />
+                                  <span className="truncate">Session: <strong className="font-semibold text-[#0066cc]">{slot.availableDurations || '20, 30, 60 min'}</strong></span>
+                                </div>
                               </div>
                             )}
                           </div>
-                        ))}
+                        )})}
                       </div>
 
                       {/* Tooltip Side Pointer Arrow */}
@@ -843,31 +936,54 @@ export default function TutorSchedule() {
                   <div className="grid grid-cols-2 gap-2.5">
                     {selectedDay.slots.map((slot, idx) => {
                       const isSelected = selectedSlot?.time === slot.time
+                      const isGroupableBooked = slot.isBooked && slot.allowGroupSplit
+                      const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit
+
                       return (
                         <button
                           key={idx}
                           type="button"
-                          disabled={slot.isBooked}
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`p-3.5 rounded-2xl border text-xs font-medium text-left flex items-center justify-between gap-3 transition-colors duration-150 cursor-pointer select-none transform-gpu ${
-                            slot.isBooked
+                          disabled={isPrivateBooked}
+                          onClick={() => {
+                            if (isGroupableBooked) {
+                              setSelectedDay(null)
+                              setGroupSplitModalSlot({ day: selectedDay, slot })
+                            } else if (!slot.isBooked) {
+                              setSelectedSlot(slot)
+                            }
+                          }}
+                          className={`p-3.5 rounded-2xl border text-xs font-medium text-left flex items-center justify-between gap-3 transition-all duration-150 cursor-pointer select-none transform-gpu ${
+                            isPrivateBooked
                               ? 'bg-[#f5f5f7] border-[#e0e0e0] text-[#a1a1a6] cursor-not-allowed opacity-60'
+                              : isGroupableBooked
+                              ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-400'
                               : isSelected
                               ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
                               : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5'
                           }`}
                         >
                           <div className="space-y-1 min-w-0 flex-1">
-                            <div className="font-sans font-bold text-xs tracking-tight">
-                              {slot.time}
+                            <div className="font-sans font-bold text-xs tracking-tight flex items-center gap-1.5">
+                              <span>{slot.time}</span>
+                              {isGroupableBooked && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-600 text-white">
+                                  Group 50% Off
+                                </span>
+                              )}
                             </div>
-                            <div className={`text-[11px] font-semibold truncate ${isSelected ? 'text-white/95' : 'text-[#3a3a3c]'}`}>
-                              {slot.subject}
+                            <div className={`text-[11px] font-semibold truncate ${
+                              isSelected ? 'text-white/95' : isGroupableBooked ? 'text-emerald-900 font-bold' : 'text-[#3a3a3c]'
+                            }`}>
+                              {isGroupableBooked ? `Booked by ${slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}` : slot.subject}
                             </div>
                           </div>
 
                           <div className="shrink-0 flex items-center justify-center">
-                            {isSelected ? (
+                            {isGroupableBooked ? (
+                              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-600 text-white shadow-2xs">
+                                Join (${Math.round(tutor.hourlyRate / 2)})
+                              </span>
+                            ) : isSelected ? (
                               <CheckCircle2 size={18} className="text-white shrink-0" />
                             ) : (
                               <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5e7] shrink-0">
@@ -897,6 +1013,26 @@ export default function TutorSchedule() {
                     placeholder="e.g. Graph Traversal algorithms, BFS vs DFS prep..."
                     rows={3}
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
+                  />
+                </div>
+
+                {/* Allow Group Fee Sharing Toggle */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#fafafc] border border-[#e5e5e7] select-none">
+                  <div className="space-y-0.5 max-w-[82%]">
+                    <label htmlFor="group-split-toggle" className="text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5 cursor-pointer">
+                      <Users size={13} className="text-[#0066cc]" />
+                      <span>Allow Group Fee Sharing</span>
+                    </label>
+                    <p className="text-[10px] text-[#7a7a7a] leading-tight">
+                      Permit other students to join this session & split tutor cost 50/50.
+                    </p>
+                  </div>
+                  <input
+                    id="group-split-toggle"
+                    type="checkbox"
+                    checked={allowGroupSplitBooking}
+                    onChange={(e) => setAllowGroupSplitBooking(e.target.checked)}
+                    className="w-4 h-4 rounded text-[#0066cc] focus:ring-[#0066cc] cursor-pointer shrink-0"
                   />
                 </div>
 
@@ -931,6 +1067,115 @@ export default function TutorSchedule() {
                   </div>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* GROUP SESSION & FEE SHARING MODAL */}
+      <AnimatePresence>
+        {groupSplitModalSlot && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-[#e5e5e7] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Users size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#1d1d1f]">
+                      Group Session & Fee Sharing
+                    </h3>
+                    <p className="text-xs text-[#7a7a7a]">
+                      Group with <strong className="text-[#1d1d1f]">{groupSplitModalSlot.slot.bookedBy?.replace(/\s*\([^)]*\)/g, '') || 'Alex Mercer'}</strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGroupSplitModalSlot(null)}
+                  className="p-1.5 rounded-full text-[#7a7a7a] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors cursor-pointer select-none"
+                  aria-label="Close modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Session Details */}
+              <div className="p-4 rounded-2xl bg-[#fafafc] border border-[#e8e8ed] space-y-2.5 text-xs">
+                <div className="flex items-center justify-between text-[#525252]">
+                  <span className="font-medium text-[#7a7a7a]">Tutor Educator:</span>
+                  <span className="font-bold text-[#1d1d1f]">{tutor.name}</span>
+                </div>
+                <div className="flex items-center justify-between text-[#525252]">
+                  <span className="font-medium text-[#7a7a7a]">Subject:</span>
+                  <span className="font-bold text-[#0066cc]">{groupSplitModalSlot.slot.subject}</span>
+                </div>
+                <div className="flex items-center justify-between text-[#525252]">
+                  <span className="font-medium text-[#7a7a7a]">Date & Time:</span>
+                  <span className="font-bold text-[#1d1d1f]">{groupSplitModalSlot.day.fullDateStr} at {groupSplitModalSlot.slot.time}</span>
+                </div>
+                <div className="flex items-center justify-between text-[#525252]">
+                  <span className="font-medium text-[#7a7a7a]">Original Booker:</span>
+                  <span className="font-bold text-[#1d1d1f] flex items-center gap-1">
+                    <User size={12} className="text-[#6e6e73]" />
+                    {groupSplitModalSlot.slot.bookedBy?.replace(/\s*\([^)]*\)/g, '') || 'Alex Mercer'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Fee Split Card */}
+              <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between text-xs text-emerald-950 font-semibold">
+                  <span>Single Session Cost:</span>
+                  <span className="line-through text-emerald-800">${tutor.hourlyRate}.00</span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-bold text-emerald-900 pt-1 border-t border-emerald-200/70">
+                  <span className="flex items-center gap-1.5">
+                    <Users size={15} className="text-emerald-700" />
+                    <span>Your Shared Split Fee:</span>
+                  </span>
+                  <span className="text-base text-emerald-700 font-extrabold">
+                    ${Math.round(tutor.hourlyRate / 2)}.00
+                  </span>
+                </div>
+                <p className="text-[10px] text-emerald-700 font-medium leading-relaxed">
+                  ✨ Joining this booked session splits the tutor fee equally (50% discount per student).
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setGroupSplitModalSlot(null)}
+                  className="flex-1 py-3 rounded-full border border-[#e0e0e0] text-xs font-semibold text-[#525252] hover:bg-[#f5f5f7] transition-colors cursor-pointer select-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const hostName = groupSplitModalSlot.slot.bookedBy?.replace(/\s*\([^)]*\)/g, '') || 'Alex Mercer'
+                    const splitFee = Math.round(tutor.hourlyRate / 2)
+                    toast.success(`Group Session Confirmed with ${hostName}!`, {
+                      description: `Joined ${groupSplitModalSlot.slot.subject} on ${groupSplitModalSlot.day.fullDateStr} at ${groupSplitModalSlot.slot.time}. Your split fee: $${splitFee}.`
+                    })
+                    groupSplitModalSlot.slot.bookedBy = `${hostName} & You (Grouped • $${splitFee}/ea)`
+                    setGroupSplitModalSlot(null)
+                  }}
+                  className="flex-2 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer select-none"
+                >
+                  Confirm & Join (Pay ${Math.round(tutor.hourlyRate / 2)})
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

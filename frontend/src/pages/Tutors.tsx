@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  UserCheck,
+  UserX,
   Video,
   X
 } from 'lucide-react'
@@ -464,7 +464,7 @@ export default function Tutors() {
             </div>
           ) : filteredTutors.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-3xl border border-[#e5e5e7] space-y-3">
-              <UserCheck size={36} className="mx-auto text-[#7a7a7a]" />
+              <UserX size={36} className="mx-auto text-[#7a7a7a]" />
               <h3 className="text-lg font-display font-semibold text-[#1d1d1f]">No tutors matched your criteria</h3>
               <p className="text-xs text-[#7a7a7a]">Try adjusting your search query or subject filters.</p>
             </div>
