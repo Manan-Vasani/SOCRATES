@@ -687,16 +687,16 @@ export default function TutorSchedule() {
                     </div>
                   </button>
 
-                  {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned top-0 extending downwards to prevent layout shift) */}
+                  {/* SIDE HOVER / CLICK TOOLTIP POPOVER (Positioned intelligently with explicit X Close Button) */}
                   {hoveredDay?.date === day.date && (
                     <div 
                       onMouseEnter={handlePopoverMouseEnter}
                       onMouseLeave={handlePopoverMouseLeave}
-                      className={`absolute top-0 ${
+                      className={`absolute top-1/2 -translate-y-1/2 ${
                         day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
-                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150 max-h-[380px] overflow-y-auto select-none`}
+                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
                     >
-                      <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2 shrink-0">
+                      <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
                         <span className="font-bold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>
                         <div className="flex items-center gap-2">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -708,19 +708,6 @@ export default function TutorSchedule() {
                           }`}>
                             {day.isPast ? 'Passed' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : hasGroupableSlot ? 'Group Split' : 'Fully Booked'}
                           </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
-                              setHoveredDay(null)
-                            }}
-                            className="p-1.5 rounded-full text-[#7a7a7a] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:bg-[#e8e8ed] transition-colors duration-150 cursor-pointer select-none shrink-0 transform-gpu"
-                            title="Close details"
-                            aria-label="Close popover"
-                          >
-                            <X size={14} />
-                          </button>
                         </div>
                       </div>
 
@@ -814,16 +801,16 @@ export default function TutorSchedule() {
                         )})}
                       </div>
 
-                      {/* Tooltip Side Pointer Arrow (Anchored at top-6) */}
+                      {/* Tooltip Side Pointer Arrow */}
                       {day.dayOfWeek >= 5 ? (
                         <>
-                          <div className="absolute top-6 left-full -ml-[1px] border-4 border-transparent border-l-[#e5e5e7]" />
-                          <div className="absolute top-6 left-full -ml-[2px] border-4 border-transparent border-l-white" />
+                          <div className="absolute top-1/2 -translate-y-1/2 left-full -ml-[1px] border-4 border-transparent border-l-[#e5e5e7]" />
+                          <div className="absolute top-1/2 -translate-y-1/2 left-full -ml-[2px] border-4 border-transparent border-l-white" />
                         </>
                       ) : (
                         <>
-                          <div className="absolute top-6 right-full -mr-[1px] border-4 border-transparent border-r-[#e5e5e7]" />
-                          <div className="absolute top-6 right-full -mr-[2px] border-4 border-transparent border-r-white" />
+                          <div className="absolute top-1/2 -translate-y-1/2 right-full -mr-[1px] border-4 border-transparent border-r-[#e5e5e7]" />
+                          <div className="absolute top-1/2 -translate-y-1/2 right-full -mr-[2px] border-4 border-transparent border-r-white" />
                         </>
                       )}
                     </div>
