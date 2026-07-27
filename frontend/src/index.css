@@ -63,3 +63,22 @@ button, a, [role="button"] {
   right: 12px !important;
   left: auto !important;
 }
+
+/* Sleek Custom Scrollbar Matching Outer Page */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c6;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a6;
+}
