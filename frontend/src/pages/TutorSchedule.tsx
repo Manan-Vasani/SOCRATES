@@ -259,6 +259,7 @@ export default function TutorSchedule() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [groupSplitModalSlot, setGroupSplitModalSlot] = useState<{ day: DaySchedule; slot: TimeSlot } | null>(null)
+  const [bookingRefreshKey, setBookingRefreshKey] = useState(0)
   const hoverTimeoutRef = React.useRef<any>(null)
 
   // Prevent background page scrolling when modal is open
@@ -452,11 +453,16 @@ export default function TutorSchedule() {
         fee: calculatedFee
       }])
     } else {
+      selectedSlot.isBooked = true
+      selectedSlot.bookedBy = 'Alex Mercer'
+      selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
+      selectedSlot.allowGroupSplit = allowGroupSplitBooking
       toast.success(`Session Booked with ${tutor.name}!`, {
         description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee})`
       })
     }
 
+    setBookingRefreshKey(prev => prev + 1)
     setSelectedDay(null)
     setSelectedSlot(null)
     setBookingTopic('')
@@ -661,39 +667,53 @@ export default function TutorSchedule() {
                 past: 'bg-gray-400'
               }
 
-              const hasGroupableSlot = day.slots.some(s => s.isBooked && s.allowGroupSplit)
-              const isDateDisabled = day.isPast || (day.status === 'red' && !hasGroupableSlot)
+              const openSlotsCount = day.slots.filter((s) => !s.isBooked).length
+              let computedStatus: 'green' | 'yellow' | 'red' | 'past' = day.status
+              if (!day.isPast) {
+                if (openSlotsCount === 0) {
+                  computedStatus = 'red'
+                } else if (openSlotsCount <= 2) {
+                  computedStatus = 'yellow'
+                } else {
+                  computedStatus = 'green'
+                }
+              }
+
+              const hasGroupableSlot = day.slots.some((s) => s.isBooked && s.allowGroupSplit)
+              const isDateDisabled = day.isPast || (computedStatus === 'red' && !hasGroupableSlot)
 
               return (
-                <div key={day.date} className="relative group">
+                <div key={`${day.date}-${bookingRefreshKey}`} className="relative group">
                   <button
                     disabled={isDateDisabled}
                     onClick={() => {
                       if (!isDateDisabled) {
                         setSelectedDay(day)
-                        setSelectedSlot(day.slots.find(s => !s.isBooked) || day.slots.find(s => s.allowGroupSplit) || day.slots[0] || null)
+                        setSelectedSlot(day.slots.find((s) => !s.isBooked) || day.slots.find((s) => s.allowGroupSplit) || day.slots[0] || null)
                       }
                     }}
                     onMouseEnter={() => handleCellMouseEnter(day)}
                     onMouseLeave={handleCellMouseLeave}
                     className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left select-none ${
-                      hasGroupableSlot && day.status === 'red'
+                      hasGroupableSlot && computedStatus === 'red'
                         ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950 hover:bg-emerald-100/90 cursor-pointer'
-                        : statusStyles[day.status]
+                        : statusStyles[computedStatus]
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
                       <span className="text-xs sm:text-sm font-bold">{day.date}</span>
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                        hasGroupableSlot && day.status === 'red' ? 'bg-emerald-600' : badgeStyles[day.status]
+                        hasGroupableSlot && computedStatus === 'red' ? 'bg-emerald-600' : badgeStyles[computedStatus]
                       }`} />
                     </div>
 
                     <div className="text-[10px] sm:text-xs font-semibold truncate opacity-90">
                       {day.isPast && 'Passed'}
-                      {!day.isPast && day.status === 'green' && `${day.slots.length} slots`}
-                      {!day.isPast && day.status === 'yellow' && `${day.slots.filter(s => !s.isBooked).length} left`}
-                      {!day.isPast && day.status === 'red' && (
+                      {!day.isPast && computedStatus === 'green' && (
+                        openSlotsCount === day.slots.length ? `${openSlotsCount} slots` : `${openSlotsCount} left`
+                      )}
+                      {!day.isPast && computedStatus === 'yellow' && `${openSlotsCount} left`}
+                      {!day.isPast && computedStatus === 'red' && (
                         hasGroupableSlot ? 'Group 50% Off' : 'Booked'
                       )}
                     </div>
@@ -713,12 +733,12 @@ export default function TutorSchedule() {
                         <div className="flex items-center gap-2">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             day.isPast ? 'bg-gray-100 text-gray-600 border-gray-200' :
-                            day.status === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                            day.status === 'yellow' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                            computedStatus === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            computedStatus === 'yellow' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                             hasGroupableSlot ? 'bg-amber-50 text-amber-700 border-amber-200' :
                             'bg-red-50 text-red-700 border-red-200'
                           }`}>
-                            {day.isPast ? 'Passed' : day.status === 'green' ? 'Available' : day.status === 'yellow' ? 'Limited' : hasGroupableSlot ? 'Group Split' : 'Fully Booked'}
+                            {day.isPast ? 'Passed' : computedStatus === 'green' ? (openSlotsCount === day.slots.length ? 'Available' : `${openSlotsCount} Left`) : computedStatus === 'yellow' ? `Limited (${openSlotsCount} Left)` : hasGroupableSlot ? 'Group Split' : 'Fully Booked'}
                           </span>
                         </div>
                       </div>
