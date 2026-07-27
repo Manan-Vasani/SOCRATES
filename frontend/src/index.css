@@ -66,8 +66,8 @@ button, a, [role="button"] {
 
 /* Sleek Custom Scrollbar Matching Outer Page */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -75,10 +75,13 @@ button, a, [role="button"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c6;
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a6;
+  background: rgba(0, 0, 0, 0.35);
+  background-clip: padding-box;
 }

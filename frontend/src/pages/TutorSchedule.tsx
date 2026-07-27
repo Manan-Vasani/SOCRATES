@@ -261,15 +261,21 @@ export default function TutorSchedule() {
   const [groupSplitModalSlot, setGroupSplitModalSlot] = useState<{ day: DaySchedule; slot: TimeSlot } | null>(null)
   const hoverTimeoutRef = React.useRef<any>(null)
 
-  // Prevent background page scrolling when modal is open
+  // Prevent background page scrolling & prevent layout shift when modal is open
   useEffect(() => {
     if (selectedDay || groupSplitModalSlot) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
       document.body.style.overflow = 'hidden'
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`
+      }
     } else {
       document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
     }
     return () => {
       document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
     }
   }, [selectedDay, groupSplitModalSlot])
 
