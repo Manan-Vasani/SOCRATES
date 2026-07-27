@@ -956,7 +956,7 @@ export default function TutorSchedule() {
                           }}
                           className={`p-3 rounded-2xl border text-xs font-medium text-left transition-all duration-150 cursor-pointer select-none transform-gpu flex flex-col justify-between ${
                             isPrivateBooked
-                              ? 'bg-[#f5f5f7] border-[#e0e0e0] text-[#a1a1a6] cursor-not-allowed opacity-60 min-h-[76px]'
+                              ? 'bg-red-50/80 border-red-200 text-red-950 cursor-not-allowed opacity-90 min-h-[76px]'
                               : isGroupableBooked
                               ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300 min-h-[76px]'
                               : isSelected
@@ -964,7 +964,19 @@ export default function TutorSchedule() {
                               : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5 min-h-[76px]'
                           }`}
                         >
-                          {isGroupableBooked ? (
+                          {isPrivateBooked ? (
+                            <div className="w-full space-y-1">
+                              <div className="flex items-center justify-between gap-1 w-full">
+                                <span className="font-bold text-xs text-red-950 tracking-tight">{slot.time}</span>
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200/80 shrink-0">
+                                  Private
+                                </span>
+                              </div>
+                              <div className="text-[10px] font-semibold text-red-900 truncate">
+                                Booked by <strong className="font-bold text-red-950">{slot.bookedBy?.replace(/\s*\([^)]*\)/g, '') || 'Student'}</strong>
+                              </div>
+                            </div>
+                          ) : isGroupableBooked ? (
                             <div className="w-full space-y-1.5">
                               <div className="flex items-center justify-between gap-1 w-full">
                                 <span className="font-bold text-xs text-[#1d1d1f] tracking-tight">{slot.time}</span>
