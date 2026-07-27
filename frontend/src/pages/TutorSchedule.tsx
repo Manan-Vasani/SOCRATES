@@ -922,7 +922,7 @@ export default function TutorSchedule() {
                       Duration: <strong className="text-[#1d1d1f]">{selectedDuration} min per slot</strong>
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {selectedDay.slots.map((slot, idx) => {
                       const isSelected = selectedSlot?.time === slot.time
                       const isGroupableBooked = slot.isBooked && slot.allowGroupSplit
@@ -941,47 +941,54 @@ export default function TutorSchedule() {
                               setSelectedSlot(slot)
                             }
                           }}
-                          className={`p-3.5 rounded-2xl border text-xs font-medium text-left flex items-center justify-between gap-3 transition-all duration-150 cursor-pointer select-none transform-gpu ${
-                            isGroupableBooked ? 'col-span-full' : ''
-                          } ${
+                          className={`p-3 rounded-2xl border text-xs font-medium text-left transition-all duration-150 cursor-pointer select-none transform-gpu flex flex-col justify-between ${
                             isPrivateBooked
-                              ? 'bg-[#f5f5f7] border-[#e0e0e0] text-[#a1a1a6] cursor-not-allowed opacity-60'
+                              ? 'bg-[#f5f5f7] border-[#e0e0e0] text-[#a1a1a6] cursor-not-allowed opacity-60 min-h-[76px]'
                               : isGroupableBooked
-                              ? 'bg-amber-50/80 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300'
+                              ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300 min-h-[76px]'
                               : isSelected
-                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
-                              : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5'
+                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs min-h-[76px]'
+                              : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5 min-h-[76px]'
                           }`}
                         >
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <div className="font-sans font-bold text-xs tracking-tight flex items-center gap-2">
-                              <span className="whitespace-nowrap">{slot.time}</span>
-                              {isGroupableBooked && (
-                                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300/60 shrink-0 whitespace-nowrap">
-                                  Group 50% Off
+                          {isGroupableBooked ? (
+                            <div className="w-full space-y-1">
+                              <div className="flex items-center justify-between gap-1 w-full">
+                                <span className="font-bold text-xs text-[#1d1d1f] tracking-tight">{slot.time}</span>
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300/60 shrink-0">
+                                  50% Off
                                 </span>
-                              )}
+                              </div>
+                              <div className="text-[10px] font-semibold text-amber-900 truncate">
+                                Booked by <strong className="font-bold text-amber-950">{slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}</strong>
+                              </div>
+                              <div className="w-full pt-1">
+                                <span className="w-full block text-center text-[10px] font-bold py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs transition-colors">
+                                  Join & Split (${Math.round(tutor.hourlyRate / 2)})
+                                </span>
+                              </div>
                             </div>
-                            <div className={`text-[11px] font-semibold truncate ${
-                              isSelected ? 'text-white/95' : isGroupableBooked ? 'text-amber-900 font-bold' : 'text-[#3a3a3c]'
-                            }`}>
-                              {isGroupableBooked ? `Booked by ${slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}` : slot.subject}
+                          ) : (
+                            <div className="flex items-center justify-between gap-2 w-full h-full">
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="font-sans font-bold text-xs tracking-tight">
+                                  {slot.time}
+                                </div>
+                                <div className={`text-[11px] font-semibold truncate ${isSelected ? 'text-white/95' : 'text-[#3a3a3c]'}`}>
+                                  {slot.subject}
+                                </div>
+                              </div>
+                              <div className="shrink-0 flex items-center justify-center">
+                                {isSelected ? (
+                                  <CheckCircle2 size={18} className="text-white shrink-0" />
+                                ) : (
+                                  <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5e7] shrink-0">
+                                    {selectedDuration}m
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="shrink-0 flex items-center justify-center">
-                            {isGroupableBooked ? (
-                              <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs whitespace-nowrap">
-                                Join & Split (${Math.round(tutor.hourlyRate / 2)})
-                              </span>
-                            ) : isSelected ? (
-                              <CheckCircle2 size={18} className="text-white shrink-0" />
-                            ) : (
-                              <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5e7] shrink-0">
-                                {selectedDuration}m
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </button>
                       )
                     })}
