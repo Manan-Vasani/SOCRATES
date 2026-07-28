@@ -3,9 +3,9 @@ const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    fullName: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, 'Full name is required'],
       trim: true,
       maxlength: [100, 'Name cannot exceed 100 characters'],
     },
@@ -20,9 +20,25 @@ const userSchema = new mongoose.Schema(
         'Please enter a valid email address',
       ],
     },
+    googleId: {
+      type: String,
+      default: null,
+      sparse: true,
+    },
+    profileImage: {
+      type: String,
+      default: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function () {
+        return this.provider === 'local';
+      },
       minlength: [6, 'Password must be at least 6 characters long'],
       select: false,
     },
@@ -33,10 +49,6 @@ const userSchema = new mongoose.Schema(
         message: 'Role must be student, tutor, both, or admin',
       },
       default: 'student',
-    },
-    avatar: {
-      type: String,
-      default: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
     },
     bio: {
       type: String,
@@ -55,15 +67,38 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
-// Encrypt password using bcrypt before saving
+// Virtual getters/setters for backward compatibility (name <-> fullName, avatar <-> profileImage)
+userSchema.virtual('name')
+  .get(function () {
+    return this.fullName;
+  })
+  .set(function (val) {
+    this.fullName = val;
+  });
+
+userSchema.virtual('avatar')
+  .get(function () {
+    return this.profileImage;
+  })
+  .set(function (val) {
+    this.profileImage = val;
+  });
+
+// Encrypt password using bcrypt before saving if present & modified
 userSchema.pre('save', async function () {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return;
   }
   const salt = await bcrypt.genSalt(10);
@@ -72,7 +107,9 @@ userSchema.pre('save', async function () {
 
 // Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
+

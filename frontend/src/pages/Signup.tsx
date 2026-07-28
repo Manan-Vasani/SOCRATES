@@ -86,21 +86,8 @@ export default function Signup() {
         toast.error(response.data?.message || 'Registration failed')
       }
     } catch (error: any) {
-      console.warn('[Signup Warning] Backend API error, using demo signup auth:', error.message)
-      const newUser = {
-        _id: 'new_user_' + Date.now(),
-        name: data.fullName,
-        email: data.email,
-        role: data.role,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        bio: 'Member on SOCRATES peer learning platform.',
-        subjects: ['Computer Science', 'Algorithms'],
-        hourlyRate: data.role === 'student' ? 0 : 45,
-        isVerified: data.role === 'student',
-      }
-      setAuth(newUser, 'demo_jwt_token_signup_123')
-      toast.success(`Account created! Welcome, ${newUser.name}.`)
-      navigate('/profile')
+      const errorMsg = error.response?.data?.message || error.message || 'Registration failed'
+      toast.error(errorMsg)
     } finally {
       setIsLoading(false)
     }
@@ -310,3 +297,4 @@ export default function Signup() {
     </AuthLayout>
   )
 }
+

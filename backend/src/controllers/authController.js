@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const { googleAuth, googleAuthCallback, logout, getMe } = require('./auth.controller');
 
 /**
  * @desc    Register a new user (Sign Up)
@@ -7,10 +8,19 @@ const generateToken = require('../utils/generateToken');
  * @access  Public
  */
 const registerUser = async (req, res) => {
-  const { name, email, password, role, bio, subjects } = req.body;
+  const { name, fullName, email, password, role, bio, subjects } = req.body;
+
+  const userFullName = fullName || name;
+
+  if (!userFullName || !email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide full name, email, and password',
+    });
+  }
 
   // Check if email already exists
-  const userExists = await User.findOne({ email });
+  const userExists = await User.findOne({ email: email.toLowerCase() });
 
   if (userExists) {
     return res.status(400).json({
@@ -21,9 +31,10 @@ const registerUser = async (req, res) => {
 
   // Create new user
   const user = await User.create({
-    name,
-    email,
+    fullName: userFullName,
+    email: email.toLowerCase(),
     password,
+    provider: 'local',
     role: role || 'student',
     bio: bio || '',
     subjects: subjects || [],
@@ -38,14 +49,19 @@ const registerUser = async (req, res) => {
       token,
       user: {
         _id: user._id,
-        name: user.name,
+        fullName: user.fullName,
+        name: user.fullName,
         email: user.email,
+        googleId: user.googleId,
+        profileImage: user.profileImage,
+        avatar: user.profileImage,
+        provider: user.provider,
         role: user.role,
-        avatar: user.avatar,
         bio: user.bio,
         subjects: user.subjects,
         isVerified: user.isVerified,
         createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } else {
@@ -72,7 +88,7 @@ const loginUser = async (req, res) => {
   }
 
   // Find user by email and include password field
-  const user = await User.findOne({ email }).select('+password');
+  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
   if (!user) {
     return res.status(401).json({
@@ -99,46 +115,19 @@ const loginUser = async (req, res) => {
     token,
     user: {
       _id: user._id,
-      name: user.name,
+      fullName: user.fullName,
+      name: user.fullName,
       email: user.email,
+      googleId: user.googleId,
+      profileImage: user.profileImage,
+      avatar: user.profileImage,
+      provider: user.provider,
       role: user.role,
-      avatar: user.avatar,
       bio: user.bio,
       subjects: user.subjects,
       isVerified: user.isVerified,
       createdAt: user.createdAt,
-    },
-  });
-};
-
-/**
- * @desc    Get currently logged in user profile
- * @route   GET /api/v1/auth/me
- * @access  Private
- */
-const getMe = async (req, res) => {
-  const user = await User.findById(req.user._id);
-
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
-  }
-
-  return res.json({
-    success: true,
-    user: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      bio: user.bio,
-      subjects: user.subjects,
-      hourlyRate: user.hourlyRate,
-      isVerified: user.isVerified,
-      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     },
   });
 };
@@ -158,10 +147,14 @@ const updateProfile = async (req, res) => {
     });
   }
 
-  user.name = req.body.name || user.name;
-  user.bio = req.body.bio !== undefined ? req.body.bio : user.bio;
-  user.avatar = req.body.avatar || user.avatar;
-  user.subjects = req.body.subjects || user.subjects;
+  if (req.body.fullName || req.body.name) {
+    user.fullName = req.body.fullName || req.body.name;
+  }
+  if (req.body.bio !== undefined) user.bio = req.body.bio;
+  if (req.body.profileImage || req.body.avatar) {
+    user.profileImage = req.body.profileImage || req.body.avatar;
+  }
+  if (req.body.subjects) user.subjects = req.body.subjects;
 
   if (req.body.password) {
     user.password = req.body.password;
@@ -174,14 +167,19 @@ const updateProfile = async (req, res) => {
     message: 'Profile updated successfully',
     user: {
       _id: updatedUser._id,
-      name: updatedUser.name,
+      fullName: updatedUser.fullName,
+      name: updatedUser.fullName,
       email: updatedUser.email,
+      googleId: updatedUser.googleId,
+      profileImage: updatedUser.profileImage,
+      avatar: updatedUser.profileImage,
+      provider: updatedUser.provider,
       role: updatedUser.role,
-      avatar: updatedUser.avatar,
       bio: updatedUser.bio,
       subjects: updatedUser.subjects,
       isVerified: updatedUser.isVerified,
       createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
     },
   });
 };
@@ -189,6 +187,10 @@ const updateProfile = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  googleAuth,
+  googleAuthCallback,
+  logout,
   getMe,
   updateProfile,
 };
+

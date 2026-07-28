@@ -8,9 +8,30 @@ import ForgotPassword from './pages/ForgotPassword'
 import VerifyOTP from './pages/VerifyOTP'
 import ResetPassword from './pages/ResetPassword'
 import Profile from './pages/Profile'
+import Dashboard from './pages/Dashboard'
 import Tutors from './pages/Tutors'
 import TutorSchedule from './pages/TutorSchedule'
+import { useAuthStore } from './store/useAuthStore'
+import { fetchAuthenticatedUser } from './services/authService'
 import './App.css'
+
+function AuthSync() {
+  const { token, setAuth } = useAuthStore()
+  const hasSyncedRef = useRef(false)
+
+  useEffect(() => {
+    if (token && !hasSyncedRef.current) {
+      hasSyncedRef.current = true
+      fetchAuthenticatedUser().then((user) => {
+        if (user) {
+          setAuth(user, token)
+        }
+      })
+    }
+  }, [token, setAuth])
+
+  return null
+}
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
@@ -50,6 +71,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <AuthSync />
       <Toaster position="top-right" richColors duration={1800} closeButton />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -57,6 +79,7 @@ function App() {
         <Route path="/tutors/:tutorId/schedule" element={<TutorSchedule />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-otp" element={<VerifyOTP />} />
@@ -65,6 +88,8 @@ function App() {
     </BrowserRouter>
   )
 }
+
+
 
 export default App
 

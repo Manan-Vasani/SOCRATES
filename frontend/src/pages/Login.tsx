@@ -14,9 +14,9 @@ import InputField from '../components/InputField'
 import PasswordInput from '../components/PasswordInput'
 import GoogleButton from '../components/GoogleButton'
 import Divider from '../components/Divider'
-import BackToHome from '../components/auth/BackToHome'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
+import { redirectToGoogleOAuth } from '../services/authService'
 
 const loginSchema = z.object({
   email: z
@@ -48,6 +48,10 @@ export default function Login() {
     },
   })
 
+  const handleGoogleSignIn = () => {
+    redirectToGoogleOAuth()
+  }
+
   const onSubmit = async (data: LoginFields) => {
     setIsLoading(true)
     try {
@@ -58,28 +62,14 @@ export default function Login() {
 
       if (response.data?.success && response.data?.token) {
         setAuth(response.data.user, response.data.token)
-        toast.success(`Welcome back, ${response.data.user.name}!`)
-        navigate('/profile')
+        toast.success(`Welcome back, ${response.data.user.fullName || response.data.user.name}!`)
+        navigate('/dashboard')
       } else {
         toast.error(response.data?.message || 'Login failed')
       }
     } catch (error: any) {
-      console.warn('[Login Warning] Backend API error, using demo auth mode:', error.message)
-      // Fallback demo auth for seamless UX if backend isn't reachable
-      const demoUser = {
-        _id: 'demo_user_101',
-        name: data.email.split('@')[0] || 'Alex Rivera',
-        email: data.email,
-        role: 'student' as const,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        bio: 'Computer Science Major @ Stanford • Passionate about AI, Data Structures & Peer Mentorship.',
-        subjects: ['Algorithms', 'Python', 'React'],
-        hourlyRate: 45,
-        isVerified: true,
-      }
-      setAuth(demoUser, 'demo_jwt_token_123')
-      toast.success(`Welcome back, ${demoUser.name}!`)
-      navigate('/profile')
+      const errorMsg = error.response?.data?.message || error.message || 'Login failed'
+      toast.error(errorMsg)
     } finally {
       setIsLoading(false)
     }
@@ -137,7 +127,10 @@ export default function Login() {
 
           <Divider />
 
-          <GoogleButton />
+          <GoogleButton
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+          />
 
           <div className="mt-8 text-center text-xs select-none text-[#6e6e73]">
             <span>Don't have an account? </span>
@@ -153,3 +146,4 @@ export default function Login() {
     </AuthLayout>
   )
 }
+

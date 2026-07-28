@@ -11,6 +11,8 @@ const aiRoutes = require('./routes/aiRoutes');
 const authRoutes = require('./routes/authRoutes');
 const tutorRoutes = require('./routes/tutorRoutes');
 
+const { passport } = require('./config/passport');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -18,13 +20,23 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Security & Performance Middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    contentSecurityPolicy: false,
+  })
+);
 app.use(compression());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
+
+// Passport Middleware
+app.use(passport.initialize());
+
 // API Routes
+app.use('/auth', authRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/homepage', homepageRoutes);
 app.use('/api/v1/ai', aiRoutes);

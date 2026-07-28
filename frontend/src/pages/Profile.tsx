@@ -28,6 +28,7 @@ import {
 import { useAuthStore, ProfilePerspective } from '../store/useAuthStore'
 import { updateUserProfileApi } from '../services/api'
 import { toast } from 'sonner'
+import { logoutAuthUser, fetchAuthenticatedUser } from '../services/authService'
 import Navbar from '../components/Navbar'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 
@@ -110,13 +111,26 @@ export const saveStoredProfileSessions = (sessions: ProfileSessionItem[]) => {
 }
 
 export default function Profile() {
-  const { user, updateUser, logout } = useAuthStore()
+  const { user, token, setAuth, updateUser, logout } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
-    toast.success('Signed out successfully')
-    navigate('/')
+  useEffect(() => {
+    if (!token && !user) {
+      toast.error('Please log in to view your profile')
+      navigate('/login')
+    }
+  }, [token, user, navigate])
+
+  const handleLogout = async () => {
+    try {
+      await logoutAuthUser()
+    } catch (err) {
+      // Ignore network errors on logout
+    } finally {
+      logout()
+      toast.success('Signed out successfully')
+      navigate('/login')
+    }
   }
 
   // Active Role/Perspective derived directly from user object (defaulting to 'both')
@@ -135,7 +149,8 @@ export default function Profile() {
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: user?.fullName || user?.name || '',
+
     role: user?.role || 'both',
     bio: user?.bio || '',
     hourlyRate: user?.hourlyRate || 45,
@@ -224,11 +239,8 @@ export default function Profile() {
             <div className="flex items-center gap-6">
               <div className="relative group">
                 <img
-                  src={
-                    user?.avatar ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-                  }
-                  alt={user?.name || 'User Avatar'}
+                  src={user?.profileImage || user?.avatar || ''}
+                  alt={user?.fullName || user?.name || 'User Profile'}
                   className="w-24 h-24 rounded-full object-cover border-2 border-[#0066cc] shadow-md group-hover:scale-105 transition-transform duration-300"
                 />
                 <button
@@ -243,7 +255,7 @@ export default function Profile() {
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-display font-bold tracking-tight text-[#1d1d1f]">
-                    {user?.name || 'Alex Rivera'}
+                    {user?.fullName || user?.name || 'Scholar'}
                   </h1>
                   {user?.isVerified && (
                     <span
@@ -253,11 +265,16 @@ export default function Profile() {
                       <ShieldCheck size={14} /> Verified
                     </span>
                   )}
+                  {user?.provider === 'google' && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                      Google Account
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 text-xs font-medium">
                   <span className="text-[#7a7a7a]">
-                    {user?.email || 'alex.rivera@socrates.edu'}
+                    {user?.email}
                   </span>
                   <span className="text-[#e0e0e0]">•</span>
                   {userRole === 'student' && (

@@ -2,15 +2,20 @@ import { create } from 'zustand'
 
 export interface UserProfile {
   _id: string
+  fullName?: string
   name: string
   email: string
-  role: 'student' | 'tutor' | 'both' | 'admin'
+  googleId?: string
+  profileImage?: string
   avatar: string
-  bio: string
-  subjects: string[]
+  provider?: 'local' | 'google'
+  role: 'student' | 'tutor' | 'both' | 'admin'
+  bio?: string
+  subjects?: string[]
   hourlyRate?: number
   isVerified?: boolean
   createdAt?: string
+  updatedAt?: string
 }
 
 export type ProfilePerspective = 'student' | 'tutor' | 'both'
@@ -29,38 +34,50 @@ const getInitialToken = () => localStorage.getItem('socrates_token') || null
 const getInitialUser = (): UserProfile | null => {
   const stored = localStorage.getItem('socrates_user')
   try {
-    return stored ? JSON.parse(stored) : null
+    if (!stored) return null
+    const parsed = JSON.parse(stored)
+    return {
+      ...parsed,
+      fullName: parsed.fullName || parsed.name || '',
+      name: parsed.fullName || parsed.name || '',
+      profileImage: parsed.profileImage || parsed.avatar || '',
+      avatar: parsed.profileImage || parsed.avatar || '',
+    }
   } catch {
     return null
   }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: getInitialUser() || {
-    _id: 'demo_user_101',
-    name: 'Alex Rivera',
-    email: 'alex.rivera@socrates.edu',
-    role: 'student',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    bio: 'Computer Science Major @ Stanford • Passionate about AI, Data Structures & Peer Mentorship.',
-    subjects: ['Algorithms', 'Python', 'React', 'Linear Algebra'],
-    hourlyRate: 45,
-    isVerified: true,
-    createdAt: '2026-01-15T00:00:00.000Z',
-  },
+  user: getInitialUser(),
   token: getInitialToken(),
   activePerspective: 'both',
 
   setAuth: (user, token) => {
+    const normalizedUser: UserProfile = {
+      ...user,
+      fullName: user.fullName || user.name,
+      name: user.fullName || user.name,
+      profileImage: user.profileImage || user.avatar,
+      avatar: user.profileImage || user.avatar,
+      provider: user.provider || 'local',
+    }
     localStorage.setItem('socrates_token', token)
-    localStorage.setItem('socrates_user', JSON.stringify(user))
-    set({ user, token })
+    localStorage.setItem('socrates_user', JSON.stringify(normalizedUser))
+    set({ user: normalizedUser, token })
   },
 
   updateUser: (updatedUser) => {
     set((state) => {
       if (!state.user) return state
-      const newUser = { ...state.user, ...updatedUser }
+      const newUser = {
+        ...state.user,
+        ...updatedUser,
+        fullName: updatedUser.fullName || updatedUser.name || state.user.fullName || state.user.name,
+        name: updatedUser.fullName || updatedUser.name || state.user.name,
+        profileImage: updatedUser.profileImage || updatedUser.avatar || state.user.profileImage || state.user.avatar,
+        avatar: updatedUser.profileImage || updatedUser.avatar || state.user.avatar,
+      }
       localStorage.setItem('socrates_user', JSON.stringify(newUser))
       return { user: newUser }
     })
@@ -76,3 +93,4 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, token: null })
   },
 }))
+
