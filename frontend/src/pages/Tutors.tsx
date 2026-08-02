@@ -4,6 +4,7 @@ import {
   Award,
   BarChart2,
   BookOpen,
+  Bookmark,
   Calendar,
   Code2,
   Crown,
@@ -200,6 +201,40 @@ export default function Tutors() {
   const [selectedDuration, setSelectedDuration] = useState<20 | 30 | 60>(60)
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false)
   const [expandedCardIds, setExpandedCardIds] = useState<Record<string, boolean>>({})
+
+  const [bookmarkedTutors, setBookmarkedTutors] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem('socrates_bookmarks')
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+
+  const toggleBookmark = (tutor: ExtendedTutor, e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const isBookmarked = bookmarkedTutors.some((t) => t.id === tutor.id)
+    let nextList: any[]
+    if (isBookmarked) {
+      nextList = bookmarkedTutors.filter((t) => t.id !== tutor.id)
+      toast.success(`${tutor.name} removed from bookmarks`)
+    } else {
+      const newBookmark = {
+        id: tutor.id,
+        name: tutor.name,
+        subject: tutor.subject,
+        rating: tutor.rating,
+        hourlyRate: tutor.hourlyRate,
+        avatar: tutor.image,
+        online: tutor.isOnline || false,
+      }
+      nextList = [...bookmarkedTutors, newBookmark]
+      toast.success(`${tutor.name} added to bookmarks!`)
+    }
+    setBookmarkedTutors(nextList)
+    localStorage.setItem('socrates_bookmarks', JSON.stringify(nextList))
+  }
 
   const toggleExpandCard = (id: string) => {
     setExpandedCardIds((prev) => ({
@@ -519,8 +554,19 @@ export default function Tutors() {
               {filteredTutors.map((tutor) => (
                 <div
                   key={tutor.id}
-                  className="bg-white rounded-3xl border border-[#e5e5e7] p-6 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-colors duration-150 group transform-gpu select-none"
+                  className="relative bg-white rounded-3xl border border-[#e5e5e7] p-6 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-colors duration-150 group transform-gpu select-none"
                 >
+                  <button
+                    type="button"
+                    onClick={(e) => toggleBookmark(tutor, e)}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/30 text-[#86868b] hover:text-[#0066cc] transition-colors shadow-xs transform-gpu select-none cursor-pointer z-10"
+                    title={bookmarkedTutors.some((t) => t.id === tutor.id) ? "Remove Bookmark" : "Bookmark Tutor"}
+                  >
+                    <Bookmark
+                      size={15}
+                      className={bookmarkedTutors.some((t) => t.id === tutor.id) ? "text-[#0066cc] fill-[#0066cc]" : ""}
+                    />
+                  </button>
                   <div className="space-y-4">
                     {/* Top Card Header */}
                     <div className="flex items-start gap-4">

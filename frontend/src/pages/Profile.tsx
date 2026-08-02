@@ -392,7 +392,14 @@ export default function Profile() {
   })
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM' })
   const [selectedDuration, setSelectedDuration] = useState<number>(60)
-  const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
+  const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(() => {
+    try {
+      const stored = localStorage.getItem('socrates_bookmarks')
+      return stored ? JSON.parse(stored) : MOCK_BOOKMARKED_TUTORS
+    } catch {
+      return MOCK_BOOKMARKED_TUTORS
+    }
+  })
 
   const calculateEndTime = (startStr: string, durationMin: number): string => {
     const timeToMinutes = (timeStr: string): number => {
@@ -517,7 +524,9 @@ export default function Profile() {
   }
 
   const handleRemoveBookmark = (id: string) => {
-    setBookmarkedTutors(prev => prev.filter(t => t.id !== id))
+    const next = bookmarkedTutors.filter(t => t.id !== id)
+    setBookmarkedTutors(next)
+    localStorage.setItem('socrates_bookmarks', JSON.stringify(next))
     toast.success('Tutor removed from bookmarks')
   }
 
