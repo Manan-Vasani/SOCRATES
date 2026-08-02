@@ -11,6 +11,7 @@ import {
   UserCheck,
   Edit3,
   ShieldCheck,
+  Check,
   CheckCircle2,
   Sparkles,
   X,
@@ -504,7 +505,7 @@ export default function Profile() {
                       </button>
                     ) : (
                       <span className="w-[130px] py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none shrink-0">
-                        <CheckCircle2 size={12} className="text-emerald-600 shrink-0" /> Completed
+                        <Check size={12} className="text-emerald-600 shrink-0" /> Completed
                       </span>
                     )}
                   </div>
