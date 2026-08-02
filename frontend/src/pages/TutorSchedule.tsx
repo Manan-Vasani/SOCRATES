@@ -271,6 +271,8 @@ export default function TutorSchedule() {
         reviews: backendTutor.reviews || '142 reviews',
         image: backendTutor.image,
         hourlyRate: backendTutor.hourlyRate || 65,
+        rate20Min: backendTutor.rate20Min || 15,
+        rate30Min: backendTutor.rate30Min || 25,
         subjects: backendTutor.subjects || [backendTutor.subject.split(' ')[0], 'Computer Science', 'Tutorials'],
         bio: backendTutor.bio || `${backendTutor.experience} specializing in ${backendTutor.subject}.`
       }
@@ -483,7 +485,11 @@ export default function TutorSchedule() {
     }
 
     setIsSubmitting(true)
-    const calculatedFee = Math.round((tutor.hourlyRate * selectedDuration) / 60)
+    const calculatedFee = selectedDuration === 20 
+      ? ((tutor as any).rate20Min || 15)
+      : selectedDuration === 30
+      ? ((tutor as any).rate30Min || 25)
+      : tutor.hourlyRate;
     const activeSubject = selectedSubject || tutor.subjects[0] || 'General Session'
 
     const res = await createTutorBookingApi(tutor.id, {
@@ -1092,13 +1098,13 @@ export default function TutorSchedule() {
                       options={[
                         {
                           value: 20,
-                          label: `20 Min ($${Math.round(tutor.hourlyRate * (20 / 60))})`,
+                          label: `20 Min ($${(tutor as any).rate20Min || Math.round(tutor.hourlyRate * (20 / 60))})`,
                           badge: 'Quick Doubt',
                           icon: <Zap size={14} className="text-[#0066cc]" />,
                         },
                         {
                           value: 30,
-                          label: `30 Min ($${Math.round(tutor.hourlyRate * (30 / 60))})`,
+                          label: `30 Min ($${(tutor as any).rate30Min || Math.round(tutor.hourlyRate * (30 / 60))})`,
                           badge: 'Concept Review',
                           icon: <Target size={14} className="text-[#0066cc]" />,
                         },
@@ -1341,7 +1347,11 @@ export default function TutorSchedule() {
                     <div className="flex items-baseline gap-1">
                       <span className="text-xs font-medium text-[#6e6e73]">Total Fee:</span>
                       <span className="text-xl font-bold text-[#1d1d1f]">
-                        ${Math.round((tutor.hourlyRate * selectedDuration) / 60)}
+                        ${selectedDuration === 20 
+                          ? ((tutor as any).rate20Min || 15)
+                          : selectedDuration === 30
+                          ? ((tutor as any).rate30Min || 25)
+                          : tutor.hourlyRate}
                       </span>
                       <span className="text-xs text-[#6e6e73] font-medium">({selectedDuration} min session)</span>
                     </div>

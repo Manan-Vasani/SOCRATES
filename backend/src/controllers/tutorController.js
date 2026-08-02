@@ -137,6 +137,25 @@ exports.getTutorById = async (req, res) => {
 
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
       tutor = await Tutor.findById(id).catch(() => null);
+      if (!tutor) {
+        const dbUser = await User.findById(id).catch(() => null);
+        if (dbUser && (dbUser.role === 'tutor' || dbUser.role === 'both')) {
+          tutor = {
+            _id: dbUser._id.toString(),
+            id: dbUser._id.toString(),
+            name: dbUser.fullName || dbUser.name || 'Peer Tutor',
+            subject: dbUser.subjects && dbUser.subjects.length > 0 ? dbUser.subjects.join(', ') : 'Computer Science',
+            experience: dbUser.bio ? (dbUser.bio.length > 60 ? dbUser.bio.slice(0, 60) + '...' : dbUser.bio) : 'Verified Peer Tutor',
+            rating: 5.0,
+            reviews: '0 reviews',
+            image: dbUser.profileImage || dbUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            hourlyRate: dbUser.hourlyRate || 45,
+            isFeatured: false,
+            subjects: dbUser.subjects || [],
+            availability: dbUser.availability || []
+          };
+        }
+      }
     }
 
     if (!tutor) {
@@ -147,19 +166,20 @@ exports.getTutorById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Tutor profile not found' });
     }
 
-    const tutorName = tutor.name;
-    const userTutor = await User.findOne({
-      $or: [
-        { fullName: new RegExp('^' + tutorName + '$', 'i') },
-        { name: new RegExp('^' + tutorName + '$', 'i') }
-      ]
-    });
-
     let tutorData = tutor.toObject ? tutor.toObject() : { ...tutor };
-    if (userTutor && userTutor.availability) {
-      tutorData.availability = userTutor.availability;
-    } else {
-      tutorData.availability = [];
+    if (!tutorData.availability) {
+      const tutorName = tutor.name;
+      const userTutor = await User.findOne({
+        $or: [
+          { fullName: new RegExp('^' + tutorName + '$', 'i') },
+          { name: new RegExp('^' + tutorName + '$', 'i') }
+        ]
+      });
+      if (userTutor && userTutor.availability) {
+        tutorData.availability = userTutor.availability;
+      } else {
+        tutorData.availability = [];
+      }
     }
 
     res.json({ success: true, data: tutorData });

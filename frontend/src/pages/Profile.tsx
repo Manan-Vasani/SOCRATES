@@ -329,6 +329,8 @@ export default function Profile() {
     role: user?.role || 'both',
     bio: user?.bio || '',
     hourlyRate: user?.hourlyRate || 45,
+    rate20Min: (user as any)?.rate20Min || 15,
+    rate30Min: (user as any)?.rate30Min || 25,
     avatar: user?.avatar || '',
     subjectsText: user?.subjects ? user.subjects.join(', ') : '',
     learningSubjectsText: (user as any)?.learningSubjects ? (user as any).learningSubjects.join(', ') : '',
@@ -535,6 +537,8 @@ export default function Profile() {
         role: user.role,
         bio: user.bio,
         hourlyRate: user.hourlyRate || 45,
+        rate20Min: (user as any).rate20Min || 15,
+        rate30Min: (user as any).rate30Min || 25,
         avatar: user.avatar,
         subjectsText: user.subjects.join(', '),
         learningSubjectsText: (user as any).learningSubjects ? (user as any).learningSubjects.join(', ') : '',
@@ -559,6 +563,8 @@ export default function Profile() {
       role: formData.role as 'student' | 'tutor' | 'both',
       bio: formData.bio,
       hourlyRate: Number(formData.hourlyRate),
+      rate20Min: Number(formData.rate20Min),
+      rate30Min: Number(formData.rate30Min),
       avatar: formData.avatar,
       subjects: formData.role === 'student' ? (user?.subjects || []) : subjectsArr,
       learningSubjects: (user as any)?.learningSubjects || [],
@@ -1572,19 +1578,49 @@ export default function Profile() {
 
                 {formData.role === 'tutor' && (
                   <>
-                    <div className="space-y-1.5 col-span-2">
-                      <label className="text-[#525252] font-semibold block">
-                        Hourly Tutoring Rate ($/hr)
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={formData.hourlyRate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, hourlyRate: Number(e.target.value) })
-                        }
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      />
+                    <div className="col-span-2 grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[#525252] text-xs font-semibold block">
+                          20 Min Session ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.rate20Min}
+                          onChange={(e) =>
+                            setFormData({ ...formData, rate20Min: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[#525252] text-xs font-semibold block">
+                          30 Min Session ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.rate30Min}
+                          onChange={(e) =>
+                            setFormData({ ...formData, rate30Min: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[#525252] text-xs font-semibold block">
+                          60 Min Session ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.hourlyRate}
+                          onChange={(e) =>
+                            setFormData({ ...formData, hourlyRate: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">
@@ -1631,19 +1667,49 @@ export default function Profile() {
 
                 {formData.role === 'both' && (
                   <>
-                    <div className="space-y-1.5 col-span-2">
-                      <label className="text-[#525252] font-semibold block">
-                        Hourly Tutoring Rate ($/hr)
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={formData.hourlyRate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, hourlyRate: Number(e.target.value) })
-                        }
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      />
+                    <div className="col-span-2 grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[#525252] text-xs font-semibold block">
+                          20 Min Session ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.rate20Min}
+                          onChange={(e) =>
+                            setFormData({ ...formData, rate20Min: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[#525252] text-xs font-semibold block">
+                          30 Min Session ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.rate30Min}
+                          onChange={(e) =>
+                            setFormData({ ...formData, rate30Min: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[#525252] text-xs font-semibold block">
+                          60 Min Session ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.hourlyRate}
+                          onChange={(e) =>
+                            setFormData({ ...formData, hourlyRate: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">

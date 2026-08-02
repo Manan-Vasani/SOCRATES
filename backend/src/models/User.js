@@ -65,7 +65,15 @@ const userSchema = new mongoose.Schema(
     },
     hourlyRate: {
       type: Number,
-      default: 0,
+      default: 45,
+    },
+    rate20Min: {
+      type: Number,
+      default: 15,
+    },
+    rate30Min: {
+      type: Number,
+      default: 25,
     },
     isVerified: {
       type: Boolean,
