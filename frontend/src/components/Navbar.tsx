@@ -39,7 +39,7 @@ export default function Navbar() {
             <div className="flex items-center gap-3">
               <Link
                 to="/profile"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5e7] text-[#1d1d1f] transition-all group cursor-pointer select-none"
+                className="flex items-center gap-2.5 px-1 py-1 rounded-full text-[#1d1d1f] hover:opacity-80 transition-all group cursor-pointer select-none"
                 title="My Profile"
               >
                 <img
@@ -48,7 +48,7 @@ export default function Navbar() {
                   onError={(e) => {
                     e.currentTarget.src = getInitialsAvatar(user.fullName || user.name)
                   }}
-                  className="w-6 h-6 rounded-full object-cover"
+                  className="w-8 h-8 rounded-full object-cover shrink-0"
                 />
                 <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[140px] truncate">
                   {user.fullName || user.name}
