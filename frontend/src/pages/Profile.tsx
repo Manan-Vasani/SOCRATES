@@ -396,6 +396,33 @@ export default function Profile() {
     return minutesToTime(endMin)
   }
 
+  const getAvailabilityTimeOptions = (): DropdownOption<string>[] => {
+    const timeToMinutes = (timeStr: string): number => {
+      const [time, modifier] = timeStr.split(' ')
+      let [hours, minutes] = time.split(':').map(Number)
+      if (modifier === 'PM' && hours !== 12) hours += 12
+      if (modifier === 'AM' && hours === 12) hours = 0
+      return hours * 60 + minutes
+    }
+
+    return TIME_OPTIONS.map((option) => {
+      const newStart = timeToMinutes(option.value)
+      const newEnd = newStart + selectedDuration
+
+      const hasConflict = availability.some((slot) => {
+        if (slot.dayOfWeek !== newSlot.dayOfWeek) return false
+        const existStart = timeToMinutes(slot.timeStart)
+        const existEnd = timeToMinutes(slot.timeEnd)
+        return newStart < (existEnd + 20) && newEnd > (existStart - 20)
+      })
+
+      return {
+        ...option,
+        disabled: hasConflict
+      }
+    })
+  }
+
   const handleAddAvailability = () => {
     const timeToMinutes = (timeStr: string): number => {
       const [time, modifier] = timeStr.split(' ')
@@ -421,16 +448,16 @@ export default function Profile() {
     const endMin = startMin + selectedDuration
     const timeEndStr = minutesToTime(endMin)
 
-    // Check if duplicate slot exists
-    const isDuplicate = availability.some(
-      (slot) =>
-        slot.dayOfWeek === newSlot.dayOfWeek &&
-        slot.timeStart === newSlot.timeStart &&
-        slot.timeEnd === timeEndStr
-    )
+    // Check if duplicate or conflict exists (must have at least 20 minutes break)
+    const hasConflict = availability.some((slot) => {
+      if (slot.dayOfWeek !== newSlot.dayOfWeek) return false
+      const existStart = timeToMinutes(slot.timeStart)
+      const existEnd = timeToMinutes(slot.timeEnd)
+      return startMin < (existEnd + 20) && endMin > (existStart - 20)
+    })
 
-    if (isDuplicate) {
-      toast.error('This availability slot already exists!')
+    if (hasConflict) {
+      toast.error('This slot overlaps or is too close (less than 20-min break) to an existing slot!')
       return
     }
 
@@ -1101,7 +1128,7 @@ export default function Profile() {
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
                         <CustomDropdown<string>
-                          options={TIME_OPTIONS}
+                          options={getAvailabilityTimeOptions()}
                           value={newSlot.timeStart}
                           onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeStart: val }))}
                           className="w-full"
