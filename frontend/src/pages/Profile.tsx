@@ -272,11 +272,11 @@ export default function Profile() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
             {/* User Details Left */}
             <div className="flex items-center gap-6">
-              <div className="relative group">
+              <div className="relative group shrink-0">
                 <img
                   src={user?.profileImage || user?.avatar || ''}
                   alt={user?.fullName || user?.name || 'User Profile'}
-                  className="w-24 h-24 rounded-full object-cover border border-[#e5e5e7] shadow-xs antialiased"
+                  className="w-32 h-32 rounded-full object-cover border border-[#e5e5e7] shadow-xs antialiased"
                 />
               </div>
 
