@@ -29,6 +29,8 @@ import {
   X,
   Loader2
 } from 'lucide-react'
+
+// React profile component for managing role-specific dashboards.
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
