@@ -99,17 +99,12 @@ export default function VerifyOTP() {
               </div>
             </div>
 
-            <motion.button
+            <button
               type="submit"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              transition={{ duration: 0.15 }}
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer shadow-sm select-none"
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none"
             >
-              <motion.span whileTap={{ scale: 1.0101 }} transition={{ duration: 0.15 }} className="inline-block">
-                Verify OTP
-              </motion.span>
-            </motion.button>
+              <span>Verify OTP</span>
+            </button>
           </form>
 
           <div className="mt-8 text-center select-none">

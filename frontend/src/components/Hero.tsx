@@ -78,29 +78,19 @@ export default function Hero() {
           variants={itemVariants}
           className="mt-8 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
         >
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.025 }}
-            whileTap={{ scale: 0.985 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#0066cc] text-white text-sm font-medium hover:bg-[#0077ed] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer"
+            className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#0066cc] text-white text-sm font-medium hover:bg-[#0077ed] hover:shadow-lg hover:shadow-[#0066cc]/25 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-md select-none"
           >
-            <motion.span whileTap={{ scale: 1.0152 }} transition={{ duration: 0.2 }} className="inline-block">
-              Find a Tutor
-            </motion.span>
-          </motion.button>
+            <span>Find a Tutor</span>
+          </button>
 
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.025 }}
-            whileTap={{ scale: 0.985 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="w-full sm:w-auto px-7 py-3 rounded-full bg-white text-[#0066cc] border border-[#0066cc] text-sm font-medium hover:bg-[#0066cc]/5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer"
+            className="w-full sm:w-auto px-7 py-3 rounded-full bg-white text-[#0066cc] border border-[#0066cc] text-sm font-medium hover:bg-[#0066cc]/5 hover:shadow-md hover:shadow-[#0066cc]/10 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none"
           >
-            <motion.span whileTap={{ scale: 1.0152 }} transition={{ duration: 0.2 }} className="inline-block">
-              Become a Tutor
-            </motion.span>
-          </motion.button>
+            <span>Become a Tutor</span>
+          </button>
         </motion.div>
 
         {/* Product Mockup */}

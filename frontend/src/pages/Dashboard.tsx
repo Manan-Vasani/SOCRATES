@@ -119,16 +119,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <motion.button
+            <button
               type="button"
               onClick={handleLogout}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] text-sm font-semibold transition-colors cursor-pointer select-none transform-gpu antialiased shrink-0"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 hover:shadow-sm text-[#ff3b30] text-sm font-semibold transition-all duration-200 cursor-pointer select-none antialiased shrink-0"
             >
               <LogOut className="w-4 h-4" />
               <span>Log Out</span>
-            </motion.button>
+            </button>
           </div>
 
           {/* User Profile Info Grid */}

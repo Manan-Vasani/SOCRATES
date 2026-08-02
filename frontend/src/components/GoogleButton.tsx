@@ -12,21 +12,14 @@ export default function GoogleButton({ onClick, isLoading = false, disabled = fa
   const handleClick = onClick || redirectToGoogleOAuth
 
   return (
-    <motion.button
+    <button
       type="button"
       onClick={handleClick}
       disabled={disabled || isLoading}
-      whileHover={{ scale: disabled || isLoading ? 1 : 1.01 }}
-      whileTap={{ scale: disabled || isLoading ? 1 : 0.99 }}
-      transition={{ duration: 0.15 }}
-      className="w-full flex items-center justify-center px-5 py-3 rounded-xl bg-white border border-[#e5e5e5] text-sm font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed select-none transform-gpu antialiased shadow-xs"
+      className="w-full flex items-center justify-center px-5 py-3 rounded-xl bg-white border border-[#e5e5e5] text-sm font-medium text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc] hover:shadow-md active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed select-none antialiased shadow-sm"
       aria-label="Continue with Google"
     >
-      <motion.span
-        whileTap={{ scale: disabled || isLoading ? 1 : 1.0101 }}
-        transition={{ duration: 0.15 }}
-        className="inline-flex items-center justify-center gap-3 w-full"
-      >
+      <span className="inline-flex items-center justify-center gap-3 w-full">
         {isLoading ? (
           <div className="w-4.5 h-4.5 border-2 border-[#0066cc] border-t-transparent rounded-full animate-spin shrink-0" />
         ) : (
@@ -55,8 +48,8 @@ export default function GoogleButton({ onClick, isLoading = false, disabled = fa
           </svg>
         )}
         <span>{isLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
-      </motion.span>
-    </motion.button>
+      </span>
+    </button>
   )
 }
 
