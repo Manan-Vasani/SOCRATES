@@ -108,7 +108,7 @@ export default function Signup() {
         <AuthCard>
           <AuthHeader
             title="Create Account"
-            description="Join SOCRATES as a student, tutor, or peer-to-peer scholar."
+            description="Unlock 1-on-1 tutoring, AI study guidance, and live collaboration."
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
