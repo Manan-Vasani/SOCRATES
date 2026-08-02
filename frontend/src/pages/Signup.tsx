@@ -44,8 +44,8 @@ export default function Signup() {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
+  const [hasPasswordBeenTouched, setHasPasswordBeenTouched] = useState(false)
+  const [hasConfirmPasswordBeenTouched, setHasConfirmPasswordBeenTouched] = useState(false)
 
   const {
     register,
@@ -189,16 +189,12 @@ export default function Signup() {
                 error={errors.password?.message}
                 ref={passwordRef}
                 {...passwordRegister}
-                onFocus={() => setIsPasswordFocused(true)}
-                onBlur={(e) => {
-                  passwordRegister.onBlur(e)
-                  setIsPasswordFocused(false)
-                }}
+                onFocus={() => setHasPasswordBeenTouched(true)}
               />
 
               {/* Password Requirements Panel - displays when focused or when typing */}
               <AnimatePresence>
-                {(isPasswordFocused || passwordValue.length > 0) && (
+                {(hasPasswordBeenTouched || passwordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -221,16 +217,12 @@ export default function Signup() {
                 error={errors.confirmPassword?.message}
                 ref={confirmPasswordRef}
                 {...confirmPasswordRegister}
-                onFocus={() => setIsConfirmPasswordFocused(true)}
-                onBlur={(e) => {
-                  confirmPasswordRegister.onBlur(e)
-                  setIsConfirmPasswordFocused(false)
-                }}
+                onFocus={() => setHasConfirmPasswordBeenTouched(true)}
               />
 
               {/* Confirm Password Requirements Panel - opens strictly when Confirm Password field is focused or active */}
               <AnimatePresence>
-                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
+                {(hasConfirmPasswordBeenTouched || confirmPasswordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}

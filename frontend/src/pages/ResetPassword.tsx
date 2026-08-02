@@ -38,8 +38,8 @@ export default function ResetPassword() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
+  const [hasPasswordBeenTouched, setHasPasswordBeenTouched] = useState(false)
+  const [hasConfirmPasswordBeenTouched, setHasConfirmPasswordBeenTouched] = useState(false)
 
   // Retrieve email, token & otp from URL query params or sessionStorage
   const urlToken = searchParams.get('token')
@@ -122,16 +122,12 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 error={errors.password?.message}
                 {...passwordRegister}
-                onFocus={() => setIsPasswordFocused(true)}
-                onBlur={(e) => {
-                  passwordRegister.onBlur(e)
-                  setIsPasswordFocused(false)
-                }}
+                onFocus={() => setHasPasswordBeenTouched(true)}
               />
 
-              {/* Password Requirements Panel - displays when focused or when typing (identical to Signup) */}
+              {/* Password Requirements Panel - once revealed, stays open so card NEVER shrinks on button click */}
               <AnimatePresence>
-                {(isPasswordFocused || passwordValue.length > 0) && (
+                {(hasPasswordBeenTouched || passwordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -153,16 +149,12 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 error={errors.confirmPassword?.message}
                 {...confirmPasswordRegister}
-                onFocus={() => setIsConfirmPasswordFocused(true)}
-                onBlur={(e) => {
-                  confirmPasswordRegister.onBlur(e)
-                  setIsConfirmPasswordFocused(false)
-                }}
+                onFocus={() => setHasConfirmPasswordBeenTouched(true)}
               />
 
-              {/* Confirm Password Requirements Panel - displays when focused or when typing (identical to Signup) */}
+              {/* Confirm Password Requirements Panel - once revealed, stays open so card NEVER shrinks on button click */}
               <AnimatePresence>
-                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
+                {(hasConfirmPasswordBeenTouched || confirmPasswordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
