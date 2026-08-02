@@ -504,7 +504,7 @@ export default function Profile() {
                       </button>
                     ) : (
                       <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none">
-                        Completed
+                        <CheckCircle2 size={12} className="text-emerald-600 shrink-0" /> Completed
                       </span>
                     )}
                   </div>
