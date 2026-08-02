@@ -29,10 +29,13 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4, h5, h6, .font-display {
-  font-family: var(--font-display);
+/* Strict Text, Icon & Layout Stability Lock on Page Refresh */
+h1, h2, h3, h4, h5, h6, p, span, label, input, button, svg, .font-display {
+  font-family: var(--font-apple);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Zero Text Lag & Button Antialiasing Baseline */
