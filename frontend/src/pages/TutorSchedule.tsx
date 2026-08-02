@@ -22,6 +22,7 @@ import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import CustomDropdown from '../components/CustomDropdown'
 import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
+import { useAuthStore } from '../store/useAuthStore'
 import { getStoredProfileSessions, saveStoredProfileSessions, ProfileSessionItem } from './Profile'
 
 function TutorScheduleSkeleton() {
@@ -211,6 +212,7 @@ interface DaySchedule {
 export default function TutorSchedule() {
   const { tutorId } = useParams<{ tutorId: string }>()
   const navigate = useNavigate()
+  const { user } = useAuthStore()
 
   const [backendTutor, setBackendTutor] = useState<any | null>(null)
   const [backendBookings, setBackendBookings] = useState<any[]>([])
