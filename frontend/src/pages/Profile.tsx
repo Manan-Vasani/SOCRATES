@@ -2006,7 +2006,7 @@ export default function Profile() {
                   <span>Session: {cancellingSession.subject}</span>
                   <span className="font-bold">${cancellingSession.fee}</span>
                 </div>
-                <p className="text-[#525252] leading-relaxed">
+                <p className="text-red-900/90 leading-relaxed font-medium">
                   Cancelling will remove this reservation from your schedule and notify {userRole === 'tutor' ? cancellingSession.studentName : cancellingSession.tutorName}. A full refund of ${cancellingSession.fee} will be issued to your payment method.
                 </p>
               </div>
