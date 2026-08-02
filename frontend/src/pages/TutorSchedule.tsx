@@ -973,7 +973,7 @@ export default function TutorSchedule() {
 
               {/* Slot Selection Form */}
               <form onSubmit={handleConfirmBooking} className="flex-1 flex flex-col overflow-hidden min-h-0">
-                <div className="flex-1 overflow-y-auto -mr-4 pr-3.5 py-4 space-y-5 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto -mr-3.5 pr-3 pl-1 py-4 space-y-5 custom-scrollbar">
                 {/* Side by Side: Subject Selector & Session Duration CustomDropdowns */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Subject Selector Dropdown */}

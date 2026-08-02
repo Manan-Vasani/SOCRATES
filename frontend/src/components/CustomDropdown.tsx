@@ -130,7 +130,9 @@ export default function CustomDropdown<T extends string | number>({
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`group flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-semibold text-[#1d1d1f] hover:bg-[#eaeaea] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-colors cursor-pointer select-none ${buttonClassName}`}
+        className={`group flex items-center justify-between gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border text-xs font-semibold text-[#1d1d1f] transition-all duration-150 cursor-pointer select-none focus:outline-none focus:ring-1 focus:ring-inset focus:ring-[#0066cc] focus:border-[#0066cc] ${
+          isOpen ? 'border-[#0066cc] bg-white ring-1 ring-inset ring-[#0066cc]' : 'border-[#e0e0e0] hover:bg-[#eaeaea]'
+        } ${buttonClassName}`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
