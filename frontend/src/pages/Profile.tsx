@@ -815,7 +815,7 @@ export default function Profile() {
       {/* EDIT PROFILE LIGHT MODAL */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-4 relative shadow-2xl animate-in fade-in zoom-in duration-200 text-[#1d1d1f]">
+          <div className="w-full max-w-2xl bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-4 relative shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#1d1d1f] transform-gpu antialiased">
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <h3 className="text-lg font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                 <Edit3 size={18} className="text-[#0066cc]" /> Edit Profile
