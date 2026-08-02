@@ -249,6 +249,37 @@ const CursorGrid = ({
         ctx.strokeStyle = gradient
         ctx.lineWidth = p.lineWidth
         ctx.stroke()
+
+        // Render SOCRATES logo mark inside lit cell proportional to cell opacity
+        if (a > 0.05) {
+          const iconScale = (p.cellSize * 0.38) / 24
+          ctx.save()
+          ctx.translate(cx, cy)
+          ctx.scale(iconScale, iconScale)
+          ctx.translate(-12, -12)
+
+          // Classical Pillar Lines
+          ctx.beginPath()
+          ctx.moveTo(5, 20); ctx.lineTo(19, 20)
+          ctx.moveTo(7, 16); ctx.lineTo(7, 8)
+          ctx.moveTo(12, 16); ctx.lineTo(12, 8)
+          ctx.moveTo(17, 16); ctx.lineTo(17, 8)
+          ctx.moveTo(5, 4); ctx.lineTo(19, 4)
+          ctx.moveTo(7, 4); ctx.lineTo(12, 8); ctx.lineTo(17, 4)
+          ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${a * 0.75})`
+          ctx.lineWidth = 1.6
+          ctx.lineCap = 'round'
+          ctx.lineJoin = 'round'
+          ctx.stroke()
+
+          // Center Glowing AI Node
+          ctx.beginPath()
+          ctx.arc(12, 12, 2.25, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${a * 0.9})`
+          ctx.fill()
+
+          ctx.restore()
+        }
       }
 
       if (anyVisible) {
