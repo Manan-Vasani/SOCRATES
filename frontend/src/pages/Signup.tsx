@@ -134,8 +134,8 @@ export default function Signup() {
 
             {/* Account Role / Identity Choice */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-[#1d1d1f]">
-                I am joining SOCRATES as a:
+              <label className="block text-[13px] font-semibold text-[#1d1d1f] select-none">
+                I am joining as:
               </label>
               <div className="grid grid-cols-3 gap-2.5 text-xs">
                 <button
