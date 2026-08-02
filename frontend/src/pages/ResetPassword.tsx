@@ -38,6 +38,8 @@ export default function ResetPassword() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
 
   // Retrieve email, token & otp from URL query params or sessionStorage
   const urlToken = searchParams.get('token')
@@ -64,6 +66,9 @@ export default function ResetPassword() {
   const confirmPasswordValue = watch('confirmPassword', '')
 
   const isMatching = passwordValue === confirmPasswordValue && confirmPasswordValue.length > 0
+
+  const passwordRegister = register('password')
+  const confirmPasswordRegister = register('confirmPassword')
 
   const onSubmit = async (data: ResetPasswordFields) => {
     setIsLoading(true)
@@ -109,34 +114,61 @@ export default function ResetPassword() {
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <PasswordInput
-              label="New Password"
-              placeholder="Enter new password"
-              autoComplete="new-password"
-              error={errors.password?.message}
-              {...register('password')}
-            />
+            {/* New Password Field Group */}
+            <div className="space-y-1.5">
+              <PasswordInput
+                label="New Password"
+                placeholder="Enter new password"
+                autoComplete="new-password"
+                error={errors.password?.message}
+                {...passwordRegister}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={(e) => {
+                  passwordRegister.onBlur(e)
+                  setIsPasswordFocused(false)
+                }}
+              />
 
-            {/* Live password requirements checklist */}
-            <PasswordStrength value={passwordValue} />
+              {/* Live password requirements checklist */}
+              <AnimatePresence>
+                {(isPasswordFocused || passwordValue.length > 0) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden pt-1.5"
+                  >
+                    <PasswordStrength value={passwordValue} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-            <div className="space-y-2">
+            {/* Confirm Password Field Group */}
+            <div className="space-y-1.5">
               <PasswordInput
                 label="Confirm Password"
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 error={errors.confirmPassword?.message}
-                {...register('confirmPassword')}
+                {...confirmPasswordRegister}
+                onFocus={() => setIsConfirmPasswordFocused(true)}
+                onBlur={(e) => {
+                  confirmPasswordRegister.onBlur(e)
+                  setIsConfirmPasswordFocused(false)
+                }}
               />
 
-              {/* Confirm password match requirement panel (identical to Signup page) */}
+              {/* Confirm password match requirement panel */}
               <AnimatePresence>
-                {confirmPasswordValue.length > 0 && (
+                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden pt-1.5"
                   >
                     <div className="w-full bg-[#f5f5f7] border border-[#e5e5e5] rounded-2xl p-4 space-y-2 text-left select-none">
                       <p className="text-[12px] font-semibold text-[#1d1d1f]">
