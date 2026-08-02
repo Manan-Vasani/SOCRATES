@@ -323,7 +323,7 @@ export default function Profile() {
                 </div>
 
                 {user?.bio ? (
-                  <p className="text-xs text-[#525252] max-w-xl leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#48484a] max-w-2xl leading-relaxed break-words font-normal">
                     {user.bio}
                   </p>
                 ) : (
