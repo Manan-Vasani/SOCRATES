@@ -23,6 +23,8 @@ export interface StatItem {
 }
 
 export interface TutorItem {
+  _id?: string
+  id?: string
   name: string
   subject: string
   experience: string
