@@ -38,17 +38,9 @@ export default function Navbar() {
           {user ? (
             <div className="flex items-center gap-3">
               <Link
-                to="/dashboard"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f5f5f7] hover:bg-[#e5e5e7] text-[#1d1d1f] font-semibold text-xs transition-colors"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5 text-[#0066cc]" />
-                <span>Dashboard</span>
-              </Link>
-
-              <Link
                 to="/profile"
-                className="flex items-center gap-2 text-[#1d1d1f] hover:text-[#0066cc] transition-colors group cursor-pointer"
-                title="View Profile"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5e7] border border-[#e5e5e7] text-[#1d1d1f] transition-all group cursor-pointer select-none"
+                title="My Profile"
               >
                 <img
                   src={user.profileImage || user.avatar || getInitialsAvatar(user.fullName || user.name)}
@@ -56,7 +48,7 @@ export default function Navbar() {
                   onError={(e) => {
                     e.currentTarget.src = getInitialsAvatar(user.fullName || user.name)
                   }}
-                  className="w-7 h-7 rounded-full object-cover border border-[#e5e5e7]"
+                  className="w-6 h-6 rounded-full object-cover border border-[#e5e5e7]"
                 />
                 <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[140px] truncate">
                   {user.fullName || user.name}
