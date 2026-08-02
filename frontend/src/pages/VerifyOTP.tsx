@@ -14,7 +14,8 @@ export default function VerifyOTP() {
   const navigate = useNavigate()
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
   const [error, setError] = useState<string>('')
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isResending, setIsResending] = useState<boolean>(false)
+  const [isVerifying, setIsVerifying] = useState<boolean>(false)
 
   const email = sessionStorage.getItem('reset_email') || ''
 
@@ -25,7 +26,7 @@ export default function VerifyOTP() {
       return
     }
 
-    setIsLoading(true)
+    setIsResending(true)
     try {
       const response = await api.post('/auth/forgot-password', { email })
       if (response.data?.success) {
@@ -36,7 +37,7 @@ export default function VerifyOTP() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to resend code')
     } finally {
-      setIsLoading(false)
+      setIsResending(false)
     }
   }
 
@@ -49,7 +50,7 @@ export default function VerifyOTP() {
       return
     }
 
-    setIsLoading(true)
+    setIsVerifying(true)
     try {
       const response = await api.post('/auth/verify-otp', {
         email,
@@ -71,7 +72,7 @@ export default function VerifyOTP() {
       setError(msg)
       toast.error(msg)
     } finally {
-      setIsLoading(false)
+      setIsVerifying(false)
     }
   }
 
@@ -104,20 +105,20 @@ export default function VerifyOTP() {
               <button
                 type="button"
                 onClick={handleResend}
-                disabled={isLoading}
+                disabled={isResending || isVerifying}
                 className="w-full py-2.5 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 hover:bg-[#0066cc]/10 hover:border-[#0066cc]/60 text-[#0066cc] text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 select-none"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#0066cc] ${isLoading ? 'animate-spin' : ''}`} />
-                <span>{isLoading ? 'Sending New Code...' : 'Resend Verification Code'}</span>
+                <RefreshCw className={`w-3.5 h-3.5 text-[#0066cc] ${isResending ? 'animate-spin' : ''}`} />
+                <span>{isResending ? 'Sending New Code...' : 'Resend Verification Code'}</span>
               </button>
             </div>
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isVerifying || isResending}
               className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
             >
-              <span>{isLoading ? 'Verifying OTP...' : 'Verify OTP'}</span>
+              <span>{isVerifying ? 'Verifying OTP...' : 'Verify OTP'}</span>
             </button>
           </form>
 
