@@ -13,6 +13,9 @@ export interface UserProfile {
   bio?: string
   subjects?: string[]
   hourlyRate?: number
+  rate20Min?: number
+  rate30Min?: number
+  availability?: any[]
   isVerified?: boolean
   createdAt?: string
   updatedAt?: string
