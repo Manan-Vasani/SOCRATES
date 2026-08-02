@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Check, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import AuthLayout from '../components/AuthLayout'
 import AuthCard from '../components/AuthCard'
@@ -37,6 +38,8 @@ export default function ResetPassword() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
 
   // Retrieve email, token & otp from URL query params or sessionStorage
   const urlToken = searchParams.get('token')
@@ -63,6 +66,9 @@ export default function ResetPassword() {
   const confirmPasswordValue = watch('confirmPassword', '')
 
   const isMatching = passwordValue === confirmPasswordValue && confirmPasswordValue.length > 0
+
+  const passwordRegister = register('password')
+  const confirmPasswordRegister = register('confirmPassword')
 
   const onSubmit = async (data: ResetPasswordFields) => {
     setIsLoading(true)
@@ -109,47 +115,99 @@ export default function ResetPassword() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* New Password Field Group */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <PasswordInput
                 label="New Password"
                 placeholder="Enter new password"
                 autoComplete="new-password"
                 error={errors.password?.message}
-                {...register('password')}
+                {...passwordRegister}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={(e) => {
+                  passwordRegister.onBlur(e)
+                  setIsPasswordFocused(false)
+                }}
               />
 
-              {/* Password Requirements Checklist - Static height so card NEVER resizes */}
-              <PasswordStrength value={passwordValue} />
+              {/* Password Requirements Panel - displays when focused or when typing (identical to Signup) */}
+              <AnimatePresence>
+                {(isPasswordFocused || passwordValue.length > 0) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden pt-1.5"
+                  >
+                    <PasswordStrength value={passwordValue} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Confirm Password Field Group */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <PasswordInput
                 label="Confirm Password"
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 error={errors.confirmPassword?.message}
-                {...register('confirmPassword')}
+                {...confirmPasswordRegister}
+                onFocus={() => setIsConfirmPasswordFocused(true)}
+                onBlur={(e) => {
+                  confirmPasswordRegister.onBlur(e)
+                  setIsConfirmPasswordFocused(false)
+                }}
               />
 
-              {/* Password Match Status Line - Fixed line height, zero card resizing */}
-              <div className="flex items-center gap-2 text-xs font-medium px-1 select-none min-h-[20px]">
-                {confirmPasswordValue.length > 0 ? (
-                  isMatching ? (
-                    <div className="flex items-center gap-1.5 text-emerald-600">
-                      <Check className="w-3.5 h-3.5 stroke-[3px]" />
-                      <span>Passwords match perfectly</span>
+              {/* Confirm Password Requirements Panel - displays when focused or when typing (identical to Signup) */}
+              <AnimatePresence>
+                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden pt-1"
+                  >
+                    <div className="w-full bg-[#f5f5f7] border border-[#e5e5e5] rounded-2xl p-4 space-y-2 text-left select-none">
+                      <p className="text-[12px] font-semibold text-[#1d1d1f]">
+                        Confirm Password Requirements
+                      </p>
+                      <div className="space-y-1.5 text-xs">
+                        <div
+                          className={`flex items-center gap-2 font-medium transition-colors ${
+                            confirmPasswordValue.length > 0
+                              ? isMatching
+                                ? 'text-emerald-600'
+                                : 'text-red-600'
+                              : 'text-[#6e6e73]'
+                          }`}
+                        >
+                          <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                            {confirmPasswordValue.length > 0 ? (
+                              isMatching ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3px]" />
+                              ) : (
+                                <X className="w-3.5 h-3.5 text-red-600 stroke-[3px]" />
+                              )
+                            ) : (
+                              <div className="w-3.5 h-3.5 rounded-full border border-[#6e6e73]/30" />
+                            )}
+                          </div>
+                          <span>
+                            {confirmPasswordValue.length === 0
+                              ? 'Must match password exactly'
+                              : isMatching
+                              ? 'Passwords match perfectly'
+                              : 'Passwords do not match yet'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 text-red-600">
-                      <X className="w-3.5 h-3.5 stroke-[3px]" />
-                      <span>Passwords do not match yet</span>
-                    </div>
-                  )
-                ) : (
-                  <span className="text-[#6e6e73]/60">Must match password exactly</span>
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </div>
 
             <button
