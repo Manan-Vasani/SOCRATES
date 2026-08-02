@@ -242,6 +242,13 @@ const generateTimeOptions = (): DropdownOption<string>[] => {
 
 const TIME_OPTIONS = generateTimeOptions()
 
+const ACADEMIC_LEVEL_OPTIONS: DropdownOption<string>[] = [
+  { value: 'High School', label: 'High School' },
+  { value: 'Undergraduate', label: 'Undergraduate' },
+  { value: 'Graduate', label: 'Graduate' },
+  { value: 'Other', label: 'Other' },
+]
+
 const DURATION_OPTIONS: DropdownOption<number>[] = [
   { value: 60, label: '60 Min' },
   { value: 30, label: '30 Min' },
@@ -326,6 +333,9 @@ export default function Profile() {
     hourlyRate: user?.hourlyRate || 45,
     avatar: user?.avatar || '',
     subjectsText: user?.subjects ? user.subjects.join(', ') : '',
+    learningSubjectsText: (user as any)?.learningSubjects ? (user as any).learningSubjects.join(', ') : '',
+    academicLevel: (user as any)?.academicLevel || 'Undergraduate',
+    education: (user as any)?.education || '',
   })
   const [isSaving, setIsSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -527,6 +537,9 @@ export default function Profile() {
         hourlyRate: user.hourlyRate || 45,
         avatar: user.avatar,
         subjectsText: user.subjects.join(', '),
+        learningSubjectsText: (user as any).learningSubjects ? (user as any).learningSubjects.join(', ') : '',
+        academicLevel: (user as any).academicLevel || 'Undergraduate',
+        education: (user as any).education || '',
       })
     }
   }, [user])
@@ -540,6 +553,11 @@ export default function Profile() {
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
 
+    const learningSubjectsArr = formData.learningSubjectsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+
     const updatePayload = {
       name: formData.name,
       phone: formData.phone,
@@ -548,12 +566,15 @@ export default function Profile() {
       hourlyRate: Number(formData.hourlyRate),
       avatar: formData.avatar,
       subjects: subjectsArr,
+      learningSubjects: learningSubjectsArr,
+      academicLevel: formData.academicLevel,
+      education: formData.education,
     }
 
     const result = await updateUserProfileApi(updatePayload)
     updateUser(updatePayload)
     if (updatePayload.role) {
-      setViewPerspective(updatePayload.role)
+      setViewPerspective(updatePayload.role === 'both' ? 'student' : (updatePayload.role as ProfilePerspective))
     }
     setIsSaving(false)
 
@@ -1369,68 +1390,236 @@ export default function Profile() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {formData.role !== 'student' && (
-                  <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                    <label className="text-[#525252] font-semibold block">
-                      Hourly Tutoring Rate ($/hr)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={formData.hourlyRate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, hourlyRate: Number(e.target.value) })
-                      }
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                    />
-                  </div>
+                {formData.role === 'student' && (
+                  <>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Learning Subjects
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.learningSubjectsText}
+                        onChange={(e) =>
+                          setFormData({ ...formData, learningSubjectsText: e.target.value })
+                        }
+                        placeholder="Algorithms, Python, React"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Academic Level
+                      </label>
+                      <CustomDropdown<string>
+                        options={ACADEMIC_LEVEL_OPTIONS}
+                        value={formData.academicLevel}
+                        onChange={(val: string) => setFormData({ ...formData, academicLevel: val })}
+                        className="w-full"
+                        buttonClassName="!py-2.5 !px-4 w-full justify-between bg-[#f5f5f7] text-xs font-bold border border-[#e0e0e0] !rounded-xl text-[#1d1d1f]"
+                        align="center"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-[#1d1d1f]">
+                          Learning Goals / Bio
+                        </label>
+                        <span
+                          className={`text-[10px] transition-colors ${
+                            formData.bio.length >= 250
+                              ? 'text-red-500 font-bold'
+                              : 'text-[#7a7a7a] font-medium'
+                          }`}
+                        >
+                          {formData.bio.length}/250 chars
+                        </span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        maxLength={250}
+                        value={formData.bio}
+                        onChange={(e) =>
+                          setFormData({ ...formData, bio: e.target.value })
+                        }
+                        placeholder="Describe what you want to achieve..."
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
+                      />
+                    </div>
+                  </>
                 )}
 
-                <div className={`space-y-1.5 ${formData.role === 'student' ? 'col-span-2' : 'col-span-2 sm:col-span-1'}`}>
-                  <label className="text-[#525252] font-semibold block">
-                    {formData.role === 'student'
-                      ? 'Learning Subjects'
-                      : formData.role === 'tutor'
-                      ? 'Teaching Subjects'
-                      : 'Teaching & Learning Subjects'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.subjectsText}
-                    onChange={(e) =>
-                      setFormData({ ...formData, subjectsText: e.target.value })
-                    }
-                    placeholder="Algorithms, Python, React"
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                  />
-                </div>
-              </div>
+                {formData.role === 'tutor' && (
+                  <>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Hourly Tutoring Rate ($/hr)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData.hourlyRate}
+                        onChange={(e) =>
+                          setFormData({ ...formData, hourlyRate: Number(e.target.value) })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Teaching Subjects
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.subjectsText}
+                        onChange={(e) =>
+                          setFormData({ ...formData, subjectsText: e.target.value })
+                        }
+                        placeholder="Algorithms, Python, React"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-[#525252] font-semibold block">
+                        Education / Degree
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.education}
+                        onChange={(e) =>
+                          setFormData({ ...formData, education: e.target.value })
+                        }
+                        placeholder="e.g. BS in Computer Science, Stanford University"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-[#1d1d1f]">
+                          Tutor Bio / Statement
+                        </label>
+                        <span
+                          className={`text-[10px] transition-colors ${
+                            formData.bio.length >= 250
+                              ? 'text-red-500 font-bold'
+                              : 'text-[#7a7a7a] font-medium'
+                          }`}
+                        >
+                          {formData.bio.length}/250 chars
+                        </span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        maxLength={250}
+                        value={formData.bio}
+                        onChange={(e) =>
+                          setFormData({ ...formData, bio: e.target.value })
+                        }
+                        placeholder="Describe your tutoring style and experience..."
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
+                      />
+                    </div>
+                  </>
+                )}
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-[#1d1d1f]">
-                    Bio / Statement
-                  </label>
-                  <span
-                    className={`text-[10px] transition-colors ${
-                      formData.bio.length >= 250
-                        ? 'text-red-500 font-bold'
-                        : 'text-[#7a7a7a] font-medium'
-                    }`}
-                  >
-                    {formData.bio.length}/250 chars
-                  </span>
-                </div>
-                <textarea
-                  rows={3}
-                  maxLength={250}
-                  value={formData.bio}
-                  onChange={(e) =>
-                    setFormData({ ...formData, bio: e.target.value })
-                  }
-                  placeholder="Write a short summary about your academic background and learning goals..."
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
-                />
+                {formData.role === 'both' && (
+                  <>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Hourly Tutoring Rate ($/hr)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData.hourlyRate}
+                        onChange={(e) =>
+                          setFormData({ ...formData, hourlyRate: Number(e.target.value) })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Teaching Subjects
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.subjectsText}
+                        onChange={(e) =>
+                          setFormData({ ...formData, subjectsText: e.target.value })
+                        }
+                        placeholder="Algorithms, Python, React"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Learning Subjects
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.learningSubjectsText}
+                        onChange={(e) =>
+                          setFormData({ ...formData, learningSubjectsText: e.target.value })
+                        }
+                        placeholder="Algorithms, Python, React"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <label className="text-[#525252] font-semibold block">
+                        Academic Level
+                      </label>
+                      <CustomDropdown<string>
+                        options={ACADEMIC_LEVEL_OPTIONS}
+                        value={formData.academicLevel}
+                        onChange={(val: string) => setFormData({ ...formData, academicLevel: val })}
+                        className="w-full"
+                        buttonClassName="!py-2.5 !px-4 w-full justify-between bg-[#f5f5f7] text-xs font-bold border border-[#e0e0e0] !rounded-xl text-[#1d1d1f]"
+                        align="center"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-[#525252] font-semibold block">
+                        Education / Degree
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.education}
+                        onChange={(e) =>
+                          setFormData({ ...formData, education: e.target.value })
+                        }
+                        placeholder="e.g. BS in Computer Science, Stanford University"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-[#1d1d1f]">
+                          Bio / Statement
+                        </label>
+                        <span
+                          className={`text-[10px] transition-colors ${
+                            formData.bio.length >= 250
+                              ? 'text-red-500 font-bold'
+                              : 'text-[#7a7a7a] font-medium'
+                          }`}
+                        >
+                          {formData.bio.length}/250 chars
+                        </span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        maxLength={250}
+                        value={formData.bio}
+                        onChange={(e) =>
+                          setFormData({ ...formData, bio: e.target.value })
+                        }
+                        placeholder="Write a short summary about your academic background and learning goals..."
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e5e5e7]">
