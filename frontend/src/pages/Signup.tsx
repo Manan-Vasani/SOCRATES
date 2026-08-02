@@ -108,7 +108,7 @@ export default function Signup() {
         <AuthCard>
           <AuthHeader
             title="Create Account"
-            description="Unlock 1-on-1 tutoring, AI study guidance, and live collaboration."
+            description="Join a community of curious minds and expert tutors."
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
