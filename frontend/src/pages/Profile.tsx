@@ -498,12 +498,12 @@ export default function Profile() {
                       <button
                         type="button"
                         onClick={() => setCancellingSession(session)}
-                        className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs flex items-center gap-1"
+                        className="w-[130px] py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1 shrink-0"
                       >
                         <X size={12} /> Cancel Session
                       </button>
                     ) : (
-                      <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none">
+                      <span className="w-[130px] py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none shrink-0">
                         <CheckCircle2 size={12} className="text-emerald-600 shrink-0" /> Completed
                       </span>
                     )}
