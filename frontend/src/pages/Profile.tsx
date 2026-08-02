@@ -1252,7 +1252,7 @@ export default function Profile() {
 
               {/* Right Column: Availability Scheduler (6 cols) */}
               <div className="md:col-span-6 flex">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between min-h-[352px]">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between">
                   <div className="space-y-4">
                     <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                       <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours
@@ -1312,10 +1312,10 @@ export default function Profile() {
                   </div>
 
                   {/* Active Slots list */}
-                  <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-4">
+                  <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-2 justify-end">
                     <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
                     {availability.length > 0 ? (
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar h-0 min-h-[140px]">
+                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar h-0 min-h-[110px]">
                         {availability.map((av) => (
                           <div key={av.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-emerald-500/25 transition-colors gap-3 text-xs font-bold">
                             <div className="flex items-center gap-2">
