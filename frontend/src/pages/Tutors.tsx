@@ -1,13 +1,26 @@
 import { motion, Variants } from 'framer-motion'
 import {
+  Atom,
+  Award,
+  BarChart2,
   BookOpen,
   Calendar,
+  Code2,
+  Crown,
+  Cpu,
   DollarSign,
+  Layers,
+  Network,
+  Percent,
   RotateCcw,
   Search,
   ShieldCheck,
+  Sigma,
   Sparkles,
   Star,
+  Tag,
+  Terminal,
+  TrendingDown,
   UserX,
   Video,
   X
@@ -282,23 +295,51 @@ export default function Tutors() {
   }
 
   const ratingOptions: DropdownOption<number>[] = [
-    { value: 0, label: 'Any Rating', icon: <Star size={13} className="text-[#0066cc]" /> },
-    { value: 4.5, label: '4.5+ Rating', icon: <Star size={13} className="text-[#0066cc]" /> },
-    { value: 4.8, label: '4.8+ Rating', icon: <Star size={13} className="text-[#0066cc]" /> },
-    { value: 4.9, label: '4.9+ Rating', icon: <Star size={13} className="text-[#0066cc]" /> },
+    { value: 0, label: 'Any Rating', icon: <Star size={13} className="text-amber-500 fill-amber-500" /> },
+    { value: 4.5, label: '4.5+ Rating', icon: <Award size={13} className="text-amber-500" /> },
+    { value: 4.8, label: '4.8+ Rating', icon: <Sparkles size={13} className="text-amber-500" /> },
+    { value: 4.9, label: '4.9+ Rating', icon: <Crown size={13} className="text-amber-500" /> },
   ]
 
   const priceOptions: DropdownOption<number>[] = [
-    { value: 100, label: 'Under $100/hr', icon: <DollarSign size={13} className="text-[#0066cc]" /> },
-    { value: 70, label: 'Under $70/hr', icon: <DollarSign size={13} className="text-[#0066cc]" /> },
-    { value: 55, label: 'Under $55/hr', icon: <DollarSign size={13} className="text-[#0066cc]" /> },
+    { value: 100, label: 'Under $100/hr', icon: <DollarSign size={13} className="text-emerald-600" /> },
+    { value: 70, label: 'Under $70/hr', icon: <Tag size={13} className="text-emerald-600" /> },
+    { value: 55, label: 'Under $55/hr', icon: <Percent size={13} className="text-emerald-600" /> },
   ]
+
+  function getSubjectIcon(sub: string) {
+    const lower = sub.toLowerCase()
+    if (lower === 'all') return <Layers size={13} className="text-[#0066cc]" />
+    if (lower.includes('python')) return <Terminal size={13} className="text-[#0066cc]" />
+    if (lower.includes('algebra') || lower.includes('math') || lower.includes('calculus')) {
+      return <Sigma size={13} className="text-[#0066cc]" />
+    }
+    if (lower.includes('machine') || lower.includes('ai') || lower.includes('torch')) {
+      return <Sparkles size={13} className="text-[#0066cc]" />
+    }
+    if (lower.includes('structure') || lower.includes('algorithm') || lower.includes('data')) {
+      return <Network size={13} className="text-[#0066cc]" />
+    }
+    if (lower.includes('c++') || lower.includes('code') || lower.includes('system')) {
+      return <Code2 size={13} className="text-[#0066cc]" />
+    }
+    if (lower.includes('react') || lower.includes('web') || lower.includes('node') || lower.includes('frontend')) {
+      return <Atom size={13} className="text-[#0066cc]" />
+    }
+    if (lower.includes('physics') || lower.includes('quantum') || lower.includes('thermo')) {
+      return <Cpu size={13} className="text-[#0066cc]" />
+    }
+    if (lower.includes('stat') || lower.includes('r')) {
+      return <BarChart2 size={13} className="text-[#0066cc]" />
+    }
+    return <BookOpen size={13} className="text-[#0066cc]" />
+  }
 
   const subjectDropdownOptions: DropdownOption<string>[] = useMemo(() => {
     return allSubjects.map((sub) => ({
       value: sub,
       label: sub === 'All' ? 'All Academic Domains' : sub,
-      icon: <BookOpen size={13} className="text-[#0066cc]" />,
+      icon: getSubjectIcon(sub),
     }))
   }, [allSubjects])
 
@@ -393,13 +434,17 @@ export default function Tutors() {
                     <button
                       key={sub}
                       onClick={() => setSelectedSubject(sub)}
-                      className={`px-2.5 py-1 rounded-xl font-medium text-xs transition-colors duration-150 shrink-0 cursor-pointer select-none transform-gpu border ${
+                      className={`px-2.5 py-1.5 rounded-xl font-medium text-xs transition-colors duration-150 shrink-0 cursor-pointer select-none transform-gpu border inline-flex items-center gap-1.5 ${
                         selectedSubject === sub
                           ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
                           : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#525252] hover:bg-[#e0e0e0]/60'
                       }`}
                     >
-                      {sub}
+                      {React.cloneElement(getSubjectIcon(sub) as React.ReactElement<any>, {
+                        size: 12,
+                        className: selectedSubject === sub ? 'text-white shrink-0' : 'text-[#0066cc] shrink-0'
+                      })}
+                      <span>{sub}</span>
                     </button>
                   ))}
                 </div>
