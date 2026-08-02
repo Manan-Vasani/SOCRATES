@@ -150,8 +150,12 @@ const updateProfile = async (req, res) => {
   if (req.body.fullName || req.body.name) {
     user.fullName = req.body.fullName || req.body.name;
   }
+  if (req.body.role && ['student', 'tutor', 'both'].includes(req.body.role)) {
+    user.role = req.body.role;
+  }
   if (req.body.bio !== undefined) user.bio = req.body.bio;
-  if (req.body.profileImage || req.body.avatar) {
+  if (req.body.hourlyRate !== undefined) user.hourlyRate = Number(req.body.hourlyRate);
+  if (req.body.profileImage || req.body.avatar !== undefined) {
     user.profileImage = req.body.profileImage || req.body.avatar;
   }
   if (req.body.subjects) user.subjects = req.body.subjects;
@@ -177,6 +181,7 @@ const updateProfile = async (req, res) => {
       role: updatedUser.role,
       bio: updatedUser.bio,
       subjects: updatedUser.subjects,
+      hourlyRate: updatedUser.hourlyRate,
       isVerified: updatedUser.isVerified,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,

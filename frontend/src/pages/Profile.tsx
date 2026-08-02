@@ -247,6 +247,9 @@ export default function Profile() {
 
     const result = await updateUserProfileApi(updatePayload)
     updateUser(updatePayload)
+    if (updatePayload.role) {
+      setViewPerspective(updatePayload.role)
+    }
     setIsSaving(false)
 
     if (result.success !== false) {
