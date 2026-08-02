@@ -2,15 +2,15 @@ const axios = require('axios');
 const nodemailer = require('nodemailer');
 
 /**
- * Send Email via Brevo API, Brevo SMTP, or Nodemailer
+ * Send Email via Gmail SMTP, Brevo API, or Brevo SMTP
  * @param {Object} options - { to, subject, html, text, otp, resetUrl, userName }
  */
 const sendEmail = async (options) => {
   const apiKey = process.env.BREVO_API_KEY;
-  const smtpUser = process.env.BREVO_SMTP_USER || process.env.EMAIL_FROM;
-  const smtpKey = process.env.BREVO_SMTP_KEY;
-  const fromEmail = process.env.EMAIL_FROM || 'no-reply@socrates.ai';
-  const fromName = process.env.EMAIL_FROM_NAME || 'SOCRATES Learning';
+  const gmailUser = process.env.EMAIL_USER || 'mananvasani801@gmail.com';
+  const gmailPass = process.env.EMAIL_PASS || 'hrzjpizzwrcktush';
+  const fromEmail = process.env.EMAIL_FROM || gmailUser || 'mananvasani801@gmail.com';
+  const fromName = process.env.EMAIL_FROM_NAME || 'SOCRATES';
 
   const defaultHtml = `
     <!DOCTYPE html>
@@ -65,7 +65,33 @@ const sendEmail = async (options) => {
 
   const htmlContent = options.html || defaultHtml;
 
-  // 1. Try Brevo REST API v3 if BREVO_API_KEY is available
+  // 1. Try Gmail SMTP via Nodemailer
+  if (gmailUser && gmailPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+      });
+
+      const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: options.to,
+        subject: options.subject || 'SOCRATES — Password Reset Request',
+        html: htmlContent,
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log('✅ Gmail SMTP Email Sent Successfully to', options.to, 'MessageID:', info.messageId);
+      return { success: true, method: 'gmail-smtp', messageId: info.messageId };
+    } catch (gmailError) {
+      console.error('⚠️ Gmail SMTP Error:', gmailError.message);
+    }
+  }
+
+  // 2. Try Brevo REST API v3 if BREVO_API_KEY is available
   if (apiKey && apiKey !== 'your_brevo_api_key_here') {
     try {
       const response = await axios.post(
@@ -91,37 +117,9 @@ const sendEmail = async (options) => {
     }
   }
 
-  // 2. Try Brevo SMTP / Nodemailer if SMTP keys are available
-  if (smtpUser && smtpKey && smtpKey !== 'your_brevo_smtp_key_here') {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: smtpUser,
-          pass: smtpKey,
-        },
-      });
-
-      const mailOptions = {
-        from: `"${fromName}" <${fromEmail}>`,
-        to: options.to,
-        subject: options.subject || 'SOCRATES — Password Reset Request',
-        html: htmlContent,
-      };
-
-      const info = await transporter.sendMail(mailOptions);
-      console.log('✅ Brevo SMTP Email Sent Successfully:', info.messageId);
-      return { success: true, method: 'brevo-smtp', messageId: info.messageId };
-    } catch (smtpError) {
-      console.error('⚠️ Brevo SMTP Error:', smtpError.message);
-    }
-  }
-
-  // 3. Fallback: Log OTP to console in development mode so testing NEVER blocks
+  // Fallback: Log OTP to console
   console.log('\n==================================================');
-  console.log('📧 [DEVELOPMENT EMAIL FALLBACK - BREVO]');
+  console.log('📧 [DEVELOPMENT EMAIL FALLBACK]');
   console.log(`TO: ${options.to}`);
   console.log(`SUBJECT: ${options.subject}`);
   if (options.otp) console.log(`VERIFICATION OTP CODE: ${options.otp}`);
