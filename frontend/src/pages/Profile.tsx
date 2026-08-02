@@ -339,6 +339,7 @@ export default function Profile() {
   })
   const [isSaving, setIsSaving] = useState(false)
   const [newSubject, setNewSubject] = useState('')
+  const [newTeachingSubject, setNewTeachingSubject] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showUrlInput, setShowUrlInput] = useState(false)
 
@@ -623,6 +624,41 @@ export default function Profile() {
     const result = await updateUserProfileApi(updatePayload)
     updateUser(updatePayload)
     toast.success(`Removed subject: ${subjectToRemove}`)
+  }
+
+  const handleAddTeachingSubject = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newTeachingSubject.trim()) return
+
+    const trimmed = newTeachingSubject.trim()
+    const currentSubjects = user?.subjects || []
+
+    if (currentSubjects.includes(trimmed)) {
+      toast.error('Teaching subject already exists!')
+      return
+    }
+
+    const updatedSubjects = [...currentSubjects, trimmed]
+    const updatePayload = {
+      subjects: updatedSubjects
+    }
+
+    const result = await updateUserProfileApi(updatePayload)
+    updateUser(updatePayload)
+    setNewTeachingSubject('')
+    toast.success(`Added teaching subject: ${trimmed}`)
+  }
+
+  const handleRemoveTeachingSubject = async (subjectToRemove: string) => {
+    const currentSubjects = user?.subjects || []
+    const updatedSubjects = currentSubjects.filter((s) => s !== subjectToRemove)
+    const updatePayload = {
+      subjects: updatedSubjects
+    }
+
+    const result = await updateUserProfileApi(updatePayload)
+    updateUser(updatePayload)
+    toast.success(`Removed teaching subject: ${subjectToRemove}`)
   }
 
   return (
@@ -1147,18 +1183,43 @@ export default function Profile() {
                 <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
                     <span>Teaching Expertise Domains</span>
-                    <button onClick={() => setIsEditModalOpen(true)} className="text-xs text-[#0066cc] hover:underline font-bold cursor-pointer">
-                      Edit Subjects
-                    </button>
+                    <span className="text-xs text-[#7a7a7a] font-normal">{(user?.subjects || []).length} Active</span>
                   </h3>
-                  <div className="flex flex-wrap gap-2">
+
+                  {/* Inline Form to Add Teaching Subject */}
+                  <form onSubmit={handleAddTeachingSubject} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTeachingSubject}
+                      onChange={(e) => setNewTeachingSubject(e.target.value)}
+                      placeholder="Add a subject (e.g. Chemistry)"
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-colors cursor-pointer select-none"
+                    >
+                      Add
+                    </button>
+                  </form>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
                     {user?.subjects && user.subjects.length > 0 ? (
                       user.subjects.map((sub, idx) => (
                         <span
                           key={idx}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-bold text-[#0066cc] flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-bold text-[#0066cc] flex items-center gap-1.5"
                         >
-                          <Sparkles size={12} /> {sub}
+                          <Sparkles size={12} />
+                          <span>{sub}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTeachingSubject(sub)}
+                            className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
+                            title="Remove Subject"
+                          >
+                            <X size={11} />
+                          </button>
                         </span>
                       ))
                     ) : (
@@ -1511,7 +1572,7 @@ export default function Profile() {
 
                 {formData.role === 'tutor' && (
                   <>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                    <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">
                         Hourly Tutoring Rate ($/hr)
                       </label>
@@ -1522,20 +1583,6 @@ export default function Profile() {
                         onChange={(e) =>
                           setFormData({ ...formData, hourlyRate: Number(e.target.value) })
                         }
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                      <label className="text-[#525252] font-semibold block">
-                        Teaching Subjects
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.subjectsText}
-                        onChange={(e) =>
-                          setFormData({ ...formData, subjectsText: e.target.value })
-                        }
-                        placeholder="Algorithms, Python, React"
                         className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
@@ -1584,7 +1631,7 @@ export default function Profile() {
 
                 {formData.role === 'both' && (
                   <>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                    <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">
                         Hourly Tutoring Rate ($/hr)
                       </label>
@@ -1595,20 +1642,6 @@ export default function Profile() {
                         onChange={(e) =>
                           setFormData({ ...formData, hourlyRate: Number(e.target.value) })
                         }
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                      <label className="text-[#525252] font-semibold block">
-                        Teaching Subjects
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.subjectsText}
-                        onChange={(e) =>
-                          setFormData({ ...formData, subjectsText: e.target.value })
-                        }
-                        placeholder="Algorithms, Python, React"
                         className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
