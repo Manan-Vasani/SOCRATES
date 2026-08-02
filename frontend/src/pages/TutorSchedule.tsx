@@ -1,20 +1,30 @@
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import {
   ArrowLeft,
+  Atom,
   BookOpen,
   Calendar as CalendarIcon,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Code2,
+  Cpu,
   Globe,
+  GraduationCap,
+  Layers,
   Lock,
   ShieldCheck,
+  Sigma,
+  Sparkles,
   Star,
+  Target,
+  Terminal,
   User,
   Users,
   Video,
-  X
+  X,
+  Zap
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -207,6 +217,30 @@ interface DaySchedule {
   label: string
   isPast: boolean
   slots: TimeSlot[]
+}
+
+function getSubjectIcon(sub: string) {
+  const lower = sub.toLowerCase()
+  if (lower.includes('python')) return <Terminal size={14} className="text-[#0066cc]" />
+  if (lower.includes('algebra') || lower.includes('math') || lower.includes('calculus')) {
+    return <Sigma size={14} className="text-[#0066cc]" />
+  }
+  if (lower.includes('machine') || lower.includes('ai') || lower.includes('torch')) {
+    return <Sparkles size={14} className="text-[#0066cc]" />
+  }
+  if (lower.includes('structure') || lower.includes('algorithm') || lower.includes('data')) {
+    return <Layers size={14} className="text-[#0066cc]" />
+  }
+  if (lower.includes('c++') || lower.includes('code') || lower.includes('system')) {
+    return <Code2 size={14} className="text-[#0066cc]" />
+  }
+  if (lower.includes('react') || lower.includes('web') || lower.includes('frontend')) {
+    return <Atom size={14} className="text-[#0066cc]" />
+  }
+  if (lower.includes('physics') || lower.includes('quantum')) {
+    return <Cpu size={14} className="text-[#0066cc]" />
+  }
+  return <BookOpen size={14} className="text-[#0066cc]" />
 }
 
 export default function TutorSchedule() {
@@ -952,7 +986,7 @@ export default function TutorSchedule() {
                       options={(tutor.subjects && tutor.subjects.length > 0 ? tutor.subjects : ['General Tutoring']).map((sub) => ({
                         value: sub,
                         label: sub,
-                        icon: <BookOpen size={14} className="text-[#0066cc]" />,
+                        icon: getSubjectIcon(sub),
                       }))}
                       value={selectedSubject || (tutor.subjects?.[0] || 'General Tutoring')}
                       onChange={(val) => setSelectedSubject(val)}
@@ -978,19 +1012,19 @@ export default function TutorSchedule() {
                           value: 20,
                           label: `20 Min ($${Math.round(tutor.hourlyRate * (20 / 60))})`,
                           badge: 'Quick Doubt',
-                          icon: <Clock size={14} className="text-[#0066cc]" />,
+                          icon: <Zap size={14} className="text-[#0066cc]" />,
                         },
                         {
                           value: 30,
                           label: `30 Min ($${Math.round(tutor.hourlyRate * (30 / 60))})`,
                           badge: 'Concept Review',
-                          icon: <Clock size={14} className="text-[#0066cc]" />,
+                          icon: <Target size={14} className="text-[#0066cc]" />,
                         },
                         {
                           value: 60,
                           label: `60 Min ($${tutor.hourlyRate})`,
                           badge: 'Full Session',
-                          icon: <Clock size={14} className="text-[#0066cc]" />,
+                          icon: <GraduationCap size={14} className="text-[#0066cc]" />,
                         },
                       ]}
                       value={selectedDuration}
