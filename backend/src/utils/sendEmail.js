@@ -114,7 +114,7 @@ const sendEmail = async (options) => {
       <body>
         <div class="email-wrapper">
           <div class="header-logo">
-            <span class="logo-brand">SOCRATES</span>
+            <span class="logo-brand">SOCRATES<span style="color: #0066cc;">.</span></span>
           </div>
           
           <h1 class="title">Verification Code</h1>
