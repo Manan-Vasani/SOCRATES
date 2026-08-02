@@ -32,6 +32,7 @@ import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
 import { fetchAllTutors, TutorItem } from '../services/api'
+import { useAuthStore } from '../store/useAuthStore'
 
 export interface ExtendedTutor extends Omit<TutorItem, 'reviews'> {
   id: string
@@ -188,6 +189,7 @@ function TutorCardSkeleton() {
 
 export default function Tutors() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const [tutorsList, setTutorsList] = useState<ExtendedTutor[]>(INITIAL_TOP_TUTORS)
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -556,17 +558,19 @@ export default function Tutors() {
                   key={tutor.id}
                   className="relative bg-white rounded-3xl border border-[#e5e5e7] p-6 flex flex-col justify-between shadow-xs hover:border-[#0066cc]/40 hover:shadow-sm transition-colors duration-150 group transform-gpu select-none"
                 >
-                  <button
-                    type="button"
-                    onClick={(e) => toggleBookmark(tutor, e)}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/30 text-[#86868b] hover:text-[#0066cc] transition-colors shadow-xs transform-gpu select-none cursor-pointer z-10"
-                    title={bookmarkedTutors.some((t) => t.id === tutor.id) ? "Remove Bookmark" : "Bookmark Tutor"}
-                  >
-                    <Bookmark
-                      size={15}
-                      className={bookmarkedTutors.some((t) => t.id === tutor.id) ? "text-[#0066cc] fill-[#0066cc]" : ""}
-                    />
-                  </button>
+                  {user?.role === 'student' && (
+                    <button
+                      type="button"
+                      onClick={(e) => toggleBookmark(tutor, e)}
+                      className="absolute top-4 right-4 p-2 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/30 text-[#86868b] hover:text-[#0066cc] transition-colors shadow-xs transform-gpu select-none cursor-pointer z-10"
+                      title={bookmarkedTutors.some((t) => t.id === tutor.id) ? "Remove Bookmark" : "Bookmark Tutor"}
+                    >
+                      <Bookmark
+                        size={15}
+                        className={bookmarkedTutors.some((t) => t.id === tutor.id) ? "text-[#0066cc] fill-[#0066cc]" : ""}
+                      />
+                    </button>
+                  )}
                   <div className="space-y-4">
                     {/* Top Card Header */}
                     <div className="flex items-start gap-4">
