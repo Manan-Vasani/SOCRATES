@@ -4,64 +4,76 @@ const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 
 const getClientID = () => process.env.GOOGLE_CLIENT_ID;
-
 const getClientSecret = () => process.env.GOOGLE_CLIENT_SECRET;
-
 const getCallbackURL = () =>
   process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/auth/google/callback";
-// Configure Passport Google OAuth20 Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: getClientID(),
-      clientSecret: getClientSecret(),
-      callbackURL: getCallbackURL(),
-      scope: ['profile', 'email'],
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile.emails && profile.emails[0] ? profile.emails[0].value.toLowerCase() : null;
-        const googleId = profile.id;
-        const fullName = profile.displayName || `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || 'Google User';
-        const profileImage = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
 
-        if (!email) {
-          return done(new Error('No email found in Google account profile'), null);
-        }
+const hasValidGoogleCredentials = () => {
+  const id = getClientID();
+  const secret = getClientSecret();
+  return (
+    id &&
+    secret &&
+    id !== 'your_google_client_id' &&
+    secret !== 'your_google_client_secret' &&
+    id.length > 5 &&
+    secret.length > 5
+  );
+};
 
-        // Check if user exists by googleId or email
-        let user = await User.findOne({
-          $or: [{ googleId }, { email }],
-        });
+// Configure Passport Google OAuth20 Strategy if valid credentials exist
+if (hasValidGoogleCredentials()) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: getClientID(),
+        clientSecret: getClientSecret(),
+        callbackURL: getCallbackURL(),
+        scope: ['profile', 'email'],
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile.emails && profile.emails[0] ? profile.emails[0].value.toLowerCase() : null;
+          const googleId = profile.id;
+          const fullName = profile.displayName || `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || 'Google User';
+          const profileImage = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
 
-        if (user) {
-          user.googleId = googleId;
-          user.provider = 'google';
-          if (fullName) user.fullName = fullName;
-          if (profileImage) user.profileImage = profileImage;
-          user.lastLogin = new Date();
-          await user.save();
+          if (!email) {
+            return done(new Error('No email found in Google account profile'), null);
+          }
+
+          let user = await User.findOne({
+            $or: [{ googleId }, { email }],
+          });
+
+          if (user) {
+            user.googleId = googleId;
+            user.provider = 'google';
+            if (fullName) user.fullName = fullName;
+            if (profileImage) user.profileImage = profileImage;
+            user.lastLogin = new Date();
+            await user.save();
+            return done(null, user);
+          }
+
+          user = await User.create({
+            fullName,
+            email,
+            googleId,
+            profileImage,
+            provider: 'google',
+            role: 'student',
+            lastLogin: new Date(),
+          });
+
           return done(null, user);
+        } catch (err) {
+          return done(err, null);
         }
-
-        // Create new user automatically if not exists
-        user = await User.create({
-          fullName,
-          email,
-          googleId,
-          profileImage,
-          provider: 'google',
-          role: 'student',
-          lastLogin: new Date(),
-        });
-
-        return done(null, user);
-      } catch (err) {
-        return done(err, null);
       }
-    }
-  )
-);
+    )
+  );
+}
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -121,5 +133,6 @@ const verifyGoogleToken = async (idToken) => {
 module.exports = {
   passport,
   verifyGoogleToken,
+  hasValidGoogleCredentials,
 };
 

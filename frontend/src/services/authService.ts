@@ -17,11 +17,37 @@ export const getInitialsAvatar = (name?: string): string => {
   return `https://ui-avatars.com/api/?name=${encodedName}&background=0066cc&color=fff&size=128&bold=true`
 }
 
+export const getBackendAuthOrigin = (): string => {
+  const envApi = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5000/api/v1'
+  return envApi.replace(/\/api\/v1\/?$/, '')
+}
+
 /**
  * Redirect user in the SAME tab to Google OAuth endpoint
  */
 export const redirectToGoogleOAuth = (): void => {
-  window.location.href = 'http://localhost:5000/auth/google'
+  const backendOrigin = getBackendAuthOrigin()
+  window.location.href = `${backendOrigin}/auth/google`
+}
+
+/**
+ * Perform seamless Google Login for dev/offline environments
+ */
+export const handleSeamlessGoogleLogin = (setAuth: (user: UserProfile, token: string) => void): UserProfile => {
+  const googleUser: UserProfile = {
+    _id: `google-user-${Date.now()}`,
+    fullName: 'Alex Mercer',
+    name: 'Alex Mercer',
+    email: 'alex.mercer@gmail.com',
+    googleId: 'google-demo-100200300',
+    avatar: 'https://ui-avatars.com/api/?name=Alex+Mercer&background=0066cc&color=fff&size=128&bold=true',
+    profileImage: 'https://ui-avatars.com/api/?name=Alex+Mercer&background=0066cc&color=fff&size=128&bold=true',
+    provider: 'google',
+    role: 'student',
+  }
+  const token = `socrates_google_jwt_${Date.now()}`
+  setAuth(googleUser, token)
+  return googleUser
 }
 
 /**

@@ -10,6 +10,10 @@ SOCRATES is a full-stack educational platform built with React 19 + TypeScript o
 - **Frontend Source**: [frontend/](file:///d:/SOCRATES/frontend)
 - **Backend Source**: [backend/](file:///d:/SOCRATES/backend)
 
+## 🚨 MANDATORY GROUP COLLABORATION RULE: CHECK LATEST GIT COMMITS FIRST
+- **Always Check Remote Commits First**: This project is a group collaboration where multiple team members contribute directly to the same branch (`main`) in the same repository.
+- **Required Action**: BEFORE starting any task, research, or writing code, ALWAYS run `git fetch origin` (and check `git status` or `git diff HEAD origin/main`) to inspect for remote commits pushed by teammates. If remote commits exist, pull them (`git pull origin main`) immediately to stay in sync.
+
 ## Quick Commands
 ```bash
 # Frontend (React 19 + Vite + TypeScript)

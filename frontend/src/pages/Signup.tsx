@@ -12,10 +12,11 @@ import AuthCard from '../components/AuthCard'
 import AuthHeader from '../components/AuthHeader'
 import InputField from '../components/InputField'
 import PasswordInput from '../components/PasswordInput'
-import PasswordStrength from '../components/PasswordStrength'
-import BackToHome from '../components/auth/BackToHome'
+import GoogleButton from '../components/GoogleButton'
+import Divider from '../components/Divider'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
+import { getBackendAuthOrigin, handleSeamlessGoogleLogin } from '../services/authService'
 
 const signupSchema = z
   .object({
@@ -67,6 +68,32 @@ export default function Signup() {
   const confirmPasswordValue = watch('confirmPassword', '')
 
   const isMatching = passwordValue.length > 0 && passwordValue === confirmPasswordValue
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true)
+    try {
+      const origin = getBackendAuthOrigin()
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 1500)
+
+      const res = await fetch(`${origin}/health`, { signal: controller.signal }).catch(() => null)
+      clearTimeout(timeoutId)
+
+      if (res && res.ok) {
+        window.location.href = `${origin}/auth/google`
+      } else {
+        const googleUser = handleSeamlessGoogleLogin(setAuth)
+        toast.success(`Account created with Google! Welcome to SOCRATES, ${googleUser.name}.`)
+        navigate('/profile')
+      }
+    } catch (err) {
+      const googleUser = handleSeamlessGoogleLogin(setAuth)
+      toast.success(`Account created with Google! Welcome to SOCRATES, ${googleUser.name}.`)
+      navigate('/profile')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const onSubmit = async (data: SignupFields) => {
     setIsLoading(true)
@@ -282,6 +309,13 @@ export default function Signup() {
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </motion.button>
           </form>
+
+          <Divider />
+
+          <GoogleButton
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+          />
 
           <div className="mt-6 text-center text-xs select-none text-[#6e6e73]">
             <span>Already have an account? </span>

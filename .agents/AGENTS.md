@@ -11,6 +11,12 @@ This file defines project-specific rules, style guidelines, and behavioral const
 - **Frontend App**: [frontend/](file:///d:/SOCRATES/frontend)
 - **Backend API**: [backend/](file:///d:/SOCRATES/backend)
 
+## 🚨 MANDATORY GROUP COLLABORATION RULE: CHECK LATEST GIT COMMITS FIRST
+
+- **Always Fetch & Verify Remote Commits First**: This project is an active group collaboration where multiple team members contribute directly to the same branch (`main`) in the same repository.
+- **Mandatory Action**: BEFORE doing any research, code edits, or starting a task, ALWAYS run `git fetch origin` (and check `git status` or `git diff HEAD origin/main`) to inspect for remote commits pushed by teammates.
+- **Auto-Sync**: If remote changes exist on `origin/main`, pull them into the local workspace (`git pull origin main`) immediately to ensure you are working on the latest up-to-date code.
+
 ## 🚨 HIGHEST PRIORITY RULE: ZERO TEXT LAG & ZERO FONT INCONSISTENCY (MANDATORY)
 
 - **Absolute Zero Typography Lag on Buttons & Interactive Elements**:

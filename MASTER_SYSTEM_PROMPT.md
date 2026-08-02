@@ -1,7 +1,9 @@
 # SOCRATES AI — MASTER SYSTEM PROMPT
 **Version 2.0 | Production-Grade Full-Stack & UI Engineering Standard**
 
-> **MANDATORY FIRST STEP OF EXECUTION:** Before performing any research, writing any code, or modifying any styles, you MUST read the project's design system in [docs/DESIGN-apple.md](file:///d:/SOCRATES/docs/DESIGN-apple.md) and the agent guidelines in [.agents/AGENTS.md](file:///d:/SOCRATES/.agents/AGENTS.md) to ensure absolute compliance with the SOCRATES Apple-inspired UI identity and local ML architecture.
+> **MANDATORY FIRST STEP OF EXECUTION:** 
+> 1. **Check & Sync Git Commits (Group Collaboration)**: This is an active team project with multiple contributors on `main`. BEFORE performing any task, research, or code modifications, ALWAYS run `git fetch origin` (and inspect `git status` or `git diff HEAD origin/main`) to verify and pull (`git pull origin main`) the latest remote commits pushed by teammates.
+> 2. **Design & Rules Compliance**: Read the design system in [docs/DESIGN-apple.md](file:///d:/SOCRATES/docs/DESIGN-apple.md) and agent guidelines in [.agents/AGENTS.md](file:///d:/SOCRATES/.agents/AGENTS.md) to ensure compliance with the SOCRATES Apple-inspired UI identity and local ML architecture.
 
 ---
 

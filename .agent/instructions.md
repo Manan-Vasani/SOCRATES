@@ -10,6 +10,11 @@ SOCRATES is a modern full-stack web application designed for learning management
 - **Design Guidelines**: [DESIGN-apple.md](file:///d:/SOCRATES/DESIGN-apple.md) (UI/UX design specifications)
 - **Strict CSS Performance Rules**: [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt) (Mandatory 60fps & anti-jank rendering rules)
 
+## 🚨 Mandatory Execution Rule: Git Remote Sync (Group Collaboration)
+- This project is a group collaboration with multiple contributors on `main`.
+- BEFORE initiating any research, editing code, or executing tasks, ALWAYS run `git fetch origin` (and check `git status` or `git diff HEAD origin/main`).
+- If teammates pushed new commits, pull them (`git pull origin main`) immediately to ensure you work on the latest remote commit.
+
 ## Quick Commands
 ### Frontend (`frontend/`)
 - Dev Server: `npm run dev` (Runs Vite on default port)
