@@ -1586,12 +1586,14 @@ export default function Profile() {
                         <input
                           type="number"
                           min={0}
+                          max={100}
                           value={formData.rate20Min}
                           onChange={(e) =>
-                            setFormData({ ...formData, rate20Min: Number(e.target.value) })
+                            setFormData({ ...formData, rate20Min: Math.min(100, Math.max(0, Number(e.target.value))) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
+                        <span className="text-[9px] text-[#7a7a7a] font-medium block">Max $100</span>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[#525252] text-xs font-semibold block">
@@ -1600,12 +1602,14 @@ export default function Profile() {
                         <input
                           type="number"
                           min={0}
+                          max={150}
                           value={formData.rate30Min}
                           onChange={(e) =>
-                            setFormData({ ...formData, rate30Min: Number(e.target.value) })
+                            setFormData({ ...formData, rate30Min: Math.min(150, Math.max(0, Number(e.target.value))) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
+                        <span className="text-[9px] text-[#7a7a7a] font-medium block">Max $150</span>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[#525252] text-xs font-semibold block">
@@ -1614,12 +1618,14 @@ export default function Profile() {
                         <input
                           type="number"
                           min={0}
+                          max={300}
                           value={formData.hourlyRate}
                           onChange={(e) =>
-                            setFormData({ ...formData, hourlyRate: Number(e.target.value) })
+                            setFormData({ ...formData, hourlyRate: Math.min(300, Math.max(0, Number(e.target.value))) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
+                        <span className="text-[9px] text-[#7a7a7a] font-medium block">Max $300</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 col-span-2">
@@ -1675,12 +1681,14 @@ export default function Profile() {
                         <input
                           type="number"
                           min={0}
+                          max={100}
                           value={formData.rate20Min}
                           onChange={(e) =>
-                            setFormData({ ...formData, rate20Min: Number(e.target.value) })
+                            setFormData({ ...formData, rate20Min: Math.min(100, Math.max(0, Number(e.target.value))) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
+                        <span className="text-[9px] text-[#7a7a7a] font-medium block">Max $100</span>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[#525252] text-xs font-semibold block">
@@ -1689,12 +1697,14 @@ export default function Profile() {
                         <input
                           type="number"
                           min={0}
+                          max={150}
                           value={formData.rate30Min}
                           onChange={(e) =>
-                            setFormData({ ...formData, rate30Min: Number(e.target.value) })
+                            setFormData({ ...formData, rate30Min: Math.min(150, Math.max(0, Number(e.target.value))) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
+                        <span className="text-[9px] text-[#7a7a7a] font-medium block">Max $150</span>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[#525252] text-xs font-semibold block">
@@ -1703,12 +1713,14 @@ export default function Profile() {
                         <input
                           type="number"
                           min={0}
+                          max={300}
                           value={formData.hourlyRate}
                           onChange={(e) =>
-                            setFormData({ ...formData, hourlyRate: Number(e.target.value) })
+                            setFormData({ ...formData, hourlyRate: Math.min(300, Math.max(0, Number(e.target.value))) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
+                        <span className="text-[9px] text-[#7a7a7a] font-medium block">Max $300</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 col-span-2">
