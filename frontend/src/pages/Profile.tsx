@@ -683,6 +683,7 @@ export default function Profile() {
       <main className="max-w-6xl mx-auto px-6 pt-10 relative z-10 space-y-8">
         {isProfileLoading ? (
           <div className="space-y-8 animate-pulse select-none transform-gpu">
+            {/* Profile Hero Card Skeleton */}
             <div className="relative rounded-3xl bg-white border border-[#e5e5e7] p-8 shadow-sm">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
@@ -701,49 +702,98 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-4 space-y-6">
-                <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
-                  <div className="h-5 w-24 bg-[#f3f3f6] rounded-lg" />
-                  <div className="space-y-2">
-                    <div className="h-4 w-full bg-[#f3f3f6] rounded-lg" />
-                    <div className="h-4 w-5/6 bg-[#f3f3f6] rounded-lg" />
+            {/* My Booked Tutoring Sessions Skeleton */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="h-7 w-56 bg-[#f3f3f6] rounded-lg" />
+                <div className="h-9 w-40 bg-[#f3f3f6] rounded-xl" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2].map((n) => (
+                  <div key={n} className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4 shadow-sm">
+                    <div className="flex justify-between items-center">
+                      <div className="h-5 w-32 bg-[#f3f3f6] rounded-lg" />
+                      <div className="h-5 w-24 bg-[#f3f3f6] rounded-lg" />
+                    </div>
+                    <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
+                    <div className="flex justify-between items-center pt-2">
+                      <div className="h-4 w-32 bg-[#f3f3f6] rounded-lg" />
+                      <div className="h-9 w-24 bg-[#f3f3f6] rounded-xl" />
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
-                  <div className="h-5 w-36 bg-[#f3f3f6] rounded-lg" />
-                  <div className="flex flex-wrap gap-2">
-                    <div className="h-7 w-20 bg-[#f3f3f6] rounded-lg" />
-                    <div className="h-7 w-24 bg-[#f3f3f6] rounded-lg" />
-                    <div className="h-7 w-16 bg-[#f3f3f6] rounded-lg" />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
-                  <div className="h-5 w-28 bg-[#f3f3f6] rounded-lg" />
-                  <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
-                </div>
+            {/* Tutor Dashboard Skeleton */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div className="h-7 w-40 bg-[#f3f3f6] rounded-lg" />
+                <div className="h-8 w-48 bg-[#f3f3f6] rounded-lg" />
               </div>
 
-              <div className="lg:col-span-8 space-y-6">
-                <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-6">
-                  <div className="flex justify-between items-center pb-4 border-b border-[#f3f3f6]">
-                    <div className="h-6 w-48 bg-[#f3f3f6] rounded-lg" />
-                    <div className="h-8 w-36 bg-[#f3f3f6] rounded-lg" />
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((n) => (
+                  <div key={n} className="bg-white p-5 rounded-2xl border border-[#e5e5e7] space-y-3">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-20 bg-[#f3f3f6] rounded-md" />
+                      <div className="h-4 w-4 bg-[#f3f3f6] rounded-md" />
+                    </div>
+                    <div className="h-8 w-24 bg-[#f3f3f6] rounded-lg" />
+                    <div className="h-3 w-32 bg-[#f3f3f6] rounded-md" />
                   </div>
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((n) => (
-                      <div key={n} className="p-5 border border-[#e5e5e7] rounded-2xl flex items-center justify-between gap-4">
-                        <div className="space-y-2.5">
-                          <div className="h-5 w-40 bg-[#f3f3f6] rounded-lg" />
-                          <div className="h-4 w-64 bg-[#f3f3f6] rounded-lg" />
-                        </div>
-                        <div className="h-8 w-24 bg-[#f3f3f6] rounded-lg" />
-                      </div>
-                    ))}
+                ))}
+              </div>
+
+              {/* Three column layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left Column (Teaching Expertise + badges) */}
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
+                    <div className="h-5 w-36 bg-[#f3f3f6] rounded-lg" />
+                    <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
+                    <div className="flex gap-2">
+                      <div className="h-7 w-12 bg-[#f3f3f6] rounded-lg" />
+                      <div className="h-7 w-16 bg-[#f3f3f6] rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
+                    <div className="h-5 w-36 bg-[#f3f3f6] rounded-lg" />
+                    <div className="space-y-3">
+                      <div className="h-12 w-full bg-[#f3f3f6] rounded-2xl" />
+                      <div className="h-12 w-full bg-[#f3f3f6] rounded-2xl" />
+                    </div>
                   </div>
                 </div>
+
+                {/* Right Column (Manage Availability Hours) */}
+                <div className="lg:col-span-8">
+                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-6">
+                    <div className="h-5 w-44 bg-[#f3f3f6] rounded-lg" />
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                    </div>
+                    <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
+                    <div className="space-y-2">
+                      <div className="h-10 bg-[#f3f3f6] rounded-xl" />
+                      <div className="h-10 bg-[#f3f3f6] rounded-xl" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Earnings Records table skeleton */}
+            <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
+              <div className="h-5 w-48 bg-[#f3f3f6] rounded-lg" />
+              <div className="space-y-3">
+                <div className="h-8 bg-[#f3f3f6] rounded-lg" />
+                <div className="h-10 bg-[#f3f3f6] rounded-lg" />
+                <div className="h-10 bg-[#f3f3f6] rounded-lg" />
               </div>
             </div>
           </div>
