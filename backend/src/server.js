@@ -46,9 +46,12 @@ app.use('/api/v1/tutors', tutorRoutes);
 
 // Healthcheck Route
 app.get('/health', (req, res) => {
+  const mongoose = require('mongoose');
   res.json({
     status: 'online',
     service: 'SOCRATES Backend API',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    readyState: mongoose.connection.readyState,
     timestamp: new Date().toISOString(),
   });
 });
