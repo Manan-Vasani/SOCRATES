@@ -119,26 +119,28 @@ export default function VerifyOTP() {
               error={error}
             />
 
-            {/* Countdown timer animation & Resend */}
-            <div className="flex flex-col items-center justify-center space-y-1.5 select-none min-h-[32px]">
+            {/* Countdown timer animation & Resend Button */}
+            <div className="flex flex-col items-center justify-center space-y-3 select-none">
               {timeLeft > 0 ? (
-                <div className="text-xs font-medium text-[#6e6e73] flex items-center gap-1.5">
+                <div className="text-xs font-medium text-[#6e6e73] flex items-center gap-1.5 bg-[#f5f5f7] px-3.5 py-1.5 rounded-full border border-[#e5e5e5]">
                   <span>Resend code in</span>
-                  <span className="font-semibold font-mono text-[#1d1d1f] bg-[#f5f5f7] px-2 py-0.5 rounded-md border border-[#e5e5e5]">
+                  <span className="font-bold font-mono text-[#0066cc]">
                     {formatTime(timeLeft)}
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center justify-center gap-1.5 text-xs text-[#6e6e73]">
-                  <span>Didn't receive the code?</span>
+                <div className="w-full space-y-2.5">
+                  <p className="text-center text-xs font-medium text-[#6e6e73]">
+                    Didn't receive the verification code?
+                  </p>
                   <button
                     type="button"
                     onClick={handleResend}
                     disabled={isLoading}
-                    className="font-semibold text-[#0066cc] hover:text-[#0077ed] hover:underline focus-visible:outline-2 focus-visible:outline-[#0066cc] rounded inline-flex items-center gap-1 cursor-pointer transition-colors"
+                    className="w-full py-2.5 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 hover:bg-[#0066cc]/10 hover:border-[#0066cc]/60 text-[#0066cc] text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 select-none"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                    <span>Resend Code</span>
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#0066cc] ${isLoading ? 'animate-spin' : ''}`} />
+                    <span>{isLoading ? 'Sending New Code...' : 'Resend Verification Code'}</span>
                   </button>
                 </div>
               )}
