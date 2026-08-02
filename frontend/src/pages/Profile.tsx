@@ -2001,14 +2001,41 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100 space-y-2 text-xs text-red-950">
-                <div className="font-semibold flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100 space-y-3.5 text-xs">
+                <div className="font-semibold text-red-950 flex items-center justify-between border-b border-red-200/50 pb-2">
                   <span>Session: {cancellingSession.subject}</span>
                   <span className="font-bold">${cancellingSession.fee}</span>
                 </div>
-                <p className="text-red-900/90 leading-relaxed font-medium">
-                  Cancelling will remove this reservation from your schedule and notify {userRole === 'tutor' ? cancellingSession.studentName : cancellingSession.tutorName}. A full refund of ${cancellingSession.fee} will be issued to your payment method.
-                </p>
+
+                <div className="space-y-2.5 text-red-900/90 font-medium">
+                  <div className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                    <div>
+                      <strong className="text-red-950 font-bold block">Schedule Update</strong>
+                      <span className="text-[11px] text-red-900/85">The session will be immediately removed from your dashboard calendar.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                    <div>
+                      <strong className="text-red-950 font-bold block">Notification Sent</strong>
+                      <span className="text-[11px] text-red-900/85">
+                        An automated alert will notify {userRole === 'tutor' ? cancellingSession.studentName : cancellingSession.tutorName} of the cancellation.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                    <div>
+                      <strong className="text-red-950 font-bold block">Refund Processed</strong>
+                      <span className="text-[11px] text-red-900/85">
+                        A full refund of <span className="font-bold">${cancellingSession.fee}</span> will be credited back to your payment method.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#f0f0f2]">
