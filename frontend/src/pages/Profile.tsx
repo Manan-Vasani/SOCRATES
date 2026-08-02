@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -24,6 +24,10 @@ import {
   Users,
   Lock,
   Tag,
+  Upload,
+  Trash2,
+  Camera,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { useAuthStore, ProfilePerspective } from '../store/useAuthStore'
 import { updateUserProfileApi } from '../services/api'
@@ -158,6 +162,37 @@ export default function Profile() {
     subjectsText: user?.subjects ? user.subjects.join(', ') : '',
   })
   const [isSaving, setIsSaving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showUrlInput, setShowUrlInput] = useState(false)
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be smaller than 5MB')
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (PNG, JPG, WebP)')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setFormData((prev) => ({ ...prev, avatar: reader.result as string }))
+        toast.success('New profile photo selected! Click Save to apply.')
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, avatar: '' }))
+    toast.info('Profile photo removed')
+  }
 
   // Booked Sessions State & Cancellation System
   const [sessions, setSessions] = useState<ProfileSessionItem[]>(() => getStoredProfileSessions())
@@ -825,19 +860,75 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[#525252] font-semibold block">
-                  Avatar Image URL
+              {/* Profile Photo Manager */}
+              <div className="space-y-2 bg-[#f8f9fa] p-4 rounded-2xl border border-[#e5e5e7]">
+                <label className="text-[#1d1d1f] font-semibold block text-xs">
+                  Profile Photo
                 </label>
-                <input
-                  type="text"
-                  value={formData.avatar}
-                  onChange={(e) =>
-                    setFormData({ ...formData, avatar: e.target.value })
-                  }
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                />
+                
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative group shrink-0">
+                    <img
+                      src={formData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'User')}&background=0066cc&color=fff`}
+                      alt="Avatar Preview"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'User')}&background=0066cc&color=fff`
+                      }}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-[#0066cc] shadow-xs bg-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 w-full">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3.5 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer select-none"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{formData.avatar ? 'Change Photo' : 'Upload Photo'}</span>
+                    </button>
+
+                    {formData.avatar && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer select-none"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove Photo</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowUrlInput(!showUrlInput)}
+                      className="px-3 py-2 rounded-xl bg-white hover:bg-[#f0f0f2] border border-[#e5e5e7] text-[#6e6e73] hover:text-[#1d1d1f] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer select-none ml-auto"
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                      <span>{showUrlInput ? 'Hide URL' : 'Use Image URL'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {showUrlInput && (
+                  <div className="pt-2">
+                    <input
+                      type="text"
+                      value={formData.avatar}
+                      onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                      placeholder="https://example.com/my-photo.jpg"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#e0e0e0] text-[#1d1d1f] text-xs focus:outline-none focus:border-[#0066cc]"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
