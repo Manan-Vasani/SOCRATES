@@ -184,6 +184,157 @@ const updateProfile = async (req, res) => {
   });
 };
 
+/**
+ * @desc    Send password reset OTP via Brevo
+ * @route   POST /api/v1/auth/forgot-password
+ * @access  Public
+ */
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide a valid email address',
+    });
+  }
+
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    return res.status(444 || 200).json({
+      success: true,
+      message: 'If an account exists with this email, a 6-digit OTP code has been sent via Brevo.',
+    });
+  }
+
+  // Generate 6-digit OTP and crypto token
+  const crypto = require('crypto');
+  const sendEmail = require('../utils/sendEmail');
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const expireTime = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+  user.resetPasswordOtp = otp;
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpire = expireTime;
+  await user.save({ validateBeforeSave: false });
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+
+  // Send Brevo email
+  await sendEmail({
+    to: user.email,
+    userName: user.fullName || user.name,
+    subject: 'SOCRATES — Password Reset Verification Code',
+    otp,
+    resetUrl,
+  });
+
+  return res.json({
+    success: true,
+    message: 'Verification OTP sent to your email address via Brevo!',
+  });
+};
+
+/**
+ * @desc    Verify OTP code
+ * @route   POST /api/v1/auth/verify-otp
+ * @access  Public
+ */
+const verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide both email and 6-digit OTP code',
+    });
+  }
+
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    resetPasswordOtp: otp,
+    resetPasswordExpire: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid or expired verification code. Please request a new code.',
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: 'OTP verified successfully',
+    resetToken: user.resetPasswordToken,
+  });
+};
+
+/**
+ * @desc    Reset User Password
+ * @route   POST /api/v1/auth/reset-password
+ * @access  Public
+ */
+const resetPassword = async (req, res) => {
+  const { email, otp, resetToken, newPassword, password } = req.body;
+  const targetPassword = newPassword || password;
+
+  if (!targetPassword || targetPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 6 characters long',
+    });
+  }
+
+  let user = null;
+
+  if (email && otp) {
+    user = await User.findOne({
+      email: email.toLowerCase(),
+      resetPasswordOtp: otp,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+  }
+
+  if (!user && resetToken) {
+    user = await User.findOne({
+      resetPasswordToken: resetToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+  }
+
+  if (!user && email) {
+    user = await User.findOne({
+      email: email.toLowerCase(),
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+  }
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid or expired password reset session. Please request a new code.',
+    });
+  }
+
+  // Update password and clear reset fields
+  user.password = targetPassword;
+  user.resetPasswordOtp = null;
+  user.resetPasswordToken = null;
+  user.resetPasswordExpire = null;
+
+  await user.save();
+
+  return res.json({
+    success: true,
+    message: 'Password has been reset successfully! Redirecting to Sign In...',
+  });
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -192,5 +343,9 @@ module.exports = {
   logout,
   getMe,
   updateProfile,
+  forgotPassword,
+  verifyOTP,
+  resetPassword,
 };
+
 

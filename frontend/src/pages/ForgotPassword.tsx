@@ -1,17 +1,17 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
 
 import AuthLayout from '../components/AuthLayout'
 import AuthCard from '../components/AuthCard'
 import AuthHeader from '../components/AuthHeader'
 import InputField from '../components/InputField'
 import BackToHome from '../components/auth/BackToHome'
+import { api } from '../services/api'
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -24,6 +24,8 @@ type ForgotPasswordFields = z.infer<typeof forgotPasswordSchema>
 
 export default function ForgotPassword() {
   const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false)
+
   const {
     register,
     handleSubmit,
@@ -35,9 +37,26 @@ export default function ForgotPassword() {
     },
   })
 
-  const onSubmit = (data: ForgotPasswordFields) => {
-    toast.success(`Verification code sent to ${data.email}`)
-    navigate('/verify-otp')
+  const onSubmit = async (data: ForgotPasswordFields) => {
+    setIsLoading(true)
+    try {
+      const response = await api.post('/auth/forgot-password', {
+        email: data.email,
+      })
+
+      if (response.data?.success) {
+        sessionStorage.setItem('reset_email', data.email)
+        toast.success(response.data?.message || `Verification OTP code sent via Brevo to ${data.email}`)
+        navigate('/verify-otp')
+      } else {
+        toast.error(response.data?.message || 'Failed to send OTP')
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to request password reset'
+      toast.error(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -47,7 +66,7 @@ export default function ForgotPassword() {
         <AuthCard>
           <AuthHeader
             title="Forgot Password"
-            description="Enter your email address to receive a verification code."
+            description="Enter your email address to receive a Brevo verification code."
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -63,9 +82,10 @@ export default function ForgotPassword() {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
             >
-              <span>Send OTP</span>
+              <span>{isLoading ? 'Sending Brevo Email...' : 'Send Verification OTP'}</span>
             </button>
           </form>
 

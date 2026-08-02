@@ -8,6 +8,9 @@ const {
   registerUser,
   loginUser,
   updateProfile,
+  forgotPassword,
+  verifyOTP,
+  resetPassword,
 } = require('../controllers/authController');
 const verifyJWT = require('../middleware/verifyJWT');
 
@@ -56,5 +59,10 @@ router.post('/signup', registerUser);
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.put('/profile', verifyJWT, updateProfile);
+
+// Password Reset Routes (Brevo Integration)
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-otp', verifyOTP);
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

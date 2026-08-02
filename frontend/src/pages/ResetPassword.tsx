@@ -1,11 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
 
 import AuthLayout from '../components/AuthLayout'
 import AuthCard from '../components/AuthCard'
@@ -13,13 +12,14 @@ import AuthHeader from '../components/AuthHeader'
 import PasswordInput from '../components/PasswordInput'
 import PasswordStrength from '../components/PasswordStrength'
 import BackToHome from '../components/auth/BackToHome'
+import { api } from '../services/api'
 
 const resetPasswordSchema = z
   .object({
     password: z
       .string()
       .min(1, 'Password is required')
-      .min(8, 'Password must be at least 8 characters')
+      .min(6, 'Password must be at least 6 characters')
       .regex(/[A-Z]/, 'Must contain one uppercase letter')
       .regex(/[a-z]/, 'Must contain one lowercase letter')
       .regex(/[0-9]/, 'Must contain one number')
@@ -35,6 +35,17 @@ type ResetPasswordFields = z.infer<typeof resetPasswordSchema>
 
 export default function ResetPassword() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Retrieve email, token & otp from URL query params or sessionStorage
+  const urlToken = searchParams.get('token')
+  const urlEmail = searchParams.get('email')
+
+  const email = urlEmail || sessionStorage.getItem('reset_email') || ''
+  const resetToken = urlToken || sessionStorage.getItem('reset_token') || ''
+  const otp = sessionStorage.getItem('verified_otp') || ''
+
   const {
     register,
     handleSubmit,
@@ -54,9 +65,37 @@ export default function ResetPassword() {
   const showMatchStatus = passwordValue.length > 0 && confirmPasswordValue.length > 0
   const isMatching = passwordValue === confirmPasswordValue
 
-  const onSubmit = (data: ResetPasswordFields) => {
-    toast.success('Password has been reset successfully!')
-    navigate('/login')
+  const onSubmit = async (data: ResetPasswordFields) => {
+    setIsLoading(true)
+    try {
+      const response = await api.post('/auth/reset-password', {
+        email,
+        otp,
+        resetToken,
+        newPassword: data.password,
+      })
+
+      if (response.data?.success) {
+        // Clear reset session storage
+        sessionStorage.removeItem('reset_email')
+        sessionStorage.removeItem('reset_token')
+        sessionStorage.removeItem('verified_otp')
+
+        toast.success(response.data?.message || 'Password reset successfully! Redirecting to Sign In...')
+        
+        // Redirect to main Sign In page (/login)
+        setTimeout(() => {
+          navigate('/login')
+        }, 1200)
+      } else {
+        toast.error(response.data?.message || 'Password reset failed')
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || error.message || 'Password reset failed. Please request a new code.'
+      toast.error(msg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -114,9 +153,10 @@ export default function ResetPassword() {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
             >
-              <span>Reset Password</span>
+              <span>{isLoading ? 'Resetting Password...' : 'Reset Password'}</span>
             </button>
           </form>
 

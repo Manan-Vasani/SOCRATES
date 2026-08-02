@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
 
 import AuthLayout from '../components/AuthLayout'
 import AuthCard from '../components/AuthCard'
 import AuthHeader from '../components/AuthHeader'
 import OTPInput from '../components/OTPInput'
 import BackToHome from '../components/auth/BackToHome'
+import { api } from '../services/api'
 
 export default function VerifyOTP() {
   const navigate = useNavigate()
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
   const [error, setError] = useState<string>('')
   const [timeLeft, setTimeLeft] = useState<number>(120) // 2 minutes (120s)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  const email = sessionStorage.getItem('reset_email') || ''
 
   useEffect(() => {
     if (timeLeft <= 0) return
@@ -34,15 +37,25 @@ export default function VerifyOTP() {
     return `${mins}:${secs}`
   }
 
-  const handleResend = () => {
-    if (timeLeft > 0) return
-    setTimeLeft(120)
-    setOtp(Array(6).fill(''))
-    setError('')
-    toast.success('A new verification code has been sent!')
+  const handleResend = async () => {
+    if (timeLeft > 0 || !email) return
+    setIsLoading(true)
+    try {
+      const response = await api.post('/auth/forgot-password', { email })
+      if (response.data?.success) {
+        setTimeLeft(120)
+        setOtp(Array(6).fill(''))
+        setError('')
+        toast.success(response.data?.message || 'A new Brevo OTP verification code has been sent!')
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to resend code')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     const otpCode = otp.join('')
 
@@ -51,8 +64,30 @@ export default function VerifyOTP() {
       return
     }
 
-    toast.success('Code verified successfully!')
-    navigate('/reset-password')
+    setIsLoading(true)
+    try {
+      const response = await api.post('/auth/verify-otp', {
+        email,
+        otp: otpCode,
+      })
+
+      if (response.data?.success) {
+        if (response.data?.resetToken) {
+          sessionStorage.setItem('reset_token', response.data.resetToken)
+        }
+        sessionStorage.setItem('verified_otp', otpCode)
+        toast.success('Code verified successfully! Enter your new password.')
+        navigate('/reset-password')
+      } else {
+        setError(response.data?.message || 'Invalid verification code.')
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Invalid or expired OTP code.'
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -62,7 +97,11 @@ export default function VerifyOTP() {
         <AuthCard>
           <AuthHeader
             title="Verify OTP"
-            description="Enter the 6-digit verification code sent to your email."
+            description={
+              email
+                ? `Enter the 6-digit Brevo verification code sent to ${email}.`
+                : 'Enter the 6-digit verification code sent to your email.'
+            }
           />
 
           <form onSubmit={handleVerify} className="space-y-6">
@@ -90,6 +129,7 @@ export default function VerifyOTP() {
                   <button
                     type="button"
                     onClick={handleResend}
+                    disabled={isLoading}
                     className="font-semibold text-[#0066cc] hover:underline focus-visible:outline-2 focus-visible:outline-[#0066cc] rounded inline-flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw className="w-3 h-3" />
@@ -101,9 +141,10 @@ export default function VerifyOTP() {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
             >
-              <span>Verify OTP</span>
+              <span>{isLoading ? 'Verifying OTP...' : 'Verify OTP'}</span>
             </button>
           </form>
 
