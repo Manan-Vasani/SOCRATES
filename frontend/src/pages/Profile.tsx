@@ -215,6 +215,38 @@ const DAY_OPTIONS: DropdownOption<string>[] = [
   { value: 'Sunday', label: 'Sunday' },
 ]
 
+const TIME_OPTIONS: DropdownOption<string>[] = [
+  { value: '08:00 AM', label: '08:00 AM' },
+  { value: '08:30 AM', label: '08:30 AM' },
+  { value: '09:00 AM', label: '09:00 AM' },
+  { value: '09:30 AM', label: '09:30 AM' },
+  { value: '10:00 AM', label: '10:00 AM' },
+  { value: '10:30 AM', label: '10:30 AM' },
+  { value: '11:00 AM', label: '11:00 AM' },
+  { value: '11:30 AM', label: '11:30 AM' },
+  { value: '12:00 PM', label: '12:00 PM' },
+  { value: '12:30 PM', label: '12:30 PM' },
+  { value: '01:00 PM', label: '01:00 PM' },
+  { value: '01:30 PM', label: '01:30 PM' },
+  { value: '02:00 PM', label: '02:00 PM' },
+  { value: '02:30 PM', label: '02:30 PM' },
+  { value: '03:00 PM', label: '03:00 PM' },
+  { value: '03:30 PM', label: '03:30 PM' },
+  { value: '04:00 PM', label: '04:00 PM' },
+  { value: '04:30 PM', label: '04:30 PM' },
+  { value: '05:00 PM', label: '05:00 PM' },
+  { value: '05:30 PM', label: '05:30 PM' },
+  { value: '06:00 PM', label: '06:00 PM' },
+  { value: '06:30 PM', label: '06:30 PM' },
+  { value: '07:00 PM', label: '07:00 PM' },
+  { value: '07:30 PM', label: '07:30 PM' },
+  { value: '08:00 PM', label: '08:00 PM' },
+  { value: '08:30 PM', label: '08:30 PM' },
+  { value: '09:00 PM', label: '09:00 PM' },
+  { value: '09:30 PM', label: '09:30 PM' },
+  { value: '10:00 PM', label: '10:00 PM' },
+]
+
 const DEFAULT_AVAILABILITY: AvailabilitySlot[] = [
   { id: 'av-1', dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' },
   { id: 'av-2', dayOfWeek: 'Wednesday', timeStart: '02:00 PM', timeEnd: '04:30 PM' },
@@ -337,6 +369,17 @@ export default function Profile() {
   const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
 
   const handleAddAvailability = () => {
+    const isDuplicate = availability.some(
+      (slot) =>
+        slot.dayOfWeek === newSlot.dayOfWeek &&
+        slot.timeStart === newSlot.timeStart &&
+        slot.timeEnd === newSlot.timeEnd
+    )
+    if (isDuplicate) {
+      toast.error('This availability slot already exists!')
+      return
+    }
+
     const slot: AvailabilitySlot = {
       id: `av-${Date.now()}`,
       dayOfWeek: newSlot.dayOfWeek,
@@ -994,22 +1037,24 @@ export default function Profile() {
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
-                        <input
-                          type="text"
+                        <CustomDropdown<string>
+                          options={TIME_OPTIONS}
                           value={newSlot.timeStart}
-                          onChange={(e) => setNewSlot(prev => ({ ...prev, timeStart: e.target.value }))}
-                          placeholder="e.g. 09:00 AM"
-                          className="w-full p-2 bg-white border border-[#e5e5e7] rounded-lg text-xs font-bold text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
+                          onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeStart: val }))}
+                          className="w-full"
+                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                          align="center"
                         />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
-                        <input
-                          type="text"
+                        <CustomDropdown<string>
+                          options={TIME_OPTIONS}
                           value={newSlot.timeEnd}
-                          onChange={(e) => setNewSlot(prev => ({ ...prev, timeEnd: e.target.value }))}
-                          placeholder="e.g. 11:00 AM"
-                          className="w-full p-2 bg-white border border-[#e5e5e7] rounded-lg text-xs font-bold text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
+                          onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeEnd: val }))}
+                          className="w-full"
+                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                          align="center"
                         />
                       </div>
                     </div>
