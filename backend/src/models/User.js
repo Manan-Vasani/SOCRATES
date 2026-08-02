@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
         'Please enter a valid email address',
       ],
     },
+    phone: {
+      type: String,
+      default: '',
+    },
     googleId: {
       type: String,
       default: null,

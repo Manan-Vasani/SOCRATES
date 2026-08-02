@@ -150,6 +150,7 @@ const updateProfile = async (req, res) => {
   if (req.body.fullName || req.body.name) {
     user.fullName = req.body.fullName || req.body.name;
   }
+  if (req.body.phone !== undefined) user.phone = req.body.phone;
   if (req.body.role && ['student', 'tutor', 'both'].includes(req.body.role)) {
     user.role = req.body.role;
   }
@@ -174,6 +175,7 @@ const updateProfile = async (req, res) => {
       fullName: updatedUser.fullName,
       name: updatedUser.fullName,
       email: updatedUser.email,
+      phone: updatedUser.phone,
       googleId: updatedUser.googleId,
       profileImage: updatedUser.profileImage,
       avatar: updatedUser.profileImage,

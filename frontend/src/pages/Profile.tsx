@@ -154,7 +154,7 @@ export default function Profile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: user?.fullName || user?.name || '',
-
+    phone: (user as any)?.phone || '',
     role: user?.role || 'both',
     bio: user?.bio || '',
     hourlyRate: user?.hourlyRate || 45,
@@ -218,6 +218,7 @@ export default function Profile() {
     if (user) {
       setFormData({
         name: user.name,
+        phone: (user as any).phone || '',
         role: user.role,
         bio: user.bio,
         hourlyRate: user.hourlyRate || 45,
@@ -238,6 +239,7 @@ export default function Profile() {
 
     const updatePayload = {
       name: formData.name,
+      phone: formData.phone,
       role: formData.role as 'student' | 'tutor' | 'both',
       bio: formData.bio,
       hourlyRate: Number(formData.hourlyRate),
@@ -817,7 +819,7 @@ export default function Profile() {
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[#525252] font-semibold block">
                     Full Name
@@ -834,19 +836,17 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[#525252] font-semibold block text-xs">
-                    Account Role / Identity
+                  <label className="text-[#525252] font-semibold block">
+                    Phone Number
                   </label>
-                  <CustomDropdown
-                    options={[
-                      { value: 'student', label: 'Student Only (Learning)', icon: <GraduationCap size={14} /> },
-                      { value: 'tutor', label: 'Tutor Only (Teaching)', icon: <UserCheck size={14} /> },
-                      { value: 'both', label: 'Peer-to-Peer (Both Learn & Teach)', icon: <Layers size={14} /> },
-                    ]}
-                    value={formData.role}
-                    onChange={(val) => setFormData({ ...formData, role: val })}
-                    className="w-full"
-                    buttonClassName="w-full py-2.5 px-4 bg-[#f5f5f7] border-[#e0e0e0]"
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    placeholder="+1 (555) 000-0000"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                   />
                 </div>
               </div>
