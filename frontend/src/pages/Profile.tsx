@@ -205,6 +205,16 @@ export interface AvailabilitySlot {
   timeEnd: string
 }
 
+const DAY_OPTIONS: DropdownOption<string>[] = [
+  { value: 'Monday', label: 'Monday' },
+  { value: 'Tuesday', label: 'Tuesday' },
+  { value: 'Wednesday', label: 'Wednesday' },
+  { value: 'Thursday', label: 'Thursday' },
+  { value: 'Friday', label: 'Friday' },
+  { value: 'Saturday', label: 'Saturday' },
+  { value: 'Sunday', label: 'Sunday' },
+]
+
 const DEFAULT_AVAILABILITY: AvailabilitySlot[] = [
   { id: 'av-1', dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' },
   { id: 'av-2', dayOfWeek: 'Wednesday', timeStart: '02:00 PM', timeEnd: '04:30 PM' },
@@ -973,15 +983,13 @@ export default function Profile() {
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
-                        <select
+                        <CustomDropdown<string>
+                          options={DAY_OPTIONS}
                           value={newSlot.dayOfWeek}
-                          onChange={(e) => setNewSlot(prev => ({ ...prev, dayOfWeek: e.target.value }))}
-                          className="w-full p-2 bg-white border border-[#e5e5e7] rounded-lg text-xs font-bold text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0066cc] cursor-pointer"
-                        >
-                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                            <option key={day} value={day}>{day}</option>
-                          ))}
-                        </select>
+                          onChange={(val: string) => setNewSlot(prev => ({ ...prev, dayOfWeek: val }))}
+                          buttonClassName="py-[7px] w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7]"
+                          align="left"
+                        />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
