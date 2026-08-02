@@ -75,6 +75,17 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 25,
     },
+    availability: {
+      type: [
+        {
+          id: String,
+          dayOfWeek: String,
+          timeStart: String,
+          timeEnd: String,
+        }
+      ],
+      default: [],
+    },
     isVerified: {
       type: Boolean,
       default: false,

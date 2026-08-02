@@ -384,7 +384,12 @@ export default function Profile() {
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
 
-  const [availability, setAvailability] = useState<AvailabilitySlot[]>(DEFAULT_AVAILABILITY)
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>(() => {
+    const initialUser = useAuthStore.getState().user
+    return initialUser && (initialUser as any).availability
+      ? (initialUser as any).availability
+      : DEFAULT_AVAILABILITY
+  })
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM' })
   const [selectedDuration, setSelectedDuration] = useState<number>(60)
   const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
@@ -559,7 +564,7 @@ export default function Profile() {
         academicLevel: (user as any).academicLevel || 'Undergraduate',
         education: (user as any).education || '',
       })
-      if ((user as any).availability && (user as any).availability.length > 0) {
+      if ((user as any).availability) {
         setAvailability((user as any).availability)
       }
     }
