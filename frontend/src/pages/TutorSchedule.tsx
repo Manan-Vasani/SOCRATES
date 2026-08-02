@@ -755,7 +755,11 @@ export default function TutorSchedule() {
               }
 
               const hasGroupableSlot = day.slots.some((s) => {
-                if (!s.isBooked || !s.allowGroupSplit || joinedSlotKeys.has(`${day.date}-${s.time}`)) return false
+                const isHost = s.isBooked && (
+                  s.bookedBy?.toLowerCase().includes('alex mercer') ||
+                  (user?.fullName && s.bookedBy?.toLowerCase().includes(user.fullName.toLowerCase()))
+                )
+                if (!s.isBooked || !s.allowGroupSplit || joinedSlotKeys.has(`${day.date}-${s.time}`) || isHost) return false
                 const sMaxMem = s.maxMembers || getDurationMaxMembers(s.durationMin || selectedDuration)
                 const sCurrMem = s.currentMembers || 1
                 return sCurrMem < sMaxMem
@@ -832,14 +836,22 @@ export default function TutorSchedule() {
                         {day.slots.map((slot, sIdx) => {
                           const popoverSlotKey = `${day.date}-${slot.time}`
                           const isPopoverJoinedByMe = joinedSlotKeys.has(popoverSlotKey)
-                          const isGroupSplit = slot.isBooked && slot.allowGroupSplit && !isPopoverJoinedByMe
-                          const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit && !isPopoverJoinedByMe
+                          const isPopoverHost = slot.isBooked && (
+                            slot.bookedBy?.toLowerCase().includes('alex mercer') ||
+                            (user?.fullName && slot.bookedBy?.toLowerCase().includes(user.fullName.toLowerCase()))
+                          )
+                          
+                          // If I am the host or I already joined, it's not a general group-split or private slot for me to book/join
+                          const isGroupSplit = slot.isBooked && slot.allowGroupSplit && !isPopoverJoinedByMe && !isPopoverHost
+                          const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit && !isPopoverJoinedByMe && !isPopoverHost
 
                           // Group-full detection for tooltip
                           const popoverDuration = slot.durationMin || selectedDuration
                           const popoverMaxMem = slot.maxMembers || getDurationMaxMembers(popoverDuration)
                           const popoverCurrMem = slot.currentMembers || 1
                           const isPopoverGroupFull = isGroupSplit && popoverCurrMem >= popoverMaxMem
+
+                          const isOurs = isPopoverJoinedByMe || isPopoverHost
 
                           return (
                             <div 
@@ -853,7 +865,7 @@ export default function TutorSchedule() {
                                 }
                               }}
                               className={`p-2.5 rounded-xl border text-[11px] space-y-1 min-h-[46px] flex flex-col justify-center transition-all ${
-                                isPopoverJoinedByMe
+                                isOurs
                                   ? 'bg-blue-50/80 border-blue-200 text-blue-950 cursor-default'
                                   : isPopoverGroupFull
                                   ? 'bg-slate-50/80 border-slate-300 text-slate-900 cursor-not-allowed'
@@ -866,11 +878,11 @@ export default function TutorSchedule() {
                             >
                               <div className="flex items-center justify-between">
                                 <span className="flex items-center gap-1 font-sans font-bold text-xs tracking-tight">
-                                  <Clock size={11} className={isPopoverJoinedByMe ? 'text-blue-600' : isPopoverGroupFull ? 'text-slate-500' : isGroupSplit ? 'text-amber-600' : isPrivateBooked ? 'text-red-600' : 'text-[#0066cc]'} />
+                                  <Clock size={11} className={isOurs ? 'text-blue-600' : isPopoverGroupFull ? 'text-slate-500' : isGroupSplit ? 'text-amber-600' : isPrivateBooked ? 'text-red-600' : 'text-[#0066cc]'} />
                                   {slot.time}
                                 </span>
                                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                  isPopoverJoinedByMe
+                                  isOurs
                                     ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                     : isPopoverGroupFull
                                     ? 'bg-slate-200 text-slate-700 border border-slate-300'
@@ -880,15 +892,24 @@ export default function TutorSchedule() {
                                     ? 'bg-red-100 text-red-800 border border-red-200' 
                                     : 'bg-emerald-100/70 text-emerald-700'
                                 }`}>
-                                  {isPopoverJoinedByMe ? 'Joined' : isPopoverGroupFull ? `Full (${popoverCurrMem}/${popoverMaxMem})` : isGroupSplit ? 'Group Split' : isPrivateBooked ? 'Reserved' : 'Open'}
+                                  {isPopoverJoinedByMe ? 'Joined' : isPopoverHost ? 'Your Session' : isPopoverGroupFull ? `Full (${popoverCurrMem}/${popoverMaxMem})` : isGroupSplit ? 'Group Split' : isPrivateBooked ? 'Reserved' : 'Open'}
                                 </span>
                               </div>
 
-                              {isPopoverJoinedByMe ? (
+                              {isOurs ? (
                                 <div className="space-y-1 pt-0.5 border-t mt-1 border-blue-200/70">
                                   <div className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-900">
-                                    <CheckCircle2 size={10} className="text-blue-600 shrink-0" />
-                                    <span>You already joined the group</span>
+                                    {isPopoverJoinedByMe ? (
+                                      <>
+                                        <CheckCircle2 size={10} className="text-blue-600 shrink-0" />
+                                        <span>You already joined the group</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Users size={10} className="text-blue-600 shrink-0" />
+                                        <span>Booked by <strong className="font-bold text-blue-950">You (Host)</strong></span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               ) : isPopoverGroupFull ? (
