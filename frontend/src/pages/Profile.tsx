@@ -1315,7 +1315,7 @@ export default function Profile() {
                   <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-2 justify-end">
                     <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
                     {availability.length > 0 ? (
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar h-0 min-h-[110px]">
+                      <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[140px]">
                         {availability.map((av) => (
                           <div key={av.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-emerald-500/25 transition-colors gap-3 text-xs font-bold">
                             <div className="flex items-center gap-2">
