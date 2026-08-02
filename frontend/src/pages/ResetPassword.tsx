@@ -107,7 +107,7 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-[420px] min-w-[320px] flex flex-col items-start gap-4 shrink-0">
+      <div className="w-[420px] max-w-full flex flex-col items-start gap-4 shrink-0">
         <BackToHome />
         <AuthCard>
           <AuthHeader

@@ -24,7 +24,7 @@ export default function AuthCard({ children, className = '' }: AuthCardProps) {
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      className={`w-full max-w-[420px] bg-white border border-[#e5e5e5] rounded-3xl p-8 sm:p-10 shadow-xs antialiased select-none ${className}`}
+      className={`w-[420px] max-w-full bg-white border border-[#e5e5e5] rounded-3xl p-8 sm:p-10 shadow-xs antialiased select-none shrink-0 ${className}`}
     >
       {children}
     </motion.div>
