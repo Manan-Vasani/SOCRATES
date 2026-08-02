@@ -46,7 +46,7 @@ export default function VerifyOTP() {
         setTimeLeft(120)
         setOtp(Array(6).fill(''))
         setError('')
-        toast.success(response.data?.message || 'A new Brevo OTP verification code has been sent!')
+        toast.success(response.data?.message || 'A new OTP verification code has been sent!')
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to resend code')
@@ -99,7 +99,7 @@ export default function VerifyOTP() {
             title="Verify OTP"
             description={
               email
-                ? `Enter the 6-digit Brevo verification code sent to ${email}.`
+                ? `Enter the 6-digit verification code sent to ${email}.`
                 : 'Enter the 6-digit verification code sent to your email.'
             }
           />

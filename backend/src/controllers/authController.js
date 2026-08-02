@@ -202,9 +202,9 @@ const forgotPassword = async (req, res) => {
   const user = await User.findOne({ email: email.toLowerCase() });
 
   if (!user) {
-    return res.status(444 || 200).json({
+    return res.status(200).json({
       success: true,
-      message: 'If an account exists with this email, a 6-digit OTP code has been sent via Brevo.',
+      message: 'If an account exists with this email, a 6-digit OTP code has been sent.',
     });
   }
 
@@ -235,7 +235,7 @@ const forgotPassword = async (req, res) => {
 
   return res.json({
     success: true,
-    message: 'Verification OTP sent to your email address via Brevo!',
+    message: 'Verification OTP sent to your email address!',
   });
 };
 

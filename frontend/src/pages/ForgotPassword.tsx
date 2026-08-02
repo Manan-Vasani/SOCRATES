@@ -46,7 +46,7 @@ export default function ForgotPassword() {
 
       if (response.data?.success) {
         sessionStorage.setItem('reset_email', data.email)
-        toast.success(response.data?.message || `Verification OTP code sent via Brevo to ${data.email}`)
+        toast.success(response.data?.message || `Verification OTP code sent to ${data.email}`)
         navigate('/verify-otp')
       } else {
         toast.error(response.data?.message || 'Failed to send OTP')
@@ -66,7 +66,7 @@ export default function ForgotPassword() {
         <AuthCard>
           <AuthHeader
             title="Forgot Password"
-            description="Enter your email address to receive a Brevo verification code."
+            description="Enter your email address to receive a 6-digit verification code."
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -85,7 +85,7 @@ export default function ForgotPassword() {
               disabled={isLoading}
               className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
             >
-              <span>{isLoading ? 'Sending Brevo Email...' : 'Send Verification OTP'}</span>
+              <span>{isLoading ? 'Sending Verification Code...' : 'Send Verification OTP'}</span>
             </button>
           </form>
 
