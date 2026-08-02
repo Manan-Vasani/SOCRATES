@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import AuthLayout from '../components/AuthLayout'
@@ -154,9 +154,16 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none inline-flex items-center justify-center gap-2 disabled:opacity-75"
             >
-              <span>{isLoading ? 'Resetting Password...' : 'Reset Password'}</span>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+                  <span>Resetting Password...</span>
+                </>
+              ) : (
+                <span>Reset Password</span>
+              )}
             </button>
           </form>
 

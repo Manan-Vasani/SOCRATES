@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, RefreshCw } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import AuthLayout from '../components/AuthLayout'
@@ -116,9 +116,16 @@ export default function VerifyOTP() {
             <button
               type="submit"
               disabled={isVerifying || isResending}
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none inline-flex items-center justify-center gap-2 disabled:opacity-75"
             >
-              <span>{isVerifying ? 'Verifying OTP...' : 'Verify OTP'}</span>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+                  <span>Verifying OTP...</span>
+                </>
+              ) : (
+                <span>Verify OTP</span>
+              )}
             </button>
           </form>
 
