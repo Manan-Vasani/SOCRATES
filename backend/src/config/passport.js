@@ -5,13 +5,13 @@ const User = require('../models/User');
 
 const getClientID = () =>
   process.env.GOOGLE_CLIENT_ID ||
-  "799222349882-ne3i0s9jdm5s0p7ll2d7tlsi1vc1halt.apps.googleusercontent.com";
+  "707390697275-q2iakjtob55tnob3i11dlkm56om0q21p.apps.googleusercontent.com";
 
 const getClientSecret = () =>
   process.env.GOOGLE_CLIENT_SECRET || "GOCSPX-dev-placeholder-secret";
 
 const getCallbackURL = () =>
-  process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/auth/google/callback";
+  process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback";
 
 passport.use(
   new GoogleStrategy(

@@ -27,7 +27,7 @@ export const getBackendAuthOrigin = (): string => {
  */
 export const redirectToGoogleOAuth = (): void => {
   const backendOrigin = getBackendAuthOrigin()
-  window.location.href = `${backendOrigin}/auth/google`
+  window.location.href = `${backendOrigin}/api/auth/google`
 }
 
 /**
