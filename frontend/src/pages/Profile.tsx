@@ -276,15 +276,8 @@ export default function Profile() {
                 <img
                   src={user?.profileImage || user?.avatar || ''}
                   alt={user?.fullName || user?.name || 'User Profile'}
-                  className="w-24 h-24 rounded-full object-cover border-2 border-[#0066cc] shadow-md hover:shadow-lg transition-all duration-300"
+                  className="w-24 h-24 rounded-full object-cover border border-[#e5e5e7] shadow-xs antialiased"
                 />
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="absolute bottom-0 right-0 p-2 bg-[#0066cc] hover:bg-[#0077ed] text-white rounded-full shadow-md hover:shadow-lg transition-all"
-                  title="Change Avatar"
-                >
-                  <Edit3 size={13} />
-                </button>
               </div>
 
               <div className="space-y-1.5">
@@ -298,11 +291,6 @@ export default function Profile() {
                       title="Verified Educator & Scholar"
                     >
                       <ShieldCheck size={14} /> Verified
-                    </span>
-                  )}
-                  {user?.provider === 'google' && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
-                      Google Account
                     </span>
                   )}
                 </div>
