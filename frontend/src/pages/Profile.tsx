@@ -322,10 +322,15 @@ export default function Profile() {
                   )}
                 </div>
 
-                <p className="text-xs text-[#525252] max-w-xl leading-relaxed">
-                  {user?.bio ||
-                    'Computer Science Scholar & Peer Educator passionate about Data Structures, AI, and Collaborative Problem Solving.'}
-                </p>
+                {user?.bio ? (
+                  <p className="text-xs text-[#525252] max-w-xl leading-relaxed">
+                    {user.bio}
+                  </p>
+                ) : (
+                  <p className="text-xs text-[#86868b] italic">
+                    No bio added yet. Click Edit Profile to add one.
+                  </p>
+                )}
               </div>
             </div>
 
