@@ -1251,69 +1251,71 @@ export default function Profile() {
               </div>
 
               {/* Right Column: Availability Scheduler (6 cols) */}
-              <div className="md:col-span-6">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs min-h-[352px]">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                    <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours
-                  </h3>
-                  
-                  {/* Availability Creator Form */}
-                  <div className="p-3.5 rounded-xl bg-[#fafafc] border border-[#e5e5e7] space-y-3">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
-                        <CustomDropdown<string>
-                          options={DAY_OPTIONS}
-                          value={newSlot.dayOfWeek}
-                          onChange={(val: string) => setNewSlot(prev => ({ ...prev, dayOfWeek: val }))}
-                          className="w-full"
-                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                          align="center"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
-                        <CustomDropdown<string>
-                          options={getAvailabilityTimeOptions()}
-                          value={newSlot.timeStart}
-                          onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeStart: val }))}
-                          className="w-full"
-                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                          align="center"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
-                        <div className="w-full py-2 px-3.5 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg text-xs font-bold text-[#7a7a7a] h-[34px] flex items-center select-none">
-                          {calculateEndTime(newSlot.timeStart, selectedDuration)}
+              <div className="md:col-span-6 flex">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between min-h-[352px]">
+                  <div className="space-y-4">
+                    <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                      <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours
+                    </h3>
+                    
+                    {/* Availability Creator Form */}
+                    <div className="p-3.5 rounded-xl bg-[#fafafc] border border-[#e5e5e7] space-y-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
+                          <CustomDropdown<string>
+                            options={DAY_OPTIONS}
+                            value={newSlot.dayOfWeek}
+                            onChange={(val: string) => setNewSlot(prev => ({ ...prev, dayOfWeek: val }))}
+                            className="w-full"
+                            buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                            align="center"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
+                          <CustomDropdown<string>
+                            options={getAvailabilityTimeOptions()}
+                            value={newSlot.timeStart}
+                            onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeStart: val }))}
+                            className="w-full"
+                            buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                            align="center"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
+                          <div className="w-full py-2 px-3.5 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg text-xs font-bold text-[#7a7a7a] h-[34px] flex items-center select-none">
+                            {calculateEndTime(newSlot.timeStart, selectedDuration)}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Session</label>
+                          <CustomDropdown<number>
+                            options={DURATION_OPTIONS}
+                            value={selectedDuration}
+                            onChange={(val: number) => setSelectedDuration(val)}
+                            className="w-full"
+                            buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                            align="center"
+                          />
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Session</label>
-                        <CustomDropdown<number>
-                          options={DURATION_OPTIONS}
-                          value={selectedDuration}
-                          onChange={(val: number) => setSelectedDuration(val)}
-                          className="w-full"
-                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                          align="center"
-                        />
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddAvailability}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer select-none"
+                      >
+                        Add Availability Slot
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddAvailability}
-                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer select-none"
-                    >
-                      Add Availability Slot
-                    </button>
                   </div>
 
                   {/* Active Slots list */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-4">
                     <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
                     {availability.length > 0 ? (
-                      <div className="max-h-[140px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[140px] md:max-h-none h-0">
                         {availability.map((av) => (
                           <div key={av.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-emerald-500/25 transition-colors gap-3 text-xs font-bold">
                             <div className="flex items-center gap-2">
