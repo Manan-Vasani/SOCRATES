@@ -16,7 +16,7 @@ import GoogleButton from '../components/GoogleButton'
 import Divider from '../components/Divider'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
-import { getBackendAuthOrigin, handleSeamlessGoogleLogin } from '../services/authService'
+import { redirectToGoogleOAuth } from '../services/authService'
 
 const loginSchema = z.object({
   email: z
@@ -48,30 +48,8 @@ export default function Login() {
     },
   })
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true)
-    try {
-      const origin = getBackendAuthOrigin()
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 1500)
-      
-      const res = await fetch(`${origin}/health`, { signal: controller.signal }).catch(() => null)
-      clearTimeout(timeoutId)
-
-      if (res && res.ok) {
-        window.location.href = `${origin}/auth/google`
-      } else {
-        const googleUser = handleSeamlessGoogleLogin(setAuth)
-        toast.success(`Welcome back, ${googleUser.name}! Signed in with Google.`)
-        navigate('/dashboard')
-      }
-    } catch (err) {
-      const googleUser = handleSeamlessGoogleLogin(setAuth)
-      toast.success(`Welcome back, ${googleUser.name}! Signed in with Google.`)
-      navigate('/dashboard')
-    } finally {
-      setIsLoading(false)
-    }
+  const handleGoogleSignIn = () => {
+    redirectToGoogleOAuth()
   }
 
   const onSubmit = async (data: LoginFields) => {

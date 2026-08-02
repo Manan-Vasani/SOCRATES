@@ -31,23 +31,36 @@ export const redirectToGoogleOAuth = (): void => {
 }
 
 /**
- * Perform seamless Google Login for dev/offline environments
+ * Perform Google Login for any custom selected Google account
  */
-export const handleSeamlessGoogleLogin = (setAuth: (user: UserProfile, token: string) => void): UserProfile => {
+export const handleGoogleAccountLogin = (
+  account: { name: string; email: string; avatar?: string },
+  setAuth: (user: UserProfile, token: string) => void
+): UserProfile => {
   const googleUser: UserProfile = {
     _id: `google-user-${Date.now()}`,
-    fullName: 'Alex Mercer',
-    name: 'Alex Mercer',
-    email: 'alex.mercer@gmail.com',
-    googleId: 'google-demo-100200300',
-    avatar: 'https://ui-avatars.com/api/?name=Alex+Mercer&background=0066cc&color=fff&size=128&bold=true',
-    profileImage: 'https://ui-avatars.com/api/?name=Alex+Mercer&background=0066cc&color=fff&size=128&bold=true',
+    fullName: account.name,
+    name: account.name,
+    email: account.email.toLowerCase(),
+    googleId: `google-id-${Date.now()}`,
+    avatar: account.avatar || getInitialsAvatar(account.name),
+    profileImage: account.avatar || getInitialsAvatar(account.name),
     provider: 'google',
     role: 'student',
   }
   const token = `socrates_google_jwt_${Date.now()}`
   setAuth(googleUser, token)
   return googleUser
+}
+
+/**
+ * Perform seamless Google Login for dev/offline environments
+ */
+export const handleSeamlessGoogleLogin = (setAuth: (user: UserProfile, token: string) => void): UserProfile => {
+  return handleGoogleAccountLogin(
+    { name: 'Alex Mercer', email: 'alex.mercer@gmail.com' },
+    setAuth
+  )
 }
 
 /**
