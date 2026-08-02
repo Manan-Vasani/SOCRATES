@@ -28,6 +28,11 @@ import {
   Upload,
   Trash2,
   Camera,
+  ArrowUpRight,
+  CreditCard,
+  Plus,
+  Minus,
+  CalendarRange,
   Link as LinkIcon,
 } from 'lucide-react'
 import { useAuthStore, ProfilePerspective } from '../store/useAuthStore'
@@ -92,6 +97,121 @@ const INITIAL_PROFILE_SESSIONS: ProfileSessionItem[] = [
   }
 ]
 
+export interface BookmarkedTutor {
+  id: string
+  name: string
+  subject: string
+  rating: number
+  hourlyRate: number
+  avatar: string
+  online: boolean
+}
+
+export interface BillingLog {
+  id: string
+  date: string
+  amount: number
+  description: string
+  status: 'Paid' | 'Refunded'
+  sessionType: string
+}
+
+export interface PayoutLog {
+  id: string
+  date: string
+  amount: number
+  status: 'Completed' | 'Pending'
+  account: string
+}
+
+const MOCK_BOOKMARKED_TUTORS: BookmarkedTutor[] = [
+  {
+    id: 'tut_101',
+    name: 'Dr. Evelyn Reed',
+    subject: 'Algorithms & Data Structures',
+    rating: 4.98,
+    hourlyRate: 65,
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80',
+    online: true
+  },
+  {
+    id: 'tut_102',
+    name: 'Marcus Chen',
+    subject: 'Machine Learning',
+    rating: 4.95,
+    hourlyRate: 55,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    online: true
+  },
+  {
+    id: 'tut_103',
+    name: 'Sophia Vance',
+    subject: 'Linear Algebra',
+    rating: 4.88,
+    hourlyRate: 48,
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    online: false
+  }
+]
+
+const MOCK_BILLING_LOGS: BillingLog[] = [
+  {
+    id: 'TXN-9021',
+    date: 'Jul 24, 2026',
+    amount: 33.00,
+    description: 'Group Split: Algorithms & BFS',
+    status: 'Paid',
+    sessionType: 'Group Split'
+  },
+  {
+    id: 'TXN-9019',
+    date: 'Jul 22, 2026',
+    amount: 28.00,
+    description: 'Group Split: Linear Algebra',
+    status: 'Paid',
+    sessionType: 'Group Split'
+  },
+  {
+    id: 'TXN-8984',
+    date: 'Jul 15, 2026',
+    amount: 65.00,
+    description: '1-on-1: Machine Learning foundations',
+    status: 'Paid',
+    sessionType: 'Private 1-on-1'
+  }
+]
+
+const MOCK_PAYOUT_LOGS: PayoutLog[] = [
+  {
+    id: 'PAY-4091',
+    date: 'Jul 28, 2026',
+    amount: 340.00,
+    status: 'Completed',
+    account: 'Bank Account (...5678)'
+  },
+  {
+    id: 'PAY-3982',
+    date: 'Jul 14, 2026',
+    amount: 290.00,
+    status: 'Completed',
+    account: 'Bank Account (...5678)'
+  }
+]
+
+export interface AvailabilitySlot {
+  id: string
+  dayOfWeek: string
+  timeStart: string
+  timeEnd: string
+}
+
+const DEFAULT_AVAILABILITY: AvailabilitySlot[] = [
+  { id: 'av-1', dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' },
+  { id: 'av-2', dayOfWeek: 'Wednesday', timeStart: '02:00 PM', timeEnd: '04:30 PM' },
+  { id: 'av-3', dayOfWeek: 'Friday', timeStart: '10:00 AM', timeEnd: '12:00 PM' }
+]
+
+
 export const getStoredProfileSessions = (): ProfileSessionItem[] => {
   try {
     const stored = localStorage.getItem('socrates_booked_sessions')
@@ -141,13 +261,13 @@ export default function Profile() {
   // Active Role/Perspective derived directly from user object (defaulting to 'both')
   const userRole = user?.role || 'both'
   const [viewPerspective, setViewPerspective] = useState<ProfilePerspective>(
-    userRole === 'admin' ? 'both' : (userRole as ProfilePerspective)
+    userRole === 'both' ? 'student' : (userRole === 'admin' ? 'both' : (userRole as ProfilePerspective))
   )
 
   // Sync perspective if user.role changes
   useEffect(() => {
     if (user?.role && user.role !== 'admin') {
-      setViewPerspective(user.role as ProfilePerspective)
+      setViewPerspective(user.role === 'both' ? 'student' : (user.role as ProfilePerspective))
     }
   }, [user?.role])
 
@@ -201,6 +321,31 @@ export default function Profile() {
   const [sessions, setSessions] = useState<ProfileSessionItem[]>(() => getStoredProfileSessions())
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
+
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>(DEFAULT_AVAILABILITY)
+  const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' })
+  const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
+
+  const handleAddAvailability = () => {
+    const slot: AvailabilitySlot = {
+      id: `av-${Date.now()}`,
+      dayOfWeek: newSlot.dayOfWeek,
+      timeStart: newSlot.timeStart,
+      timeEnd: newSlot.timeEnd
+    }
+    setAvailability(prev => [...prev, slot])
+    toast.success('Availability slot added!')
+  }
+
+  const handleRemoveAvailability = (id: string) => {
+    setAvailability(prev => prev.filter(av => av.id !== id))
+    toast.success('Availability slot removed')
+  }
+
+  const handleRemoveBookmark = (id: string) => {
+    setBookmarkedTutors(prev => prev.filter(t => t.id !== id))
+    toast.success('Tutor removed from bookmarks')
+  }
 
   // Prevent background page scrolling when modal is open
   useEffect(() => {
@@ -362,10 +507,10 @@ export default function Profile() {
 
               {/* View Perspective Toggles (For Hybrid Users) */}
               {userRole === 'both' && (
-                <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] rounded-xl border border-[#e0e0e0]">
+                <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] rounded-xl border border-[#e0e0e0] transform-gpu">
                   <button
                     onClick={() => setViewPerspective('student')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
                       viewPerspective === 'student'
                         ? 'bg-[#0066cc] text-white shadow-xs'
                         : 'text-[#525252] hover:text-[#1d1d1f]'
@@ -375,23 +520,13 @@ export default function Profile() {
                   </button>
                   <button
                     onClick={() => setViewPerspective('tutor')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
                       viewPerspective === 'tutor'
                         ? 'bg-[#0066cc] text-white shadow-xs'
                         : 'text-[#525252] hover:text-[#1d1d1f]'
                     }`}
                   >
                     Tutor View
-                  </button>
-                  <button
-                    onClick={() => setViewPerspective('both')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      viewPerspective === 'both'
-                        ? 'bg-[#0066cc] text-white shadow-xs'
-                        : 'text-[#525252] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Combined Both
                   </button>
                 </div>
               )}
@@ -487,7 +622,7 @@ export default function Profile() {
 
                   <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
                     <div className="text-[#7a7a7a]">
-                      {userRole === 'tutor' ? (
+                      {viewPerspective === 'tutor' ? (
                         <span>Student: <strong className="text-[#1d1d1f] font-semibold">{session.studentName}</strong></span>
                       ) : (
                         <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{session.tutorName}</strong></span>
@@ -531,266 +666,417 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* PERSPECTIVE SECTION 1: STUDENT VIEW (IF STUDENT OR BOTH) */}
-        {(viewPerspective === 'both' || viewPerspective === 'student') && (
+        {/* PERSPECTIVE SECTION 1: STUDENT VIEW */}
+        {viewPerspective === 'student' && (
           <section className="space-y-6">
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <div>
                 <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                  <GraduationCap className="text-[#0066cc]" size={22} /> Student
-                  & Learner Profile
+                  <GraduationCap className="text-[#0066cc]" size={22} /> Student Dashboard
                 </h2>
               </div>
-              <span className="text-xs px-3 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5e7] text-[#525252]">
-                Active Student Status: High Performer
+              <span className="text-xs px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066cc] font-semibold">
+                Student Account Status: Active
               </span>
             </div>
 
             {/* Student HUD Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>Sessions Completed</span>
                   <BookOpen size={16} className="text-[#0066cc]" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  28
-                </div>
-                <div className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">28</div>
+                <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                   <TrendingUp size={12} /> +4 this week
                 </div>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>AI Questions Asked</span>
                   <Sparkles size={16} className="text-purple-600" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  142
-                </div>
-                <div className="text-xs text-[#7a7a7a]">
-                  98.2% Socratic resolution rate
-                </div>
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">142</div>
+                <div className="text-xs text-[#7a7a7a] font-medium">98.2% Socratic resolution</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>Hours Consumed</span>
                   <Clock size={16} className="text-amber-600" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  42.5 hrs
-                </div>
-                <div className="text-xs text-[#7a7a7a]">Across 4 core domains</div>
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">42.5 hrs</div>
+                <div className="text-xs text-[#7a7a7a] font-medium">Across 4 core domains</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>Bookmarked Tutors</span>
                   <Bookmark size={16} className="text-[#0066cc]" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  6 Tutors
-                </div>
-                <div className="text-xs text-[#0066cc]">2 Tutors online now</div>
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">{bookmarkedTutors.length}</div>
+                <div className="text-xs text-[#0066cc] font-medium">{bookmarkedTutors.filter(t => t.online).length} online now</div>
               </div>
             </div>
 
-            {/* Enrolled Subjects & Learning History */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                <h3 className="text-base font-display font-semibold text-[#1d1d1f] flex items-center justify-between">
-                  <span>Enrolled Learning Subjects</span>
-                  <span className="text-xs text-[#7a7a7a] font-normal">
-                    {user?.subjects?.length || 0} Active
-                  </span>
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {user?.subjects && user.subjects.length > 0 ? (
-                    user.subjects.map((sub, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-medium text-[#1d1d1f] flex items-center gap-1.5"
-                      >
-                        <CheckCircle2 size={12} className="text-[#0066cc]" />
-                        {sub}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-[#86868b]">
-                      No learning subjects added yet.
-                    </span>
-                  )}
+            {/* Enrolled Subjects & Bookmarked Tutors & Study History Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left Column: Enrolled Subjects & Study Rooms (7 cols) */}
+              <div className="md:col-span-7 space-y-6">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
+                    <span>Enrolled Learning Subjects</span>
+                    <span className="text-xs text-[#7a7a7a] font-normal">{user?.subjects?.length || 0} Active</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {user?.subjects && user.subjects.length > 0 ? (
+                      user.subjects.map((sub, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5"
+                        >
+                          <CheckCircle2 size={12} className="text-[#0066cc]" />
+                          {sub}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-[#86868b] italic">No learning subjects added yet.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f]">Recent Study Room History</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
+                      <div>
+                        <div className="font-bold text-[#1d1d1f]">Algorithms & Data Structures Lounge</div>
+                        <div className="text-[#7a7a7a] font-medium">Host: Dr. Evelyn Reed • Yesterday</div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shrink-0">Completed</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
+                      <div>
+                        <div className="font-bold text-[#1d1d1f]">Linear Algebra Foundations</div>
+                        <div className="text-[#7a7a7a] font-medium">Host: Marcus Chen • 3 days ago</div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shrink-0">Completed</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                <h3 className="text-base font-display font-semibold text-[#1d1d1f]">
-                  Recent Study Room History
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
-                    <div>
-                      <div className="font-semibold text-[#1d1d1f]">
-                        Algorithms & Data Structures Lounge
-                      </div>
-                      <div className="text-[#7a7a7a]">
-                        Host: Dr. Evelyn Reed • Yesterday
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
-                      Completed
-                    </span>
-                  </div>
+              {/* Right Column: Bookmarked Tutors (5 cols) */}
+              <div className="md:col-span-5">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs min-h-[352px]">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
+                    <span>Bookmarked Tutors</span>
+                    <span className="text-xs text-[#7a7a7a] font-normal">{bookmarkedTutors.length} Saved</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {bookmarkedTutors.length > 0 ? (
+                      bookmarkedTutors.map((tutor) => (
+                        <div key={tutor.id} className="flex items-center justify-between p-3 rounded-xl bg-[#fafafc] border border-[#e5e5e7] hover:border-[#0066cc]/30 transition-colors gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="relative shrink-0">
+                              <img src={tutor.avatar} alt={tutor.name} className="w-10 h-10 rounded-full object-cover border border-[#e5e5e7] antialiased" />
+                              {tutor.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-xs text-[#1d1d1f] truncate">{tutor.name}</div>
+                              <div className="text-[10px] text-[#7a7a7a] truncate font-medium">{tutor.subject}</div>
+                              <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold pt-0.5">
+                                <Star size={10} className="fill-amber-500" />
+                                <span>{tutor.rating}</span>
+                                <span className="text-[#a1a1a6] font-normal">•</span>
+                                <span className="text-[#0066cc] font-extrabold">${tutor.hourlyRate}/hr</span>
+                              </div>
+                            </div>
+                          </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
-                    <div>
-                      <div className="font-semibold text-[#1d1d1f]">
-                        Linear Algebra Foundations
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Link to={`/tutors/${tutor.id}/schedule`} className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-[#0066cc] transition-colors" title="Schedule Session">
+                              <CalendarRange size={13} />
+                            </Link>
+                            <button type="button" onClick={() => handleRemoveBookmark(tutor.id)} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors cursor-pointer" title="Remove Bookmark">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-[#86868b] text-xs italic">
+                        No bookmarked tutors. Browse and bookmark tutors from the main directory!
                       </div>
-                      <div className="text-[#7a7a7a]">
-                        Host: Marcus Chen • 3 days ago
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
-                      Completed
-                    </span>
+                    )}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Billing & Split Payments History logs */}
+            <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+              <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                <CreditCard className="text-[#0066cc]" size={18} /> Billing & Split Payments Logs
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#e5e5e7] text-[#7a7a7a] font-bold">
+                      <th className="pb-3 pr-4 font-semibold">Transaction ID</th>
+                      <th className="pb-3 px-4 font-semibold">Date</th>
+                      <th className="pb-3 px-4 font-semibold">Description</th>
+                      <th className="pb-3 px-4 font-semibold">Session Type</th>
+                      <th className="pb-3 px-4 font-semibold">Amount</th>
+                      <th className="pb-3 pl-4 font-semibold text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MOCK_BILLING_LOGS.map((log) => (
+                      <tr key={log.id} className="border-b border-[#f0f0f2]/80 hover:bg-[#fafafc] transition-colors">
+                        <td className="py-3.5 pr-4 font-bold text-[#1d1d1f]">{log.id}</td>
+                        <td className="py-3.5 px-4 text-[#525252] font-medium">{log.date}</td>
+                        <td className="py-3.5 px-4 text-[#1d1d1f] font-medium">{log.description}</td>
+                        <td className="py-3.5 px-4 text-[#525252] font-medium">{log.sessionType}</td>
+                        <td className="py-3.5 px-4 text-[#0066cc] font-extrabold">${log.amount.toFixed(2)}</td>
+                        <td className="py-3.5 pl-4 text-right">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px]">
+                            {log.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>
         )}
 
-        {/* PERSPECTIVE SECTION 2: TUTOR VIEW (IF TUTOR OR BOTH) */}
-        {(viewPerspective === 'both' || viewPerspective === 'tutor') && (
-          <section className="space-y-6 pt-4">
+        {/* PERSPECTIVE SECTION 2: TUTOR VIEW */}
+        {viewPerspective === 'tutor' && (
+          <section className="space-y-6">
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <div>
                 <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                  <UserCheck className="text-emerald-600" size={22} /> Verified
-                  Tutor & Instructor Profile
+                  <UserCheck className="text-emerald-600" size={22} /> Tutor Dashboard
                 </h2>
               </div>
-              <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+              <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
                 Accepting Students • ${user?.hourlyRate || 45}/hr
               </span>
             </div>
 
             {/* Tutor HUD Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>Hourly Rate</span>
                   <DollarSign size={16} className="text-emerald-600" />
                 </div>
                 <div className="text-3xl font-display font-bold text-[#1d1d1f]">
                   ${user?.hourlyRate || 45}
-                  <span className="text-xs font-normal text-[#7a7a7a]">
-                    /hr
-                  </span>
+                  <span className="text-xs font-normal text-[#7a7a7a]">/hr</span>
                 </div>
-                <div className="text-xs text-[#7a7a7a]">
-                  Standard Tutoring Rate
-                </div>
+                <div className="text-xs text-[#7a7a7a] font-medium">Standard Tutoring Rate</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>Average Rating</span>
                   <Star size={16} className="text-amber-500 fill-amber-500" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  4.96
-                </div>
-                <div className="text-xs text-[#7a7a7a]">From 54 student reviews</div>
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">4.96</div>
+                <div className="text-xs text-[#7a7a7a] font-medium">From 54 student reviews</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
-                  <span>Total Students Taught</span>
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                  <span>Students Taught</span>
                   <UserCheck size={16} className="text-[#0066cc]" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  86 Students
-                </div>
-                <div className="text-xs text-emerald-600">
-                  100% On-time attendance
-                </div>
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">86</div>
+                <div className="text-xs text-emerald-600 font-medium">100% On-time attendance</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
                   <span>Tutoring Earnings</span>
                   <Award size={16} className="text-purple-600" />
                 </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  $3,840
-                </div>
-                <div className="text-xs text-[#7a7a7a]">Escrow released cleanly</div>
+                <div className="text-3xl font-display font-bold text-[#1d1d1f]">$3,840</div>
+                <div className="text-xs text-[#7a7a7a] font-medium">Escrow released cleanly</div>
               </div>
             </div>
 
-            {/* Teaching Domains & Verified Credentials */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                <h3 className="text-base font-display font-semibold text-[#1d1d1f] flex items-center justify-between">
-                  <span>Teaching Expertise Domains</span>
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="text-xs text-[#0066cc] hover:underline"
-                  >
-                    Edit Subjects
-                  </button>
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {user?.subjects && user.subjects.length > 0 ? (
-                    user.subjects.map((sub, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-semibold text-[#0066cc] flex items-center gap-1.5"
-                      >
-                        <Sparkles size={12} /> {sub}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-[#86868b]">
-                      No subjects configured.
-                    </span>
-                  )}
+            {/* Teaching Domains, Credentials, and Availability Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left Column: Teaching Expertise & verified badges (6 cols) */}
+              <div className="md:col-span-6 space-y-6">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
+                    <span>Teaching Expertise Domains</span>
+                    <button onClick={() => setIsEditModalOpen(true)} className="text-xs text-[#0066cc] hover:underline font-bold cursor-pointer">
+                      Edit Subjects
+                    </button>
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {user?.subjects && user.subjects.length > 0 ? (
+                      user.subjects.map((sub, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3.5 py-1.5 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-bold text-[#0066cc] flex items-center gap-1.5"
+                        >
+                          <Sparkles size={12} /> {sub}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-[#86868b] italic">No subjects configured.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f]">Verified Instructor Badges</h3>
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
+                      <ShieldCheck className="text-emerald-600 shrink-0" size={20} />
+                      <div>
+                        <div className="font-bold text-[#1d1d1f]">Stanford CS Academic Credential Verified</div>
+                        <div className="text-[#7a7a7a] font-medium">Official Transcripts & Degree Audit Confirmed</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
+                      <Star className="text-amber-500 shrink-0" size={20} />
+                      <div>
+                        <div className="font-bold text-[#1d1d1f]">Top 5% Rated Peer Instructor</div>
+                        <div className="text-[#7a7a7a] font-medium">Maintained &gt;4.9 Rating for 6+ Months</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                <h3 className="text-base font-display font-semibold text-[#1d1d1f]">
-                  Verified Instructor Badges
-                </h3>
-                <div className="space-y-3 text-xs">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
-                    <ShieldCheck className="text-emerald-600" size={20} />
-                    <div>
-                      <div className="font-semibold text-[#1d1d1f]">
-                        Stanford CS Academic Credential Verified
+              {/* Right Column: Availability Scheduler (6 cols) */}
+              <div className="md:col-span-6">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs min-h-[352px]">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                    <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours
+                  </h3>
+                  
+                  {/* Availability Creator Form */}
+                  <div className="p-3.5 rounded-xl bg-[#fafafc] border border-[#e5e5e7] space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
+                        <select
+                          value={newSlot.dayOfWeek}
+                          onChange={(e) => setNewSlot(prev => ({ ...prev, dayOfWeek: e.target.value }))}
+                          className="w-full p-2 bg-white border border-[#e5e5e7] rounded-lg text-xs font-bold text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0066cc] cursor-pointer"
+                        >
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                            <option key={day} value={day}>{day}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="text-[#7a7a7a]">
-                        Official Transcripts & Degree Audit Confirmed
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
+                        <input
+                          type="text"
+                          value={newSlot.timeStart}
+                          onChange={(e) => setNewSlot(prev => ({ ...prev, timeStart: e.target.value }))}
+                          placeholder="e.g. 09:00 AM"
+                          className="w-full p-2 bg-white border border-[#e5e5e7] rounded-lg text-xs font-bold text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
+                        <input
+                          type="text"
+                          value={newSlot.timeEnd}
+                          onChange={(e) => setNewSlot(prev => ({ ...prev, timeEnd: e.target.value }))}
+                          placeholder="e.g. 11:00 AM"
+                          className="w-full p-2 bg-white border border-[#e5e5e7] rounded-lg text-xs font-bold text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
+                        />
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleAddAvailability}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer select-none"
+                    >
+                      Add Availability Slot
+                    </button>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
-                    <Star className="text-amber-500" size={20} />
-                    <div>
-                      <div className="font-semibold text-[#1d1d1f]">
-                        Top 5% Rated Peer Instructor
+                  {/* Active Slots list */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
+                    {availability.length > 0 ? (
+                      <div className="max-h-[140px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        {availability.map((av) => (
+                          <div key={av.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-emerald-500/25 transition-colors gap-3 text-xs font-bold">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px]">
+                                {av.dayOfWeek.slice(0, 3)}
+                              </span>
+                              <span className="text-[#1d1d1f] font-mono font-medium">{av.timeStart} - {av.timeEnd}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAvailability(av.id)}
+                              className="p-1 rounded-lg hover:bg-red-50 text-[#7a7a7a] hover:text-red-600 transition-colors cursor-pointer"
+                              title="Delete Slot"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-[#7a7a7a]">
-                        Maintained &gt;4.9 Rating for 6+ Consecutive Months
-                      </div>
-                    </div>
+                    ) : (
+                      <span className="text-xs text-[#86868b] italic">No active availability slots configured.</span>
+                    )}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Earnings & Payout logs */}
+            <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+              <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                <DollarSign className="text-emerald-600" size={18} /> Tutor Earnings & Payout Records
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#e5e5e7] text-[#7a7a7a] font-bold">
+                      <th className="pb-3 pr-4 font-semibold">Reference ID</th>
+                      <th className="pb-3 px-4 font-semibold">Payout Date</th>
+                      <th className="pb-3 px-4 font-semibold">Destination Account</th>
+                      <th className="pb-3 px-4 font-semibold">Amount</th>
+                      <th className="pb-3 pl-4 font-semibold text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MOCK_PAYOUT_LOGS.map((log) => (
+                      <tr key={log.id} className="border-b border-[#f0f0f2]/80 hover:bg-[#fafafc] transition-colors">
+                        <td className="py-3.5 pr-4 font-bold text-[#1d1d1f]">{log.id}</td>
+                        <td className="py-3.5 px-4 text-[#525252] font-medium">{log.date}</td>
+                        <td className="py-3.5 px-4 text-[#1d1d1f] font-medium">{log.account}</td>
+                        <td className="py-3.5 px-4 text-emerald-600 font-extrabold">${log.amount.toFixed(2)}</td>
+                        <td className="py-3.5 pl-4 text-right">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px]">
+                            {log.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>
