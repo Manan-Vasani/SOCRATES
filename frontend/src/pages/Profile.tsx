@@ -153,17 +153,7 @@ export default function Profile() {
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
-  // Prevent background page scrolling when modal is open
-  useEffect(() => {
-    if (isEditModalOpen || cancellingSession) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isEditModalOpen, cancellingSession])
+
   const [formData, setFormData] = useState({
     name: user?.fullName || user?.name || '',
     phone: (user as any)?.phone || '',
@@ -210,6 +200,18 @@ export default function Profile() {
   const [sessions, setSessions] = useState<ProfileSessionItem[]>(() => getStoredProfileSessions())
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
+
+  // Prevent background page scrolling when modal is open
+  useEffect(() => {
+    if (isEditModalOpen || cancellingSession) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isEditModalOpen, cancellingSession])
 
   const confirmCancelSession = () => {
     if (!cancellingSession) return
