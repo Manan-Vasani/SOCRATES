@@ -422,6 +422,13 @@ export default function TutorSchedule() {
     e.preventDefault()
     if (!selectedDay || !selectedSlot) return
 
+    if (bookingTopic.length > 250) {
+      toast.error('Learning Topic cannot exceed 250 characters', {
+        description: `Please trim your text by ${bookingTopic.length - 250} characters before confirming.`,
+      })
+      return
+    }
+
     setIsSubmitting(true)
     const calculatedFee = Math.round((tutor.hourlyRate * selectedDuration) / 60)
 
@@ -1070,18 +1077,34 @@ export default function TutorSchedule() {
                     <label className="text-xs font-bold text-[#1d1d1f]">
                       Learning Topic / Questions (Optional)
                     </label>
-                    <span className="text-[10px] text-[#7a7a7a] font-medium">
+                    <span
+                      className={`text-[10px] font-semibold transition-all ${
+                        bookingTopic.length >= 250
+                          ? 'text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded-md'
+                          : 'text-[#7a7a7a]'
+                      }`}
+                    >
                       {bookingTopic.length}/250 chars
                     </span>
                   </div>
                   <textarea
                     value={bookingTopic}
-                    maxLength={250}
                     onChange={(e) => setBookingTopic(e.target.value)}
                     placeholder="e.g. Graph Traversal algorithms, BFS vs DFS prep..."
                     rows={3}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
+                    className={`w-full px-3.5 py-2.5 rounded-2xl text-xs placeholder-[#86868b] focus:outline-none transition-all resize-none min-h-[84px] ${
+                      bookingTopic.length > 250
+                        ? 'bg-red-50/50 border-2 border-red-500 text-red-600 focus:border-red-600 focus:ring-2 focus:ring-red-500/20 font-medium'
+                        : bookingTopic.length === 250
+                        ? 'bg-[#f5f5f7] border-2 border-red-500 text-[#1d1d1f] focus:border-red-500'
+                        : 'bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:border-[#0066cc] focus:bg-white'
+                    }`}
                   />
+                  {bookingTopic.length > 250 && (
+                    <p className="text-[10px] text-red-600 font-semibold mt-1 flex items-center gap-1">
+                      <span>⚠️ Character limit exceeded by {bookingTopic.length - 250} characters.</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Allow Group Fee Sharing Toggle */}
