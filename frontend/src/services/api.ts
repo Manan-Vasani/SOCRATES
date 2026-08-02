@@ -64,6 +64,15 @@ export const fetchFeaturedTutors = async (): Promise<TutorItem[] | null> => {
   }
 }
 
+export const fetchAllTutors = async (): Promise<TutorItem[] | null> => {
+  try {
+    const response = await api.get('/tutors')
+    return response.data?.data || null
+  } catch (error) {
+    return null
+  }
+}
+
 export const fetchFAQs = async (): Promise<FAQItem[] | null> => {
   try {
     const response = await api.get('/homepage/faqs')

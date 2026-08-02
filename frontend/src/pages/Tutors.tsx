@@ -30,7 +30,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
-import { fetchFeaturedTutors, TutorItem } from '../services/api'
+import { fetchAllTutors, TutorItem } from '../services/api'
 
 export interface ExtendedTutor extends Omit<TutorItem, 'reviews'> {
   id: string
@@ -213,11 +213,11 @@ export default function Tutors() {
     async function loadBackendTutors() {
       setIsLoading(true)
       try {
-        const data = await fetchFeaturedTutors()
+        const data = await fetchAllTutors()
         if (data && data.length > 0 && isMounted) {
           // Merge backend data with default rich profiles
           const merged = data.map((t, idx) => ({
-            id: 'fetched_' + idx,
+            id: t._id || t.id || 'fetched_' + idx,
             name: t.name,
             subject: t.subject,
             experience: t.experience,
@@ -226,7 +226,7 @@ export default function Tutors() {
             image: t.image,
             hourlyRate: (t as any).hourlyRate || 55,
             bio: (t as any).bio || `${t.experience} specializing in ${t.subject}.`,
-            subjects: [t.subject.split(' ')[0], 'Computer Science', 'Tutorials'],
+            subjects: (t as any).subjects && (t as any).subjects.length > 0 ? (t as any).subjects : [t.subject.split(' ')[0], 'Computer Science', 'Tutorials'],
             isOnline: idx % 2 === 0,
             isVerified: true,
             institution: 'Top Academic Institution',
