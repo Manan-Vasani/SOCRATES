@@ -119,6 +119,18 @@ const verifyGoogleToken = async (idToken) => {
   }
 };
 
+const hasValidGoogleCredentials = () => {
+  const id = getClientID();
+  const secret = getClientSecret();
+  return Boolean(
+    id &&
+    secret &&
+    id !== 'your_google_client_id' &&
+    secret !== 'your_google_client_secret' &&
+    id.length > 5
+  );
+};
+
 module.exports = {
   passport,
   verifyGoogleToken,
