@@ -1307,7 +1307,7 @@ export default function Profile() {
                   </div>
 
                   {/* Active Slots list */}
-                  <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-2 justify-end">
+                  <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-2">
                     <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
                     {availability.length > 0 ? (
                       <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[140px]">
