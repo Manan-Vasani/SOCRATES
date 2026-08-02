@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
@@ -14,28 +14,9 @@ export default function VerifyOTP() {
   const navigate = useNavigate()
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
   const [error, setError] = useState<string>('')
-  const [timeLeft, setTimeLeft] = useState<number>(120) // 2 minutes (120s)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const email = sessionStorage.getItem('reset_email') || ''
-
-  useEffect(() => {
-    if (timeLeft <= 0) return
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1)
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [timeLeft])
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, '0')
-    const secs = (seconds % 60).toString().padStart(2, '0')
-    return `${mins}:${secs}`
-  }
 
   const handleResend = async () => {
     if (!email) {
@@ -48,7 +29,6 @@ export default function VerifyOTP() {
     try {
       const response = await api.post('/auth/forgot-password', { email })
       if (response.data?.success) {
-        setTimeLeft(120) // Restart countdown timer
         setOtp(Array(6).fill(''))
         setError('')
         toast.success(response.data?.message || 'A new verification code has been sent to your email!')
@@ -119,31 +99,17 @@ export default function VerifyOTP() {
               error={error}
             />
 
-            {/* Countdown timer animation & Resend Button */}
-            <div className="flex flex-col items-center justify-center space-y-3 select-none">
-              {timeLeft > 0 ? (
-                <div className="text-xs font-medium text-[#6e6e73] flex items-center gap-1.5 bg-[#f5f5f7] px-3.5 py-1.5 rounded-full border border-[#e5e5e5]">
-                  <span>Resend code in</span>
-                  <span className="font-bold font-mono text-[#0066cc]">
-                    {formatTime(timeLeft)}
-                  </span>
-                </div>
-              ) : (
-                <div className="w-full space-y-2.5">
-                  <p className="text-center text-xs font-medium text-[#6e6e73]">
-                    Didn't receive the verification code?
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={isLoading}
-                    className="w-full py-2.5 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 hover:bg-[#0066cc]/10 hover:border-[#0066cc]/60 text-[#0066cc] text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 select-none"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 text-[#0066cc] ${isLoading ? 'animate-spin' : ''}`} />
-                    <span>{isLoading ? 'Sending New Code...' : 'Resend Verification Code'}</span>
-                  </button>
-                </div>
-              )}
+            {/* Resend Verification Code Action */}
+            <div className="w-full space-y-2 select-none">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={isLoading}
+                className="w-full py-2.5 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 hover:bg-[#0066cc]/10 hover:border-[#0066cc]/60 text-[#0066cc] text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 select-none"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#0066cc] ${isLoading ? 'animate-spin' : ''}`} />
+                <span>{isLoading ? 'Sending New Code...' : 'Resend Verification Code'}</span>
+              </button>
             </div>
 
             <button
