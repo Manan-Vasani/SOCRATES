@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 require('dotenv').config();
+require('express-async-errors');
 
 const connectDB = require('./config/db');
 const homepageRoutes = require('./routes/homepageRoutes');
