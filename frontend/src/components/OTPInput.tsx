@@ -1,4 +1,4 @@
-import React, { useRef, KeyboardEvent, ClipboardEvent } from 'react'
+import React, { useRef, KeyboardEvent, ClipboardEvent, FocusEvent } from 'react'
 
 interface OTPInputProps {
   value: string[]
@@ -9,7 +9,25 @@ interface OTPInputProps {
 export default function OTPInput({ value, onChange, error }: OTPInputProps) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([])
 
-  const handleChange = (val: string, index: number) => {
+  const handleFocus = (index: number, e: FocusEvent<HTMLInputElement>) => {
+    // Find the first empty input index
+    const firstEmptyIndex = value.findIndex((val) => !val)
+
+    // If user clicked an empty box beyond the first empty one, redirect focus to first empty box
+    if (firstEmptyIndex !== -1 && index > firstEmptyIndex) {
+      inputsRef.current[firstEmptyIndex]?.focus()
+      inputsRef.current[firstEmptyIndex]?.select()
+      return
+    }
+
+    // Auto-select content in current box so typing immediately overwrites without backspace
+    e.target.select()
+  }
+
+  const handleChange = (rawVal: string, index: number) => {
+    // Take the last character entered (enables direct overwrite without pressing backspace)
+    const val = rawVal.slice(-1)
+
     // Only allow numeric digits
     if (val && !/^[0-9]$/.test(val)) return
 
@@ -19,7 +37,10 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
 
     // Automatically focus next input field if digit is entered
     if (val && index < 5) {
-      inputsRef.current[index + 1]?.focus()
+      setTimeout(() => {
+        inputsRef.current[index + 1]?.focus()
+        inputsRef.current[index + 1]?.select()
+      }, 10)
     }
   }
 
@@ -30,6 +51,7 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
         newValue[index - 1] = ''
         onChange(newValue)
         inputsRef.current[index - 1]?.focus()
+        inputsRef.current[index - 1]?.select()
       } else {
         const newValue = [...value]
         newValue[index] = ''
@@ -37,8 +59,10 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
       }
     } else if (e.key === 'ArrowLeft' && index > 0) {
       inputsRef.current[index - 1]?.focus()
+      inputsRef.current[index - 1]?.select()
     } else if (e.key === 'ArrowRight' && index < 5) {
       inputsRef.current[index + 1]?.focus()
+      inputsRef.current[index + 1]?.select()
     }
   }
 
@@ -50,6 +74,7 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
     const newValue = pastedData.split('')
     onChange(newValue)
     inputsRef.current[5]?.focus()
+    inputsRef.current[5]?.select()
   }
 
   return (
@@ -61,9 +86,11 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={1}
+            maxLength={2}
             value={value[index] || ''}
             onChange={(e) => handleChange(e.target.value, index)}
+            onFocus={(e) => handleFocus(index, e)}
+            onClick={(e) => handleFocus(index, e as any)}
             onKeyDown={(e) => handleKeyDown(e, index)}
             onPaste={handlePaste}
             ref={(el) => {
@@ -74,7 +101,7 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
               error
                 ? 'border-[#dc2626] focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626]'
                 : 'border-[#e5e5e5] focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]'
-            } text-[#1d1d1f] outline-none transition-all`}
+            } text-[#1d1d1f] outline-none transition-all cursor-pointer`}
           />
         ))}
       </div>
