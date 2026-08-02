@@ -194,21 +194,6 @@ export default function Signup() {
                   setIsPasswordFocused(false)
                 }}
               />
-
-              {/* Password Requirements Panel - opens strictly when Password field is focused or active */}
-              <AnimatePresence>
-                {(isPasswordFocused || (passwordValue.length > 0 && isPasswordFocused)) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden pt-1"
-                  >
-                    <PasswordStrength value={passwordValue} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
 
             {/* Confirm Password Field */}
@@ -226,56 +211,22 @@ export default function Signup() {
                   setIsConfirmPasswordFocused(false)
                 }}
               />
-
-              {/* Confirm Password Requirements Panel - opens strictly when Confirm Password field is focused or active */}
-              <AnimatePresence>
-                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden pt-1"
-                  >
-                    <div className="w-full bg-[#f5f5f7] border border-[#e5e5e5] rounded-2xl p-4 space-y-2 text-left select-none">
-                      <p className="text-[12px] font-semibold text-[#1d1d1f]">
-                        Confirm Password Requirements
-                      </p>
-                      <div className="space-y-1.5 text-xs">
-                        <div
-                          className={`flex items-center gap-2 font-medium transition-colors ${
-                            confirmPasswordValue.length > 0
-                              ? isMatching
-                                ? 'text-emerald-600'
-                                : 'text-red-600'
-                              : 'text-[#6e6e73]'
-                          }`}
-                        >
-                          <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                            {confirmPasswordValue.length > 0 ? (
-                              isMatching ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3px]" />
-                              ) : (
-                                <X className="w-3.5 h-3.5 text-red-600 stroke-[3px]" />
-                              )
-                            ) : (
-                              <div className="w-3.5 h-3.5 rounded-full border border-[#6e6e73]/30" />
-                            )}
-                          </div>
-                          <span>
-                            {confirmPasswordValue.length === 0
-                              ? 'Must match password exactly'
-                              : isMatching
-                              ? 'Passwords match perfectly'
-                              : 'Passwords do not match yet'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
+
+            {/* Unified Password Requirements & Match Checklist */}
+            <AnimatePresence>
+              {(isPasswordFocused || isConfirmPasswordFocused || passwordValue.length > 0 || confirmPasswordValue.length > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden pt-1"
+                >
+                  <PasswordStrength value={passwordValue} confirmValue={confirmPasswordValue} />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <button
               type="submit"
