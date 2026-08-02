@@ -68,7 +68,9 @@ export default function ForgotPassword() {
               transition={{ duration: 0.15 }}
               className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer shadow-sm select-none"
             >
-              Send OTP
+              <motion.span whileTap={{ scale: 1.0101 }} transition={{ duration: 0.15 }} className="inline-block">
+                Send OTP
+              </motion.span>
             </motion.button>
           </form>
 

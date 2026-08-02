@@ -85,7 +85,9 @@ export default function Hero() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#0066cc] text-white text-sm font-medium hover:bg-[#0077ed] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer"
           >
-            Find a Tutor
+            <motion.span whileTap={{ scale: 1.0152 }} transition={{ duration: 0.2 }} className="inline-block">
+              Find a Tutor
+            </motion.span>
           </motion.button>
 
           <motion.button
@@ -95,7 +97,9 @@ export default function Hero() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="w-full sm:w-auto px-7 py-3 rounded-full bg-white text-[#0066cc] border border-[#0066cc] text-sm font-medium hover:bg-[#0066cc]/5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer"
           >
-            Become a Tutor
+            <motion.span whileTap={{ scale: 1.0152 }} transition={{ duration: 0.2 }} className="inline-block">
+              Become a Tutor
+            </motion.span>
           </motion.button>
         </motion.div>
 
