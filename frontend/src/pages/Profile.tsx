@@ -1460,14 +1460,25 @@ export default function Profile() {
                       <label className="text-[#525252] font-semibold block">
                         Academic Level
                       </label>
-                      <CustomDropdown<string>
-                        options={ACADEMIC_LEVEL_OPTIONS}
-                        value={formData.academicLevel}
-                        onChange={(val: string) => setFormData({ ...formData, academicLevel: val })}
-                        className="w-full"
-                        buttonClassName="!py-2.5 !px-4 w-full justify-between bg-[#f5f5f7] text-xs font-bold border border-[#e0e0e0] !rounded-xl text-[#1d1d1f]"
-                        align="center"
-                      />
+                      <div className="flex flex-wrap gap-2">
+                        {ACADEMIC_LEVEL_OPTIONS.map((opt) => {
+                          const isSel = formData.academicLevel === opt.value
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, academicLevel: opt.value })}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${
+                                isSel
+                                  ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
+                                  : 'bg-[#f5f5f7] border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#e5e5e7]'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                     <div className="col-span-2">
                       <div className="flex items-center justify-between mb-2">
@@ -1605,14 +1616,25 @@ export default function Profile() {
                       <label className="text-[#525252] font-semibold block">
                         Academic Level
                       </label>
-                      <CustomDropdown<string>
-                        options={ACADEMIC_LEVEL_OPTIONS}
-                        value={formData.academicLevel}
-                        onChange={(val: string) => setFormData({ ...formData, academicLevel: val })}
-                        className="w-full"
-                        buttonClassName="!py-2.5 !px-4 w-full justify-between bg-[#f5f5f7] text-xs font-bold border border-[#e0e0e0] !rounded-xl text-[#1d1d1f]"
-                        align="center"
-                      />
+                      <div className="flex flex-wrap gap-2">
+                        {ACADEMIC_LEVEL_OPTIONS.map((opt) => {
+                          const isSel = formData.academicLevel === opt.value
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, academicLevel: opt.value })}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${
+                                isSel
+                                  ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
+                                  : 'bg-[#f5f5f7] border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#e5e5e7]'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                     <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">
