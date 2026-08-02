@@ -137,44 +137,44 @@ export default function Signup() {
               <label className="block text-xs font-medium text-[#1d1d1f]">
                 I am joining SOCRATES as a:
               </label>
-              <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="grid grid-cols-3 gap-2.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setValue('role', 'student')}
-                  className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer font-medium select-none ${
                     selectedRole === 'student'
-                      ? 'border-[#0066cc] bg-[#0066cc]/5 text-[#0066cc] font-semibold shadow-xs'
-                      : 'border-[#e0e0e0] text-[#525252] hover:bg-[#f5f5f7]'
+                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc] font-semibold shadow-xs ring-1 ring-[#0066cc]'
+                      : 'border-[#e5e5e5] bg-white text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc]'
                   }`}
                 >
-                  <GraduationCap size={16} />
-                  <span className="text-[11px]">Student</span>
+                  <GraduationCap size={18} className={selectedRole === 'student' ? 'text-[#0066cc]' : 'text-[#6e6e73]'} />
+                  <span className="text-[12px]">Student</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setValue('role', 'tutor')}
-                  className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer font-medium select-none ${
                     selectedRole === 'tutor'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-700 font-semibold shadow-xs'
-                      : 'border-[#e0e0e0] text-[#525252] hover:bg-[#f5f5f7]'
+                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc] font-semibold shadow-xs ring-1 ring-[#0066cc]'
+                      : 'border-[#e5e5e5] bg-white text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc]'
                   }`}
                 >
-                  <UserCheck size={16} />
-                  <span className="text-[11px]">Tutor</span>
+                  <UserCheck size={18} className={selectedRole === 'tutor' ? 'text-[#0066cc]' : 'text-[#6e6e73]'} />
+                  <span className="text-[12px]">Tutor</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setValue('role', 'both')}
-                  className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer font-medium select-none ${
                     selectedRole === 'both'
-                      ? 'border-purple-600 bg-purple-50 text-purple-700 font-semibold shadow-xs'
-                      : 'border-[#e0e0e0] text-[#525252] hover:bg-[#f5f5f7]'
+                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc] font-semibold shadow-xs ring-1 ring-[#0066cc]'
+                      : 'border-[#e5e5e5] bg-white text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc]'
                   }`}
                 >
-                  <Repeat size={16} />
-                  <span className="text-[11px]">Peer (Both)</span>
+                  <Repeat size={18} className={selectedRole === 'both' ? 'text-[#0066cc]' : 'text-[#6e6e73]'} />
+                  <span className="text-[12px]">Peer (Both)</span>
                 </button>
               </div>
             </div>
