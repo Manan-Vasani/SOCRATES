@@ -987,7 +987,8 @@ export default function Profile() {
                           options={DAY_OPTIONS}
                           value={newSlot.dayOfWeek}
                           onChange={(val: string) => setNewSlot(prev => ({ ...prev, dayOfWeek: val }))}
-                          buttonClassName="py-[7px] w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7]"
+                          className="w-full"
+                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
                           align="left"
                         />
                       </div>
