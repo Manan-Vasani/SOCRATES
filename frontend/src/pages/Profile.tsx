@@ -336,7 +336,7 @@ export default function Profile() {
                   onClick={() => setIsEditModalOpen(true)}
                   className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium text-xs transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Edit3 size={14} /> Edit Profile & Role
+                  <Edit3 size={14} /> Edit Profile
                 </button>
               </div>
 
@@ -807,8 +807,7 @@ export default function Profile() {
           <div className="w-full max-w-xl bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-6 relative shadow-2xl animate-in fade-in zoom-in duration-200 text-[#1d1d1f]">
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <h3 className="text-lg font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                <Edit3 size={18} className="text-[#0066cc]" /> Edit SOCRATES
-                Profile
+                <Edit3 size={18} className="text-[#0066cc]" /> Edit Profile
               </h3>
               <button
                 onClick={() => setIsEditModalOpen(false)}
