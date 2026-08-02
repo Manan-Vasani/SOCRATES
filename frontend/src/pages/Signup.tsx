@@ -141,9 +141,9 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={() => setValue('role', 'student')}
-                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer font-medium select-none ${
+                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-colors cursor-pointer font-semibold select-none ${
                     selectedRole === 'student'
-                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc] font-semibold shadow-xs ring-1 ring-[#0066cc]'
+                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc]'
                       : 'border-[#e5e5e5] bg-white text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc]'
                   }`}
                 >
@@ -154,9 +154,9 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={() => setValue('role', 'tutor')}
-                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer font-medium select-none ${
+                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-colors cursor-pointer font-semibold select-none ${
                     selectedRole === 'tutor'
-                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc] font-semibold shadow-xs ring-1 ring-[#0066cc]'
+                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc]'
                       : 'border-[#e5e5e5] bg-white text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc]'
                   }`}
                 >
@@ -167,9 +167,9 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={() => setValue('role', 'both')}
-                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer font-medium select-none ${
+                  className={`p-3 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-colors cursor-pointer font-semibold select-none ${
                     selectedRole === 'both'
-                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc] font-semibold shadow-xs ring-1 ring-[#0066cc]'
+                      ? 'border-[#0066cc] bg-[#0066cc]/10 text-[#0066cc]'
                       : 'border-[#e5e5e5] bg-white text-[#1d1d1f] hover:bg-[#f8f9fa] hover:border-[#c6c6cc]'
                   }`}
                 >
