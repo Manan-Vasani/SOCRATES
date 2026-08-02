@@ -372,20 +372,10 @@ export default function Profile() {
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
 
-  const [availability, setAvailability] = useState<AvailabilitySlot[]>(
-    (user as any)?.availability && (user as any).availability.length > 0
-      ? (user as any).availability
-      : DEFAULT_AVAILABILITY
-  )
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>(DEFAULT_AVAILABILITY)
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM' })
   const [selectedDuration, setSelectedDuration] = useState<number>(60)
   const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
-
-  useEffect(() => {
-    if ((user as any)?.availability) {
-      setAvailability((user as any).availability)
-    }
-  }, [user])
 
   const calculateEndTime = (startStr: string, durationMin: number): string => {
     const timeToMinutes = (timeStr: string): number => {
@@ -485,10 +475,7 @@ export default function Profile() {
       timeEnd: timeEndStr
     }
 
-    const updated = [...availability, newSlotItem]
-    setAvailability(updated)
-    updateUserProfileApi({ availability: updated })
-    updateUser({ availability: updated })
+    setAvailability(prev => [...prev, newSlotItem])
     toast.success(`Slot added: ${newSlot.timeStart} - ${timeEndStr}`)
 
     // Auto-advance start time by duration + 20 min break
@@ -501,10 +488,7 @@ export default function Profile() {
   }
 
   const handleRemoveAvailability = (id: string) => {
-    const updated = availability.filter(av => av.id !== id)
-    setAvailability(updated)
-    updateUserProfileApi({ availability: updated })
-    updateUser({ availability: updated })
+    setAvailability(prev => prev.filter(av => av.id !== id))
     toast.success('Availability slot removed')
   }
 
@@ -1263,7 +1247,7 @@ export default function Profile() {
 
               {/* Right Column: Availability Scheduler (6 cols) */}
               <div className="md:col-span-6 flex">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between min-h-[364px]">
                   <div className="space-y-4">
                     <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                       <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours

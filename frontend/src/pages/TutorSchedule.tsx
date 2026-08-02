@@ -1,39 +1,38 @@
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import {
-  ArrowLeft,
-  Atom,
-  BookOpen,
-  Calendar as CalendarIcon,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Code2,
-  Cpu,
-  Globe,
-  GraduationCap,
-  Layers,
-  Lock,
-  ShieldCheck,
-  Sigma,
-  Sparkles,
-  Star,
-  Target,
-  Terminal,
-  User,
-  Users,
-  Video,
-  X,
-  Zap
+    ArrowLeft,
+    Atom,
+    BookOpen,
+    Calendar as CalendarIcon,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    Code2,
+    Cpu,
+    Globe,
+    GraduationCap,
+    Layers,
+    Lock,
+    ShieldCheck,
+    Sigma,
+    Sparkles,
+    Star,
+    Target,
+    Terminal,
+    User,
+    Users,
+    X,
+    Zap
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import Navbar from '../components/Navbar'
 import CustomDropdown from '../components/CustomDropdown'
+import Navbar from '../components/Navbar'
 import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
-import { getStoredProfileSessions, saveStoredProfileSessions, ProfileSessionItem } from './Profile'
+import { getStoredProfileSessions, ProfileSessionItem, saveStoredProfileSessions } from './Profile'
 
 function TutorScheduleSkeleton() {
   return (
@@ -413,67 +412,35 @@ export default function TutorSchedule() {
       const slots: TimeSlot[] = []
       const availableSubjects = tutor.subjects
 
-      const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-      const dayName = WEEKDAYS[dayOfWeek]
+      const slotTimes = status === 'green' 
+        ? ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
+        : status === 'yellow'
+        ? ['10:00 AM', '01:30 PM', '04:00 PM']
+        : ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
 
-      const isCurrentUserTutor = user && (user.role === 'tutor' || user.role === 'both') && 
-        (String(tutor.name).toLowerCase() === String(user.fullName).toLowerCase() || 
-         String(tutor.name).toLowerCase() === String(user.name).toLowerCase() || 
-         tutor.id === user._id)
+      const mockTopics = ['Graph Traversals & BFS', 'Dynamic Programming Prep', 'Tree Recursion & Heaps']
+      slotTimes.forEach((time, idx) => {
+        const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
+        // Dynamic realistic balance: mix of Group Split (yellow) and Private 1-on-1 (red)
+        const allowGroup = isSlotBooked ? (dayNum + idx) % 3 !== 0 : true
+        const topic = isSlotBooked && idx % 2 === 0 ? mockTopics[(dayNum + idx) % mockTopics.length] : undefined
+        const durationMin = idx % 3 === 0 ? 20 : idx % 3 === 1 ? 30 : 60
+        const maxMembers = getDurationMaxMembers(durationMin)
+        const currentMembers = isSlotBooked && allowGroup ? ((dayNum + idx) % maxMembers) + 1 : 1
 
-      const customSlots = isCurrentUserTutor && (user as any).availability && (user as any).availability.length > 0
-        ? (user as any).availability.filter((slot: any) => slot.dayOfWeek === dayName)
-        : null
-
-      if (customSlots) {
-        customSlots.forEach((slot: any, idx: number) => {
-          const isSlotBooked = backendBookings.some((b: any) => {
-            const bookingDate = new Date(b.date)
-            const sameDate = bookingDate.getDate() === dayNum && bookingDate.getMonth() === month && bookingDate.getFullYear() === year
-            return sameDate && b.time === slot.timeStart
-          })
-
-          slots.push({
-            time: slot.timeStart,
-            subject: tutor.subjects[0] || 'Computer Science',
-            availableDurations: '20, 30, 60 min',
-            isBooked: isSlotBooked,
-            allowGroupSplit: true,
-            durationMin: 60,
-            maxMembers: 3,
-            currentMembers: isSlotBooked ? 1 : 0
-          })
+        slots.push({
+          time,
+          subject: isSlotBooked ? availableSubjects[idx % availableSubjects.length] : '',
+          topic,
+          availableDurations: '20, 30, 60 min',
+          isBooked: isSlotBooked,
+          bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined,
+          allowGroupSplit: allowGroup,
+          durationMin,
+          maxMembers,
+          currentMembers
         })
-      } else {
-        const slotTimes = status === 'green' 
-          ? ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
-          : status === 'yellow'
-          ? ['10:00 AM', '01:30 PM', '04:00 PM']
-          : ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
-
-        const mockTopics = ['Graph Traversals & BFS', 'Dynamic Programming Prep', 'Tree Recursion & Heaps']
-        slotTimes.forEach((time, idx) => {
-          const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
-          const allowGroup = isSlotBooked ? (dayNum + idx) % 3 !== 0 : true
-          const topic = isSlotBooked && idx % 2 === 0 ? mockTopics[(dayNum + idx) % mockTopics.length] : undefined
-          const durationMin = idx % 3 === 0 ? 20 : idx % 3 === 1 ? 30 : 60
-          const maxMembers = getDurationMaxMembers(durationMin)
-          const currentMembers = isSlotBooked && allowGroup ? ((dayNum + idx) % maxMembers) + 1 : 1
-
-          slots.push({
-            time,
-            subject: isSlotBooked ? availableSubjects[idx % availableSubjects.length] : '',
-            topic,
-            availableDurations: '20, 30, 60 min',
-            isBooked: isSlotBooked,
-            bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined,
-            allowGroupSplit: allowGroup,
-            durationMin,
-            maxMembers,
-            currentMembers
-          })
-        })
-      }
+      })
 
       const dateString = dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
