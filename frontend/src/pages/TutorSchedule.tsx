@@ -1078,10 +1078,10 @@ export default function TutorSchedule() {
                       Learning Topic / Questions (Optional)
                     </label>
                     <span
-                      className={`text-[10px] font-semibold transition-all ${
+                      className={`text-[10px] transition-colors ${
                         bookingTopic.length >= 250
-                          ? 'text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded-md'
-                          : 'text-[#7a7a7a]'
+                          ? 'text-red-500 font-bold'
+                          : 'text-[#7a7a7a] font-medium'
                       }`}
                     >
                       {bookingTopic.length}/250 chars
@@ -1089,22 +1089,12 @@ export default function TutorSchedule() {
                   </div>
                   <textarea
                     value={bookingTopic}
+                    maxLength={250}
                     onChange={(e) => setBookingTopic(e.target.value)}
                     placeholder="e.g. Graph Traversal algorithms, BFS vs DFS prep..."
                     rows={3}
-                    className={`w-full px-3.5 py-2.5 rounded-2xl text-xs placeholder-[#86868b] focus:outline-none transition-all resize-none min-h-[84px] ${
-                      bookingTopic.length > 250
-                        ? 'bg-red-50/50 border-2 border-red-500 text-red-600 focus:border-red-600 focus:ring-2 focus:ring-red-500/20 font-medium'
-                        : bookingTopic.length === 250
-                        ? 'bg-[#f5f5f7] border-2 border-red-500 text-[#1d1d1f] focus:border-red-500'
-                        : 'bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:border-[#0066cc] focus:bg-white'
-                    }`}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors resize-none min-h-[84px]"
                   />
-                  {bookingTopic.length > 250 && (
-                    <p className="text-[10px] text-red-600 font-semibold mt-1 flex items-center gap-1">
-                      <span>⚠️ Character limit exceeded by {bookingTopic.length - 250} characters.</span>
-                    </p>
-                  )}
                 </div>
 
                 {/* Allow Group Fee Sharing Toggle */}
