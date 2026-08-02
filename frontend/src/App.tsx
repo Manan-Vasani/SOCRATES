@@ -35,33 +35,23 @@ function AuthSync() {
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
-  const prevPathnameRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // Initial mount/refresh: preserve browser's native scroll position unless hash target exists
-    if (prevPathnameRef.current === null) {
-      prevPathnameRef.current = pathname
-      if (hash) {
-        const element = document.getElementById(hash.replace('#', ''))
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' })
-        }
-      }
-      return
+    // Force manual scroll restoration so page refresh always renders from top
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
     }
 
-    // Only scroll to top when navigating to a new route pathname
-    if (prevPathnameRef.current !== pathname) {
-      prevPathnameRef.current = pathname
-      if (!hash) {
-        window.scrollTo(0, 0)
-      } else {
-        const element = document.getElementById(hash.replace('#', ''))
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' })
-        }
+    if (hash) {
+      const element = document.getElementById(hash.replace('#', ''))
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+        return
       }
     }
+
+    // Instantly scroll to top on page mount, refresh, and route change
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [pathname, hash])
 
   return null
@@ -89,8 +79,4 @@ function App() {
   )
 }
 
-
-
 export default App
-
-
