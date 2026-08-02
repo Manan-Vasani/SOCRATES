@@ -894,10 +894,10 @@ export default function TutorSchedule() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-6 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none"
+              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-6 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none max-h-[85vh] flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-start justify-between border-b border-[#e5e5e7] pb-4">
+              <div className="flex items-start justify-between border-b border-[#e5e5e7] pb-4 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
                     <CalendarIcon size={20} />
@@ -934,7 +934,8 @@ export default function TutorSchedule() {
               </div>
 
               {/* Slot Selection Form */}
-              <form onSubmit={handleConfirmBooking} className="space-y-5">
+              <form onSubmit={handleConfirmBooking} className="flex-1 flex flex-col overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto pr-1.5 py-4 space-y-5 custom-scrollbar">
                 {/* Subject Selector */}
                 {tutor.subjects && tutor.subjects.length > 0 && (
                   <div>
@@ -1143,7 +1144,9 @@ export default function TutorSchedule() {
                   />
                 </div>
 
-                <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#f0f0f2]">
+                </div>
+
+                <div className="pt-3.5 mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#f0f0f2] shrink-0 bg-white z-10">
                   <div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-xs font-medium text-[#6e6e73]">Total Fee:</span>

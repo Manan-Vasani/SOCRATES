@@ -66,6 +66,24 @@ button, a, [role="button"] {
   min-height: 100vh;
 }
 
+/* Sleek Custom Scrollbar for Modals and Cards */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d1d6;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a6;
+}
+
 /* Sonner Toast Close Button Vertically Centered Right */
 [data-sonner-toast] [data-close-button] {
   top: 50% !important;
