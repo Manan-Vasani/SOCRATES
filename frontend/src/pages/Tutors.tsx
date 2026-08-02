@@ -714,7 +714,7 @@ export default function Tutors() {
                 <button
                   type="submit"
                   disabled={isBookingSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-semibold transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-2 cursor-pointer active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-semibold transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-2 cursor-pointer hover:shadow-lg"
                 >
                   {isBookingSubmitting ? 'Confirming...' : 'Confirm & Reserve Session'}
                 </button>

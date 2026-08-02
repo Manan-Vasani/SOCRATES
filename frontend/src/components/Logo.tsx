@@ -35,7 +35,7 @@ export default function Logo({
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
       {/* High-End Modern Brand Logo Mark */}
       <div
-        className={`relative ${iconSizes[size]} rounded-xl bg-[#1d1d1f] text-white flex items-center justify-center shrink-0 transition-transform duration-200 hover:scale-105 shadow-sm border border-[#333333]`}
+        className={`relative ${iconSizes[size]} rounded-xl bg-[#1d1d1f] text-white flex items-center justify-center shrink-0 transition-all duration-200 hover:shadow-md hover:border-[#0066cc]/40 shadow-sm border border-[#333333]`}
       >
         <svg
           viewBox="0 0 24 24"

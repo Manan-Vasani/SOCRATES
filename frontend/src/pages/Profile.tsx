@@ -241,11 +241,11 @@ export default function Profile() {
                 <img
                   src={user?.profileImage || user?.avatar || ''}
                   alt={user?.fullName || user?.name || 'User Profile'}
-                  className="w-24 h-24 rounded-full object-cover border-2 border-[#0066cc] shadow-md group-hover:scale-105 transition-transform duration-300"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-[#0066cc] shadow-md hover:shadow-lg transition-all duration-300"
                 />
                 <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="absolute bottom-0 right-0 p-2 bg-[#0066cc] hover:bg-[#0077ed] text-white rounded-full shadow-md transition-transform hover:scale-110"
+                  className="absolute bottom-0 right-0 p-2 bg-[#0066cc] hover:bg-[#0077ed] text-white rounded-full shadow-md hover:shadow-lg transition-all"
                   title="Change Avatar"
                 >
                   <Edit3 size={13} />
@@ -454,7 +454,7 @@ export default function Profile() {
                       <button
                         type="button"
                         onClick={() => setCancellingSession(session)}
-                        className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none active:scale-95 flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs flex items-center gap-1"
                       >
                         <X size={12} /> Cancel Session
                       </button>
@@ -765,7 +765,7 @@ export default function Profile() {
           </div>
           <button
             onClick={handleLogout}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold text-xs transition-all cursor-pointer shadow-xs hover:shadow-md"
           >
             <LogOut size={15} />
             Sign Out of Account
@@ -963,7 +963,7 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={confirmCancelSession}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors shadow-xs cursor-pointer select-none active:scale-95"
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 hover:shadow-md text-white text-xs font-semibold transition-all shadow-xs cursor-pointer select-none"
                 >
                   Yes, Cancel Session
                 </button>
