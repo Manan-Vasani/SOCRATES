@@ -38,15 +38,20 @@ export default function VerifyOTP() {
   }
 
   const handleResend = async () => {
-    if (timeLeft > 0 || !email) return
+    if (!email) {
+      toast.error('Please enter your email address first.')
+      navigate('/forgot-password')
+      return
+    }
+
     setIsLoading(true)
     try {
       const response = await api.post('/auth/forgot-password', { email })
       if (response.data?.success) {
-        setTimeLeft(120)
+        setTimeLeft(120) // Restart countdown timer
         setOtp(Array(6).fill(''))
         setError('')
-        toast.success(response.data?.message || 'A new OTP verification code has been sent!')
+        toast.success(response.data?.message || 'A new verification code has been sent to your email!')
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to resend code')
@@ -115,28 +120,28 @@ export default function VerifyOTP() {
             />
 
             {/* Countdown timer animation & Resend */}
-            <div className="flex flex-col items-center justify-center space-y-2 select-none">
-              <span className="text-sm font-semibold font-mono text-[#1d1d1f]">
-                {formatTime(timeLeft)}
-              </span>
-              <div className="text-xs text-[#6e6e73]">
-                <span>Didn't receive the code? </span>
-                {timeLeft > 0 ? (
-                  <span className="text-[#6e6e73]/60 cursor-not-allowed">
-                    Resend Code
+            <div className="flex flex-col items-center justify-center space-y-1.5 select-none min-h-[32px]">
+              {timeLeft > 0 ? (
+                <div className="text-xs font-medium text-[#6e6e73] flex items-center gap-1.5">
+                  <span>Resend code in</span>
+                  <span className="font-semibold font-mono text-[#1d1d1f] bg-[#f5f5f7] px-2 py-0.5 rounded-md border border-[#e5e5e5]">
+                    {formatTime(timeLeft)}
                   </span>
-                ) : (
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1.5 text-xs text-[#6e6e73]">
+                  <span>Didn't receive the code?</span>
                   <button
                     type="button"
                     onClick={handleResend}
                     disabled={isLoading}
-                    className="font-semibold text-[#0066cc] hover:underline focus-visible:outline-2 focus-visible:outline-[#0066cc] rounded inline-flex items-center gap-1 cursor-pointer"
+                    className="font-semibold text-[#0066cc] hover:text-[#0077ed] hover:underline focus-visible:outline-2 focus-visible:outline-[#0066cc] rounded inline-flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <RefreshCw className="w-3 h-3" />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                     <span>Resend Code</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <button
