@@ -396,9 +396,6 @@ export default function Profile() {
         <section className="space-y-4">
           <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
             <div>
-              <span className="text-[11px] uppercase tracking-widest font-semibold text-[#0066cc]">
-                Active Schedule & Reservations
-              </span>
               <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                 <Calendar className="text-[#0066cc]" size={22} /> My Booked Tutoring Sessions
               </h2>
@@ -524,9 +521,6 @@ export default function Profile() {
           <section className="space-y-6">
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <div>
-                <span className="text-[11px] uppercase tracking-widest font-semibold text-[#0066cc]">
-                  Learner Perspective
-                </span>
                 <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                   <GraduationCap className="text-[#0066cc]" size={22} /> Student
                   & Learner Profile
@@ -659,9 +653,6 @@ export default function Profile() {
           <section className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <div>
-                <span className="text-[11px] uppercase tracking-widest font-semibold text-[#0066cc]">
-                  Instructor Perspective
-                </span>
                 <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                   <UserCheck className="text-emerald-600" size={22} /> Verified
                   Tutor & Instructor Profile
