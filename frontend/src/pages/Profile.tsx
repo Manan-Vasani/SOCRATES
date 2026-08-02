@@ -26,7 +26,8 @@ import {
   Upload,
   UserCheck,
   Users,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -1722,9 +1723,10 @@ export default function Profile() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {isSaving ? 'Saving...' : 'Save Profile Changes'}
+                  {isSaving && <Loader2 className="animate-spin" size={16} />}
+                  {isSaving ? 'Saving Changes...' : 'Save Profile Changes'}
                 </button>
               </div>
             </form>
