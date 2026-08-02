@@ -263,7 +263,7 @@ const verifyOTP = async (req, res) => {
   if (!user) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid or expired verification code. Please request a new code.',
+      message: 'Invalid or expired verification code.',
     });
   }
 

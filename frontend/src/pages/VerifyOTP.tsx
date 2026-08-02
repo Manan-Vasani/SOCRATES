@@ -45,7 +45,7 @@ export default function VerifyOTP() {
     const otpCode = otp.join('')
 
     if (otpCode.length < 6) {
-      setError('Please enter all 6 digits of the verification code.')
+      setError('Please enter all 6 digits of the code.')
       return
     }
 
@@ -67,7 +67,7 @@ export default function VerifyOTP() {
         setError(response.data?.message || 'Invalid verification code.')
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid or expired OTP code.'
+      const msg = err.response?.data?.message || 'Invalid or expired verification code.'
       setError(msg)
       toast.error(msg)
     } finally {

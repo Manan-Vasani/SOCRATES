@@ -79,7 +79,7 @@ export default function OTPInput({ value, onChange, error }: OTPInputProps) {
         ))}
       </div>
       {error && (
-        <p className="text-xs text-[#dc2626] font-medium leading-tight text-center">
+        <p className="text-[11.5px] sm:text-xs text-[#dc2626] font-medium leading-normal text-center whitespace-nowrap">
           {error}
         </p>
       )}
