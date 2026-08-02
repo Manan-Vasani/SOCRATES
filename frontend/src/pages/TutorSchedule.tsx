@@ -754,7 +754,12 @@ export default function TutorSchedule() {
                 }
               }
 
-              const hasGroupableSlot = day.slots.some((s) => s.isBooked && s.allowGroupSplit && !joinedSlotKeys.has(`${day.date}-${s.time}`))
+              const hasGroupableSlot = day.slots.some((s) => {
+                if (!s.isBooked || !s.allowGroupSplit || joinedSlotKeys.has(`${day.date}-${s.time}`)) return false
+                const sMaxMem = s.maxMembers || getDurationMaxMembers(s.durationMin || selectedDuration)
+                const sCurrMem = s.currentMembers || 1
+                return sCurrMem < sMaxMem
+              })
               const isDateDisabled = day.isPast || (computedStatus === 'red' && !hasGroupableSlot)
 
               return (
@@ -828,11 +833,17 @@ export default function TutorSchedule() {
                           const isGroupSplit = slot.isBooked && slot.allowGroupSplit && !isPopoverJoinedByMe
                           const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit && !isPopoverJoinedByMe
 
+                          // Group-full detection for tooltip
+                          const popoverDuration = slot.durationMin || selectedDuration
+                          const popoverMaxMem = slot.maxMembers || getDurationMaxMembers(popoverDuration)
+                          const popoverCurrMem = slot.currentMembers || 1
+                          const isPopoverGroupFull = isGroupSplit && popoverCurrMem >= popoverMaxMem
+
                           return (
                             <div 
                               key={sIdx} 
                               onClick={(e) => {
-                                if (isGroupSplit) {
+                                if (isGroupSplit && !isPopoverGroupFull) {
                                   e.stopPropagation()
                                   if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
                                   setHoveredDay(null)
@@ -842,6 +853,8 @@ export default function TutorSchedule() {
                               className={`p-2.5 rounded-xl border text-[11px] space-y-1 min-h-[46px] flex flex-col justify-center transition-all ${
                                 isPopoverJoinedByMe
                                   ? 'bg-blue-50/80 border-blue-200 text-blue-950 cursor-default'
+                                  : isPopoverGroupFull
+                                  ? 'bg-slate-50/80 border-slate-300 text-slate-900 cursor-not-allowed'
                                   : isGroupSplit
                                   ? 'bg-amber-50/80 border-amber-200 text-amber-950 hover:bg-amber-100/80 cursor-pointer'
                                   : isPrivateBooked 
@@ -851,19 +864,21 @@ export default function TutorSchedule() {
                             >
                               <div className="flex items-center justify-between">
                                 <span className="flex items-center gap-1 font-sans font-bold text-xs tracking-tight">
-                                  <Clock size={11} className={isPopoverJoinedByMe ? 'text-blue-600' : isGroupSplit ? 'text-amber-600' : isPrivateBooked ? 'text-red-600' : 'text-[#0066cc]'} />
+                                  <Clock size={11} className={isPopoverJoinedByMe ? 'text-blue-600' : isPopoverGroupFull ? 'text-slate-500' : isGroupSplit ? 'text-amber-600' : isPrivateBooked ? 'text-red-600' : 'text-[#0066cc]'} />
                                   {slot.time}
                                 </span>
                                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                                   isPopoverJoinedByMe
                                     ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    : isPopoverGroupFull
+                                    ? 'bg-slate-200 text-slate-700 border border-slate-300'
                                     : isGroupSplit 
                                     ? 'bg-amber-100 text-amber-800 border border-amber-200' 
                                     : isPrivateBooked 
                                     ? 'bg-red-100 text-red-800 border border-red-200' 
                                     : 'bg-emerald-100/70 text-emerald-700'
                                 }`}>
-                                  {isPopoverJoinedByMe ? 'Joined' : isGroupSplit ? 'Group Split' : isPrivateBooked ? 'Reserved' : 'Open'}
+                                  {isPopoverJoinedByMe ? 'Joined' : isPopoverGroupFull ? `Full (${popoverCurrMem}/${popoverMaxMem})` : isGroupSplit ? 'Group Split' : isPrivateBooked ? 'Reserved' : 'Open'}
                                 </span>
                               </div>
 
@@ -872,6 +887,22 @@ export default function TutorSchedule() {
                                   <div className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-900">
                                     <CheckCircle2 size={10} className="text-blue-600 shrink-0" />
                                     <span>You already joined the group</span>
+                                  </div>
+                                </div>
+                              ) : isPopoverGroupFull ? (
+                                <div className="space-y-1.5 pt-0.5 border-t mt-1 border-slate-200/70">
+                                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-700 truncate">
+                                    <Lock size={10} className="text-slate-500 shrink-0" />
+                                    <span className="truncate">Booked by <strong className="font-semibold text-slate-900">{slot.bookedBy?.replace(/\s*\([^)]*\)/g, '')}</strong></span>
+                                  </div>
+                                  <div className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-600 text-[10px] font-bold select-none cursor-not-allowed">
+                                    <span className="flex items-center gap-1">
+                                      <Lock size={11} className="text-slate-500 shrink-0" />
+                                      <span>Group Locked</span>
+                                    </span>
+                                    <span className="bg-slate-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                      {popoverCurrMem}/{popoverMaxMem} Max
+                                    </span>
                                   </div>
                                 </div>
                               ) : slot.isBooked ? (
