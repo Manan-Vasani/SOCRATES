@@ -117,7 +117,7 @@ const INITIAL_TOP_TUTORS: ExtendedTutor[] = [
     experience: '5+ yrs exp • UC Berkeley MS',
     rating: 4.97,
     reviews: 115,
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
     hourlyRate: 50,
     bio: 'Expert in Applied Probability, Hypothesis Testing, R, Pandas, Data Visualization, and Econometrics.',
     subjects: ['Statistics', 'Data Science', 'Python', 'R'],
@@ -192,7 +192,7 @@ export default function Tutors() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('All')
   const [minRating, setMinRating] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(100)
+  const [maxPrice, setMaxPrice] = useState(300)
   const [selectedTutorForBooking, setSelectedTutorForBooking] = useState<ExtendedTutor | null>(null)
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('14:00')
@@ -302,6 +302,7 @@ export default function Tutors() {
   ]
 
   const priceOptions: DropdownOption<number>[] = [
+    { value: 300, label: 'Under $300/hr', icon: <DollarSign size={13} className="text-emerald-600" /> },
     { value: 100, label: 'Under $100/hr', icon: <DollarSign size={13} className="text-emerald-600" /> },
     { value: 70, label: 'Under $70/hr', icon: <Tag size={13} className="text-emerald-600" /> },
     { value: 55, label: 'Under $55/hr', icon: <Percent size={13} className="text-emerald-600" /> },
@@ -483,14 +484,14 @@ export default function Tutors() {
               <span>Verified Tutors</span>
             </div>
             <div className="h-full flex items-center shrink-0">
-              {(selectedSubject !== 'All' || searchQuery || minRating > 0 || maxPrice < 100) && (
+              {(selectedSubject !== 'All' || searchQuery || minRating > 0 || maxPrice < 300) && (
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedSubject('All')
                     setSearchQuery('')
                     setMinRating(0)
-                    setMaxPrice(100)
+                    setMaxPrice(300)
                   }}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f5f5f7] border border-[#e5e5e7] text-[11px] font-semibold text-[#525252] hover:text-[#1d1d1f] hover:bg-[#e8e8ed] active:bg-[#dcdce0] transition-colors duration-150 cursor-pointer select-none shrink-0 transform-gpu leading-none"
                 >
