@@ -940,7 +940,8 @@ export default function Profile() {
           <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
             <div>
               <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                <Calendar className="text-[#0066cc]" size={22} /> My Booked Tutoring Sessions
+                <Calendar className="text-[#0066cc]" size={22} />{' '}
+                {viewPerspective === 'tutor' ? 'My Upcoming Teaching Sessions' : 'My Booked Tutoring Sessions'}
               </h2>
             </div>
             <div className="flex items-center gap-2">
