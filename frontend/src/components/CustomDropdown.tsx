@@ -208,7 +208,6 @@ export default function CustomDropdown<T extends string | number>({
                           {option.badge}
                         </span>
                       )}
-                      {isSelected && <Check size={14} className="text-[#0066cc]" />}
                     </span>
                   </button>
                 )
