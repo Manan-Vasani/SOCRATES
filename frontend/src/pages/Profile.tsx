@@ -503,7 +503,7 @@ export default function Profile() {
                         <X size={12} /> Cancel Session
                       </button>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-[11px]">
+                      <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none">
                         Completed
                       </span>
                     )}
