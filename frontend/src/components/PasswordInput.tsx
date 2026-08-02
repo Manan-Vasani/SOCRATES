@@ -21,7 +21,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6e6e73]">
-            <Lock className="w-4.5 h-4.5" />
+            <Lock className="w-4.5 h-4.5 text-[#6e6e73] shrink-0" />
           </div>
           <input
             ref={ref}
@@ -40,9 +40,9 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
-              <EyeOff className="w-4.5 h-4.5" />
+              <EyeOff className="w-4.5 h-4.5 text-[#6e6e73] shrink-0" />
             ) : (
-              <Eye className="w-4.5 h-4.5" />
+              <Eye className="w-4.5 h-4.5 text-[#6e6e73] shrink-0" />
             )}
           </button>
         </div>

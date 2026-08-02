@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=block');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -29,13 +29,9 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-/* Strict Text, Icon & Layout Stability Lock on Page Refresh */
-h1, h2, h3, h4, h5, h6, p, span, label, input, button, svg, .font-display {
-  font-family: var(--font-apple);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transform: translateZ(0);
-  backface-visibility: hidden;
+/* Typography Standards */
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
 }
 
 /* Zero Text Lag & Button Antialiasing Baseline */
