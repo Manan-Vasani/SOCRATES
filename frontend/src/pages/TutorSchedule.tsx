@@ -761,18 +761,20 @@ export default function TutorSchedule() {
                 return sCurrMem < sMaxMem
               })
               const isDateDisabled = day.isPast || (computedStatus === 'red' && !hasGroupableSlot)
+              // Only truly block hover for past days — booked/full days still show tooltip
+              const isClickDisabled = isDateDisabled
 
               return (
                 <div key={`${day.date}-${bookingRefreshKey}`} className="relative group">
                   <button
-                    disabled={isDateDisabled}
+                    type="button"
                     onClick={() => {
-                      if (!isDateDisabled) {
+                      if (!isClickDisabled) {
                         setSelectedDay(day)
                         setSelectedSlot(day.slots.find((s) => !s.isBooked) || day.slots.find((s) => s.allowGroupSplit) || day.slots[0] || null)
                       }
                     }}
-                    onMouseEnter={() => handleCellMouseEnter(day)}
+                    onMouseEnter={() => !day.isPast && handleCellMouseEnter(day)}
                     onMouseLeave={handleCellMouseLeave}
                     className={`w-full h-20 sm:h-24 rounded-2xl p-2.5 sm:p-3 border flex flex-col justify-between transition-all text-left select-none ${
                       hasGroupableSlot && computedStatus === 'red'
