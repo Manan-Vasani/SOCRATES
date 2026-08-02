@@ -17,37 +17,14 @@ const { hasValidGoogleCredentials } = require('../config/passport');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
-// GET /auth/google - Initiate Google OAuth redirect flow or Dev/Demo Fallback
-router.get('/google', async (req, res, next) => {
-  if (!hasValidGoogleCredentials()) {
-    try {
-      let user = await User.findOne({ email: 'alex.mercer@gmail.com' });
-      if (!user) {
-        user = await User.create({
-          fullName: 'Alex Mercer',
-          email: 'alex.mercer@gmail.com',
-          googleId: 'google-demo-100200300',
-          profileImage: 'https://ui-avatars.com/api/?name=Alex+Mercer&background=0066cc&color=fff&size=128&bold=true',
-          provider: 'google',
-          role: 'student',
-          lastLogin: new Date(),
-        });
-      } else {
-        user.lastLogin = new Date();
-        await user.save();
-      }
-      const token = generateToken(user._id);
-      const hostOrigin = req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173';
-      const frontendUrl = process.env.FRONTEND_URL || hostOrigin;
-      return res.redirect(`${frontendUrl}/dashboard?token=${token}`);
-    } catch (err) {
-      console.error('[Google Demo Auth Error]', err);
-      return res.redirect('http://localhost:5173/login?error=Google+Auth+Failed');
-    }
-  }
-
-  return passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
-});
+// GET /auth/google - Initiate Google OAuth redirect flow (Forces Google Account Chooser screen)
+router.get(
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account',
+  })
+);
 
 // GET /auth/google/callback - Google OAuth redirect callback
 router.get('/google/callback', (req, res, next) => {
