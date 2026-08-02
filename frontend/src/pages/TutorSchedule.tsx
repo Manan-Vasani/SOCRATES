@@ -20,6 +20,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
+import CustomDropdown from '../components/CustomDropdown'
 import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
 import { getStoredProfileSessions, saveStoredProfileSessions, ProfileSessionItem } from './Profile'
 
@@ -894,7 +895,7 @@ export default function TutorSchedule() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-full max-w-lg bg-white border border-[#e0e0e0] rounded-3xl p-6 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none max-h-[85vh] flex flex-col"
+              className="w-full max-w-2xl bg-white border border-[#e0e0e0] rounded-3xl p-6 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none max-h-[85vh] flex flex-col"
             >
               {/* Header */}
               <div className="flex items-start justify-between border-b border-[#e5e5e7] pb-4 shrink-0">
@@ -935,67 +936,65 @@ export default function TutorSchedule() {
 
               {/* Slot Selection Form */}
               <form onSubmit={handleConfirmBooking} className="flex-1 flex flex-col overflow-hidden min-h-0">
-                <div className="flex-1 overflow-y-auto pr-1.5 py-4 space-y-5 custom-scrollbar">
-                {/* Subject Selector */}
-                {tutor.subjects && tutor.subjects.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5">
-                        <BookOpen size={13} className="text-[#0066cc]" />
-                        <span>Select Subject / Learning Area</span>
-                      </label>
-                    </div>
-                    <select
-                      value={selectedSubject || tutor.subjects[0]}
-                      onChange={(e) => setSelectedSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors cursor-pointer"
-                    >
-                      {tutor.subjects.map((sub, idx) => (
-                        <option key={idx} value={sub}>
-                          {sub}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Session Duration Selector (20 Min, 30 Min, 60 Min) */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
+                <div className="flex-1 overflow-y-auto -mr-4 pr-3.5 py-4 space-y-5 custom-scrollbar">
+                {/* Side by Side: Subject Selector & Session Duration CustomDropdowns */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Subject Selector Dropdown */}
+                  <div className="space-y-1.5">
                     <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5">
-                      <Clock size={13} className="text-[#0066cc]" />
-                      <span>Select Session Duration</span>
+                      <BookOpen size={13} className="text-[#0066cc]" />
+                      <span>Subject / Area</span>
                     </label>
-                    <span className="text-[11px] font-semibold text-[#6e6e73]">
-                      Pro-rated pricing
-                    </span>
+                    <CustomDropdown
+                      options={(tutor.subjects && tutor.subjects.length > 0 ? tutor.subjects : ['General Tutoring']).map((sub) => ({
+                        value: sub,
+                        label: sub,
+                        icon: <BookOpen size={14} className="text-[#0066cc]" />,
+                      }))}
+                      value={selectedSubject || (tutor.subjects?.[0] || 'General Tutoring')}
+                      onChange={(val) => setSelectedSubject(val)}
+                      className="w-full"
+                      buttonClassName="w-full py-2.5 px-3.5 bg-[#f5f5f7] border-[#e0e0e0] rounded-2xl text-xs font-medium text-[#1d1d1f]"
+                    />
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { minutes: 20, label: '20 Min', desc: 'Quick Doubt', factor: 20 / 60 },
-                      { minutes: 30, label: '30 Min', desc: 'Concept Review', factor: 30 / 60 },
-                      { minutes: 60, label: '60 Min', desc: 'Full Session', factor: 1.0 },
-                    ].map((dur) => {
-                      const isSelected = selectedDuration === dur.minutes
-                      const calculatedFee = Math.round(tutor.hourlyRate * dur.factor)
 
-                      return (
-                        <button
-                          key={dur.minutes}
-                          type="button"
-                          onClick={() => setSelectedDuration(dur.minutes as 20 | 30 | 60)}
-                          className={`p-2.5 rounded-2xl border text-center transition-colors duration-150 cursor-pointer select-none transform-gpu flex flex-col items-center gap-0.5 ${
-                            isSelected
-                              ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc] ring-1 ring-[#0066cc]'
-                              : 'bg-[#fafafc] border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
-                          }`}
-                        >
-                          <span className="text-xs font-bold">{dur.label}</span>
-                          <span className="text-[10px] font-medium text-[#7a7a7a]">{dur.desc}</span>
-                          <span className="text-[11px] font-extrabold text-[#1d1d1f] pt-0.5">${calculatedFee}</span>
-                        </button>
-                      )
-                    })}
+                  {/* Session Duration Selector Dropdown */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5">
+                        <Clock size={13} className="text-[#0066cc]" />
+                        <span>Session Duration</span>
+                      </label>
+                      <span className="text-[10px] font-semibold text-[#6e6e73]">
+                        Pro-rated
+                      </span>
+                    </div>
+                    <CustomDropdown
+                      options={[
+                        {
+                          value: 20,
+                          label: `20 Min ($${Math.round(tutor.hourlyRate * (20 / 60))})`,
+                          badge: 'Quick Doubt',
+                          icon: <Clock size={14} className="text-[#0066cc]" />,
+                        },
+                        {
+                          value: 30,
+                          label: `30 Min ($${Math.round(tutor.hourlyRate * (30 / 60))})`,
+                          badge: 'Concept Review',
+                          icon: <Clock size={14} className="text-[#0066cc]" />,
+                        },
+                        {
+                          value: 60,
+                          label: `60 Min ($${tutor.hourlyRate})`,
+                          badge: 'Full Session',
+                          icon: <Clock size={14} className="text-[#0066cc]" />,
+                        },
+                      ]}
+                      value={selectedDuration}
+                      onChange={(val) => setSelectedDuration(val as 20 | 30 | 60)}
+                      className="w-full"
+                      buttonClassName="w-full py-2.5 px-3.5 bg-[#f5f5f7] border-[#e0e0e0] rounded-2xl text-xs font-medium text-[#1d1d1f]"
+                    />
                   </div>
                 </div>
 
