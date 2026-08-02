@@ -1010,8 +1010,12 @@ export default function TutorSchedule() {
                   <div className="grid grid-cols-2 gap-2.5">
                     {selectedDay.slots.map((slot, idx) => {
                       const isSelected = selectedSlot?.time === slot.time
-                      const isGroupableBooked = slot.isBooked && slot.allowGroupSplit
-                      const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit
+                      const isBookedByMe = slot.isBooked && (
+                        slot.bookedBy?.toLowerCase().includes('alex mercer') ||
+                        (user?.fullName && slot.bookedBy?.toLowerCase().includes(user.fullName.toLowerCase()))
+                      )
+                      const isGroupableBooked = slot.isBooked && slot.allowGroupSplit && !isBookedByMe
+                      const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit && !isBookedByMe
 
                       return (
                         <button
@@ -1019,6 +1023,12 @@ export default function TutorSchedule() {
                           type="button"
                           disabled={isPrivateBooked}
                           onClick={() => {
+                            if (isBookedByMe) {
+                              toast.error('You Already Booked This Session', {
+                                description: 'You are the primary host of this tutoring session. You cannot join or split fee on your own booked slot.',
+                              })
+                              return
+                            }
                             if (isGroupableBooked) {
                               setSelectedDay(null)
                               setGroupSplitModalSlot({ day: selectedDay, slot })
@@ -1027,7 +1037,9 @@ export default function TutorSchedule() {
                             }
                           }}
                           className={`p-3 rounded-2xl border text-xs font-medium text-left transition-all duration-150 select-none transform-gpu flex flex-col justify-between ${
-                            isPrivateBooked
+                            isBookedByMe
+                              ? 'bg-blue-50/90 border-blue-200 text-blue-950 hover:bg-blue-100/90 cursor-pointer min-h-[76px]'
+                              : isPrivateBooked
                               ? 'bg-red-50/80 border-red-200 text-red-950 cursor-not-allowed opacity-80 min-h-[76px]'
                               : isGroupableBooked
                               ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100 hover:border-amber-300 cursor-pointer min-h-[76px]'
@@ -1036,7 +1048,19 @@ export default function TutorSchedule() {
                               : 'bg-white border-[#e5e5e7] text-[#1d1d1f] hover:border-[#0066cc] hover:bg-[#0066cc]/5 cursor-pointer min-h-[76px]'
                           }`}
                         >
-                          {isPrivateBooked ? (
+                          {isBookedByMe ? (
+                            <div className="w-full space-y-1.5 my-auto">
+                              <div className="flex items-center justify-between gap-1 w-full">
+                                <span className="font-bold text-xs text-blue-950 tracking-tight">{slot.time}</span>
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-200/90 text-blue-900 border border-blue-300/60 shrink-0">
+                                  Your Session
+                                </span>
+                              </div>
+                              <div className="text-[10px] font-semibold text-blue-900 truncate">
+                                Booked by <strong className="font-bold text-blue-950">You (Host)</strong>
+                              </div>
+                            </div>
+                          ) : isPrivateBooked ? (
                             <div className="w-full space-y-1.5 my-auto">
                               <div className="flex items-center justify-between gap-1 w-full">
                                 <span className="font-bold text-xs text-red-950 tracking-tight">{slot.time}</span>
