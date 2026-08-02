@@ -308,6 +308,7 @@ export default function TutorSchedule() {
   const [isLoading, setIsLoading] = useState(true)
   const [groupSplitModalSlot, setGroupSplitModalSlot] = useState<{ day: DaySchedule; slot: TimeSlot } | null>(null)
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0)
+  const [joinedSlotKeys, setJoinedSlotKeys] = useState<Set<string>>(new Set())
   const hoverTimeoutRef = React.useRef<any>(null)
 
   // Prevent background page scrolling when modal is open
@@ -1062,10 +1063,12 @@ export default function TutorSchedule() {
                   <div className="grid grid-cols-2 gap-2.5">
                     {selectedDay.slots.map((slot, idx) => {
                       const isSelected = selectedSlot?.time === slot.time
-                      const isBookedByMe = slot.isBooked && (
+                      const slotKey = `${selectedDay.date}-${slot.time}`
+                      const isJoinedByMe = joinedSlotKeys.has(slotKey)
+                      const isBookedByMe = isJoinedByMe || (slot.isBooked && (
                         slot.bookedBy?.toLowerCase().includes('alex mercer') ||
                         (user?.fullName && slot.bookedBy?.toLowerCase().includes(user.fullName.toLowerCase()))
-                      )
+                      ))
                       const isGroupableBooked = slot.isBooked && slot.allowGroupSplit && !isBookedByMe
                       const isPrivateBooked = slot.isBooked && !slot.allowGroupSplit && !isBookedByMe
 
@@ -1118,11 +1121,15 @@ export default function TutorSchedule() {
                               <div className="flex items-center justify-between gap-1 w-full">
                                 <span className="font-bold text-xs text-blue-950 tracking-tight">{slot.time}</span>
                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-200/90 text-blue-900 border border-blue-300/60 shrink-0">
-                                  Your Session
+                                  {isJoinedByMe ? 'Joined Group' : 'Your Session'}
                                 </span>
                               </div>
                               <div className="text-[10px] font-semibold text-blue-900 truncate">
-                                Booked by <strong className="font-bold text-blue-950">You (Host)</strong>
+                                {isJoinedByMe ? (
+                                  <><strong className="font-bold text-blue-950">You</strong> joined this group</>
+                                ) : (
+                                  <>Booked by <strong className="font-bold text-blue-950">You (Host)</strong></>
+                                )}
                               </div>
                             </div>
                           ) : isPrivateBooked ? (
@@ -1424,6 +1431,8 @@ export default function TutorSchedule() {
                       }
                       const storedSessions = getStoredProfileSessions()
                       saveStoredProfileSessions([newGroupProfileSession, ...storedSessions])
+                      const joinKey = `${groupSplitModalSlot.day.date}-${groupSplitModalSlot.slot.time}`
+                      setJoinedSlotKeys(prev => new Set(prev).add(joinKey))
                       setBookingRefreshKey(prev => prev + 1)
                       setGroupSplitModalSlot(null)
                     }}
