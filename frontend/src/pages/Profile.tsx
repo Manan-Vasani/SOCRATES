@@ -338,6 +338,7 @@ export default function Profile() {
     education: (user as any)?.education || '',
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [newSubject, setNewSubject] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showUrlInput, setShowUrlInput] = useState(false)
 
@@ -553,11 +554,6 @@ export default function Profile() {
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
 
-    const learningSubjectsArr = formData.learningSubjectsText
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-
     const updatePayload = {
       name: formData.name,
       phone: formData.phone,
@@ -565,8 +561,8 @@ export default function Profile() {
       bio: formData.bio,
       hourlyRate: Number(formData.hourlyRate),
       avatar: formData.avatar,
-      subjects: subjectsArr,
-      learningSubjects: learningSubjectsArr,
+      subjects: formData.role === 'student' ? (user?.subjects || []) : subjectsArr,
+      learningSubjects: (user as any)?.learningSubjects || [],
       academicLevel: formData.academicLevel,
       education: formData.education,
     }
@@ -585,6 +581,48 @@ export default function Profile() {
       toast.info('Profile saved to local state.')
       setIsEditModalOpen(false)
     }
+  }
+
+  const getLearningSubjects = (): string[] => {
+    if (user?.role === 'both') {
+      return (user as any).learningSubjects || []
+    }
+    return user?.subjects || []
+  }
+
+  const handleAddSubject = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newSubject.trim()) return
+
+    const trimmed = newSubject.trim()
+    const currentSubjects = getLearningSubjects()
+
+    if (currentSubjects.includes(trimmed)) {
+      toast.error('Subject is already enrolled!')
+      return
+    }
+
+    const updatedSubjects = [...currentSubjects, trimmed]
+    const updatePayload = user?.role === 'both'
+      ? { learningSubjects: updatedSubjects }
+      : { subjects: updatedSubjects }
+
+    const result = await updateUserProfileApi(updatePayload)
+    updateUser(updatePayload)
+    setNewSubject('')
+    toast.success(`Enrolled in subject: ${trimmed}`)
+  }
+
+  const handleRemoveSubject = async (subjectToRemove: string) => {
+    const currentSubjects = getLearningSubjects()
+    const updatedSubjects = currentSubjects.filter((s) => s !== subjectToRemove)
+    const updatePayload = user?.role === 'both'
+      ? { learningSubjects: updatedSubjects }
+      : { subjects: updatedSubjects }
+
+    const result = await updateUserProfileApi(updatePayload)
+    updateUser(updatePayload)
+    toast.success(`Removed subject: ${subjectToRemove}`)
   }
 
   return (
@@ -892,17 +930,43 @@ export default function Profile() {
                 <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
                     <span>Enrolled Learning Subjects</span>
-                    <span className="text-xs text-[#7a7a7a] font-normal">{user?.subjects?.length || 0} Active</span>
+                    <span className="text-xs text-[#7a7a7a] font-normal">{getLearningSubjects().length} Active</span>
                   </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {user?.subjects && user.subjects.length > 0 ? (
-                      user.subjects.map((sub, idx) => (
+
+                  {/* Inline Form to Add Learning Subject */}
+                  <form onSubmit={handleAddSubject} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSubject}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                      placeholder="Add a subject (e.g. Chemistry)"
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-colors cursor-pointer select-none"
+                    >
+                      Add
+                    </button>
+                  </form>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {getLearningSubjects().length > 0 ? (
+                      getLearningSubjects().map((sub, idx) => (
                         <span
                           key={idx}
-                          className="px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5"
                         >
                           <CheckCircle2 size={12} className="text-[#0066cc]" />
-                          {sub}
+                          <span>{sub}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSubject(sub)}
+                            className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
+                            title="Remove Subject"
+                          >
+                            <X size={11} />
+                          </button>
                         </span>
                       ))
                     ) : (
@@ -1392,21 +1456,7 @@ export default function Profile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {formData.role === 'student' && (
                   <>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                      <label className="text-[#525252] font-semibold block">
-                        Learning Subjects
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.learningSubjectsText}
-                        onChange={(e) =>
-                          setFormData({ ...formData, learningSubjectsText: e.target.value })
-                        }
-                        placeholder="Algorithms, Python, React"
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                    <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">
                         Academic Level
                       </label>
@@ -1551,21 +1601,7 @@ export default function Profile() {
                         className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                      <label className="text-[#525252] font-semibold block">
-                        Learning Subjects
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.learningSubjectsText}
-                        onChange={(e) =>
-                          setFormData({ ...formData, learningSubjectsText: e.target.value })
-                        }
-                        placeholder="Algorithms, Python, React"
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                    <div className="space-y-1.5 col-span-2">
                       <label className="text-[#525252] font-semibold block">
                         Academic Level
                       </label>
