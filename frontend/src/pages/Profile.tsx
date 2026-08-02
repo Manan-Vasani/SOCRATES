@@ -247,6 +247,12 @@ const TIME_OPTIONS: DropdownOption<string>[] = [
   { value: '10:00 PM', label: '10:00 PM' },
 ]
 
+const DURATION_OPTIONS: DropdownOption<number>[] = [
+  { value: 60, label: '60 Min' },
+  { value: 30, label: '30 Min' },
+  { value: 20, label: '20 Min' },
+]
+
 const DEFAULT_AVAILABILITY: AvailabilitySlot[] = [
   { id: 'av-1', dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' },
   { id: 'av-2', dayOfWeek: 'Wednesday', timeStart: '02:00 PM', timeEnd: '04:30 PM' },
@@ -366,28 +372,91 @@ export default function Profile() {
 
   const [availability, setAvailability] = useState<AvailabilitySlot[]>(DEFAULT_AVAILABILITY)
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' })
+  const [selectedDuration, setSelectedDuration] = useState<number>(60)
   const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
 
   const handleAddAvailability = () => {
-    const isDuplicate = availability.some(
-      (slot) =>
-        slot.dayOfWeek === newSlot.dayOfWeek &&
-        slot.timeStart === newSlot.timeStart &&
-        slot.timeEnd === newSlot.timeEnd
-    )
-    if (isDuplicate) {
-      toast.error('This availability slot already exists!')
+    const timeToMinutes = (timeStr: string): number => {
+      const [time, modifier] = timeStr.split(' ')
+      let [hours, minutes] = time.split(':').map(Number)
+      if (modifier === 'PM' && hours !== 12) hours += 12
+      if (modifier === 'AM' && hours === 12) hours = 0
+      return hours * 60 + minutes
+    }
+
+    const minutesToTime = (totalMin: number): string => {
+      const normalized = totalMin % 1440
+      let hours = Math.floor(normalized / 60)
+      const minutes = normalized % 60
+      const modifier = hours >= 12 ? 'PM' : 'AM'
+      hours = hours % 12
+      if (hours === 0) hours = 12
+      const hStr = hours < 10 ? `0${hours}` : `${hours}`
+      const mStr = minutes < 10 ? `0${minutes}` : `${minutes}`
+      return `${hStr}:${mStr} ${modifier}`
+    }
+
+    let startMin = timeToMinutes(newSlot.timeStart)
+    let endMin = timeToMinutes(newSlot.timeEnd)
+    if (endMin <= startMin) {
+      endMin += 1440 // Crosses midnight
+    }
+
+    const duration = selectedDuration
+    const breakDuration = 20
+    const newSlotsToAdd: AvailabilitySlot[] = []
+    let currentStart = startMin
+    let addedCount = 0
+    let skippedCount = 0
+
+    while (currentStart + duration <= endMin) {
+      const currentEnd = currentStart + duration
+      const timeStartStr = minutesToTime(currentStart)
+      const timeEndStr = minutesToTime(currentEnd)
+
+      // Check if duplicate slot exists
+      const isDuplicate = availability.some(
+        (slot) =>
+          slot.dayOfWeek === newSlot.dayOfWeek &&
+          slot.timeStart === timeStartStr &&
+          slot.timeEnd === timeEndStr
+      ) || newSlotsToAdd.some(
+        (slot) =>
+          slot.dayOfWeek === newSlot.dayOfWeek &&
+          slot.timeStart === timeStartStr &&
+          slot.timeEnd === timeEndStr
+      )
+
+      if (!isDuplicate) {
+        newSlotsToAdd.push({
+          id: `av-${Date.now()}-${addedCount}`,
+          dayOfWeek: newSlot.dayOfWeek,
+          timeStart: timeStartStr,
+          timeEnd: timeEndStr
+        })
+        addedCount++
+      } else {
+        skippedCount++
+      }
+
+      currentStart = currentEnd + breakDuration
+    }
+
+    if (newSlotsToAdd.length === 0) {
+      if (skippedCount > 0) {
+        toast.error('All generated slots already exist!')
+      } else {
+        toast.error('Time span is too short for selected duration!')
+      }
       return
     }
 
-    const slot: AvailabilitySlot = {
-      id: `av-${Date.now()}`,
-      dayOfWeek: newSlot.dayOfWeek,
-      timeStart: newSlot.timeStart,
-      timeEnd: newSlot.timeEnd
+    setAvailability(prev => [...prev, ...newSlotsToAdd])
+    if (skippedCount > 0) {
+      toast.success(`Generated ${addedCount} slots with 20-min breaks (${skippedCount} duplicates skipped)`)
+    } else {
+      toast.success(`Generated ${addedCount} slots with 20-min breaks!`)
     }
-    setAvailability(prev => [...prev, slot])
-    toast.success('Availability slot added!')
   }
 
   const handleRemoveAvailability = (id: string) => {
@@ -1023,7 +1092,7 @@ export default function Profile() {
                   
                   {/* Availability Creator Form */}
                   <div className="p-3.5 rounded-xl bg-[#fafafc] border border-[#e5e5e7] space-y-3">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
                         <CustomDropdown<string>
@@ -1052,6 +1121,17 @@ export default function Profile() {
                           options={TIME_OPTIONS}
                           value={newSlot.timeEnd}
                           onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeEnd: val }))}
+                          className="w-full"
+                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                          align="center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Session</label>
+                        <CustomDropdown<number>
+                          options={DURATION_OPTIONS}
+                          value={selectedDuration}
+                          onChange={(val: number) => setSelectedDuration(val)}
                           className="w-full"
                           buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
                           align="center"
