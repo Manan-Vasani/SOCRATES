@@ -1,5 +1,6 @@
 const Tutor = require('../models/Tutor');
 const Booking = require('../models/Booking');
+const User = require('../models/User');
 
 const SEEDED_TUTORS = [
   {
@@ -96,10 +97,33 @@ const findTutorInList = (id, list) => {
 exports.getAllTutors = async (req, res) => {
   try {
     let dbTutors = await Tutor.find();
-    if (!dbTutors || dbTutors.length === 0) {
-      return res.json({ success: true, data: SEEDED_TUTORS });
-    }
-    res.json({ success: true, data: dbTutors });
+    let tutorsList = dbTutors && dbTutors.length > 0 ? dbTutors.map(t => t.toObject ? t.toObject() : t) : [...SEEDED_TUTORS];
+
+    const dbUsers = await User.find({ role: { $in: ['tutor', 'both'] } });
+    const userTutors = dbUsers.map(u => ({
+      _id: u._id.toString(),
+      id: u._id.toString(),
+      name: u.fullName || u.name || 'Peer Tutor',
+      subject: u.subjects && u.subjects.length > 0 ? u.subjects.join(', ') : 'Computer Science',
+      experience: u.bio ? (u.bio.length > 60 ? u.bio.slice(0, 60) + '...' : u.bio) : 'Verified Peer Tutor',
+      rating: 5.0,
+      reviews: '0 reviews',
+      image: u.profileImage || u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      hourlyRate: u.hourlyRate || 45,
+      isFeatured: false,
+      subjects: u.subjects || []
+    }));
+
+    // Deduplicate by name (case-insensitive) to avoid double listing
+    const merged = [...tutorsList];
+    userTutors.forEach(ut => {
+      const exists = merged.some(t => t.name.toLowerCase() === ut.name.toLowerCase());
+      if (!exists) {
+        merged.push(ut);
+      }
+    });
+
+    res.json({ success: true, data: merged });
   } catch (error) {
     res.json({ success: true, data: SEEDED_TUTORS });
   }
@@ -123,10 +147,41 @@ exports.getTutorById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Tutor profile not found' });
     }
 
-    res.json({ success: true, data: tutor });
+    const tutorName = tutor.name;
+    const userTutor = await User.findOne({
+      $or: [
+        { fullName: new RegExp('^' + tutorName + '$', 'i') },
+        { name: new RegExp('^' + tutorName + '$', 'i') }
+      ]
+    });
+
+    let tutorData = tutor.toObject ? tutor.toObject() : { ...tutor };
+    if (userTutor && userTutor.availability) {
+      tutorData.availability = userTutor.availability;
+    } else {
+      tutorData.availability = [];
+    }
+
+    res.json({ success: true, data: tutorData });
   } catch (error) {
     const fallback = findTutorInList(req.params.id, SEEDED_TUTORS) || SEEDED_TUTORS[0];
-    res.json({ success: true, data: fallback });
+    let tutorData = { ...fallback };
+    try {
+      const userTutor = await User.findOne({
+        $or: [
+          { fullName: new RegExp('^' + tutorData.name + '$', 'i') },
+          { name: new RegExp('^' + tutorData.name + '$', 'i') }
+        ]
+      });
+      if (userTutor && userTutor.availability) {
+        tutorData.availability = userTutor.availability;
+      } else {
+        tutorData.availability = [];
+      }
+    } catch (e) {
+      tutorData.availability = [];
+    }
+    res.json({ success: true, data: tutorData });
   }
 };
 
