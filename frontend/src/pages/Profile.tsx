@@ -487,7 +487,11 @@ export default function Profile() {
       timeEnd: timeEndStr
     }
 
-    setAvailability(prev => [...prev, newSlotItem])
+    const updatedList = [...availability, newSlotItem]
+    setAvailability(updatedList)
+    updateUser({ availability: updatedList })
+    updateUserProfileApi({ availability: updatedList })
+
     toast.success(`Slot added: ${newSlot.timeStart} - ${timeEndStr}`)
 
     // Auto-advance start time by duration + 20 min break
@@ -499,8 +503,11 @@ export default function Profile() {
     }
   }
 
-  const handleRemoveAvailability = (id: string) => {
-    setAvailability(prev => prev.filter(av => av.id !== id))
+  const handleRemoveAvailability = async (id: string) => {
+    const updatedList = availability.filter(av => av.id !== id)
+    setAvailability(updatedList)
+    updateUser({ availability: updatedList })
+    await updateUserProfileApi({ availability: updatedList })
     toast.success('Availability slot removed')
   }
 
@@ -552,6 +559,9 @@ export default function Profile() {
         academicLevel: (user as any).academicLevel || 'Undergraduate',
         education: (user as any).education || '',
       })
+      if ((user as any).availability && (user as any).availability.length > 0) {
+        setAvailability((user as any).availability)
+      }
     }
   }, [user])
 
