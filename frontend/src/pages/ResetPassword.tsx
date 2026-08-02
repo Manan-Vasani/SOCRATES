@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { ArrowLeft, Check, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import AuthLayout from '../components/AuthLayout'
 import AuthCard from '../components/AuthCard'
@@ -62,8 +63,7 @@ export default function ResetPassword() {
   const passwordValue = watch('password', '')
   const confirmPasswordValue = watch('confirmPassword', '')
 
-  const showMatchStatus = passwordValue.length > 0 && confirmPasswordValue.length > 0
-  const isMatching = passwordValue === confirmPasswordValue
+  const isMatching = passwordValue === confirmPasswordValue && confirmPasswordValue.length > 0
 
   const onSubmit = async (data: ResetPasswordFields) => {
     setIsLoading(true)
@@ -108,7 +108,7 @@ export default function ResetPassword() {
             description="Please enter your new password below."
           />
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <PasswordInput
               label="New Password"
               placeholder="Enter new password"
@@ -120,7 +120,7 @@ export default function ResetPassword() {
             {/* Live password requirements checklist */}
             <PasswordStrength value={passwordValue} />
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <PasswordInput
                 label="Confirm Password"
                 placeholder="Confirm new password"
@@ -129,26 +129,53 @@ export default function ResetPassword() {
                 {...register('confirmPassword')}
               />
 
-              {/* Live pass match feedback */}
-              {showMatchStatus && (
-                <div
-                  className={`flex items-center gap-1.5 text-xs font-semibold select-none justify-end pt-1 ${
-                    isMatching ? 'text-[#16a34a]' : 'text-[#dc2626]'
-                  }`}
-                >
-                  {isMatching ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>Passwords match</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Passwords do not match</span>
-                    </>
-                  )}
-                </div>
-              )}
+              {/* Confirm password match requirement panel (identical to Signup page) */}
+              <AnimatePresence>
+                {confirmPasswordValue.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="w-full bg-[#f5f5f7] border border-[#e5e5e5] rounded-2xl p-4 space-y-2 text-left select-none">
+                      <p className="text-[12px] font-semibold text-[#1d1d1f]">
+                        Confirm Password Requirements
+                      </p>
+                      <div className="space-y-1.5 text-xs">
+                        <div
+                          className={`flex items-center gap-2 font-medium transition-colors ${
+                            confirmPasswordValue.length > 0
+                              ? isMatching
+                                ? 'text-emerald-600'
+                                : 'text-red-600'
+                              : 'text-[#6e6e73]'
+                          }`}
+                        >
+                          <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                            {confirmPasswordValue.length > 0 ? (
+                              isMatching ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3px]" />
+                              ) : (
+                                <X className="w-3.5 h-3.5 text-red-600 stroke-[3px]" />
+                              )
+                            ) : (
+                              <div className="w-3.5 h-3.5 rounded-full border border-[#6e6e73]/30" />
+                            )}
+                          </div>
+                          <span>
+                            {confirmPasswordValue.length === 0
+                              ? 'Must match password exactly'
+                              : isMatching
+                              ? 'Passwords match perfectly'
+                              : 'Passwords do not match yet'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <button
