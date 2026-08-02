@@ -29,6 +29,17 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
+/* Undraggable Images Across Entire Application */
+img, svg, picture, canvas, [role="img"] {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Typography Standards */
 h1, h2, h3, h4, h5, h6, .font-display {
   font-family: var(--font-display);

@@ -37,6 +37,14 @@ function ScrollToTop() {
   const { pathname, hash } = useLocation()
 
   useEffect(() => {
+    // Prevent dragging images globally across the entire app
+    const handleDragStart = (e: DragEvent) => {
+      if (e.target && (e.target as HTMLElement).tagName === 'IMG') {
+        e.preventDefault()
+      }
+    }
+    document.addEventListener('dragstart', handleDragStart)
+
     // Force manual scroll restoration so page refresh always renders from top
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual'
@@ -52,6 +60,10 @@ function ScrollToTop() {
 
     // Instantly scroll to top on page mount, refresh, and route change
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+
+    return () => {
+      document.removeEventListener('dragstart', handleDragStart)
+    }
   }, [pathname, hash])
 
   return null
