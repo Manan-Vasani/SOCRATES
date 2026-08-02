@@ -1,11 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Check, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { motion, AnimatePresence } from 'framer-motion'
 
 import AuthLayout from '../components/AuthLayout'
 import AuthCard from '../components/AuthCard'
@@ -39,10 +38,6 @@ export default function ResetPassword() {
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
 
-  // Input focus tracking states for smooth animated expansion
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
-
   // Retrieve email, token & otp from URL query params or sessionStorage
   const urlToken = searchParams.get('token')
   const urlEmail = searchParams.get('email')
@@ -64,13 +59,11 @@ export default function ResetPassword() {
     },
   })
 
-  const { ref: passwordFormRef, ...passwordRegister } = register('password')
-  const { ref: confirmPasswordFormRef, ...confirmPasswordRegister } = register('confirmPassword')
-
   const passwordValue = watch('password', '')
   const confirmPasswordValue = watch('confirmPassword', '')
 
-  const isMatching = passwordValue === confirmPasswordValue && confirmPasswordValue.length > 0
+  const showMatchStatus = passwordValue.length > 0 && confirmPasswordValue.length > 0
+  const isMatching = passwordValue === confirmPasswordValue
 
   const onSubmit = async (data: ResetPasswordFields) => {
     setIsLoading(true)
@@ -107,7 +100,7 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout>
-      <div className="w-[420px] max-w-full flex flex-col items-start gap-4 shrink-0">
+      <div className="w-full max-w-[420px] flex flex-col items-start gap-4">
         <BackToHome />
         <AuthCard>
           <AuthHeader
@@ -115,109 +108,53 @@ export default function ResetPassword() {
             description="Please enter your new password below."
           />
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* New Password Field */}
-            <div className="space-y-1.5">
-              <PasswordInput
-                label="New Password"
-                placeholder="Enter new password"
-                autoComplete="new-password"
-                error={errors.password?.message}
-                ref={passwordFormRef}
-                {...passwordRegister}
-                onFocus={() => setIsPasswordFocused(true)}
-                onBlur={(e) => {
-                  passwordRegister.onBlur(e)
-                  setIsPasswordFocused(false)
-                }}
-              />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <PasswordInput
+              label="New Password"
+              placeholder="Enter new password"
+              autoComplete="new-password"
+              error={errors.password?.message}
+              {...register('password')}
+            />
 
-              {/* Password Requirements Panel - closed by default, opens on focus or typing */}
-              <AnimatePresence>
-                {(isPasswordFocused || passwordValue.length > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden pt-1.5"
-                  >
-                    <PasswordStrength value={passwordValue} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Live password requirements checklist */}
+            <PasswordStrength value={passwordValue} />
 
-            {/* Confirm Password Field */}
             <div className="space-y-1.5">
               <PasswordInput
                 label="Confirm Password"
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 error={errors.confirmPassword?.message}
-                ref={confirmPasswordFormRef}
-                {...confirmPasswordRegister}
-                onFocus={() => setIsConfirmPasswordFocused(true)}
-                onBlur={(e) => {
-                  confirmPasswordRegister.onBlur(e)
-                  setIsConfirmPasswordFocused(false)
-                }}
+                {...register('confirmPassword')}
               />
 
-              {/* Confirm Password Requirements Panel - matches Signup.tsx exactly */}
-              <AnimatePresence>
-                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden pt-1"
-                  >
-                    <div className="w-full bg-[#f5f5f7] border border-[#e5e5e5] rounded-2xl p-4 space-y-2 text-left select-none">
-                      <p className="text-[12px] font-semibold text-[#1d1d1f]">
-                        Confirm Password Requirements
-                      </p>
-                      <div className="space-y-1.5 text-xs">
-                        <div
-                          className={`flex items-center gap-2 font-medium transition-colors ${
-                            confirmPasswordValue.length > 0
-                              ? isMatching
-                                ? 'text-emerald-600'
-                                : 'text-red-600'
-                              : 'text-[#6e6e73]'
-                          }`}
-                        >
-                          <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                            {confirmPasswordValue.length > 0 ? (
-                              isMatching ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3px]" />
-                              ) : (
-                                <X className="w-3.5 h-3.5 text-red-600 stroke-[3px]" />
-                              )
-                            ) : (
-                              <div className="w-3.5 h-3.5 rounded-full border border-[#6e6e73]/30" />
-                            )}
-                          </div>
-                          <span>
-                            {confirmPasswordValue.length === 0
-                              ? 'Must match password exactly'
-                              : isMatching
-                              ? 'Passwords match perfectly'
-                              : 'Passwords do not match yet'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Live pass match feedback */}
+              {showMatchStatus && (
+                <div
+                  className={`flex items-center gap-1.5 text-xs font-semibold select-none justify-end pt-1 ${
+                    isMatching ? 'text-[#16a34a]' : 'text-[#dc2626]'
+                  }`}
+                >
+                  {isMatching ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Passwords match</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Passwords do not match</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none inline-flex items-center justify-center gap-2 disabled:opacity-75 mt-2"
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none inline-flex items-center justify-center gap-2 disabled:opacity-75"
             >
               {isLoading ? (
                 <>
