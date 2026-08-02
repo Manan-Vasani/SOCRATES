@@ -176,6 +176,7 @@ const getMe = async (req, res) => {
       bio: user.bio,
       subjects: user.subjects,
       hourlyRate: user.hourlyRate,
+      availability: user.availability || [],
       isVerified: user.isVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

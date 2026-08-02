@@ -1,47 +1,41 @@
-// React profile component for managing role-specific dashboards
-import React, { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  GraduationCap,
-  BookOpen,
+  AlertTriangle,
   Award,
-  DollarSign,
-  Star,
-  Clock,
-  UserCheck,
-  Edit3,
-  ShieldCheck,
+  Bookmark,
+  BookOpen,
+  Calendar,
+  CalendarRange,
   Check,
   CheckCircle2,
-  Sparkles,
-  X,
-  Layers,
-  TrendingUp,
-  Bookmark,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Edit3,
+  GraduationCap,
+  Link as LinkIcon,
+  Lock,
   LogOut,
   Repeat,
-  Calendar,
-  AlertTriangle,
-  Users,
-  Lock,
+  ShieldCheck,
+  Sparkles,
+  Star,
   Tag,
-  Upload,
   Trash2,
-  Camera,
-  ArrowUpRight,
-  CreditCard,
-  Plus,
-  Minus,
-  CalendarRange,
-  Link as LinkIcon,
+  TrendingUp,
+  Upload,
+  UserCheck,
+  Users,
+  X
 } from 'lucide-react'
-import { useAuthStore, ProfilePerspective } from '../store/useAuthStore'
-import { updateUserProfileApi } from '../services/api'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { logoutAuthUser, fetchAuthenticatedUser } from '../services/authService'
-import Navbar from '../components/Navbar'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
+import Navbar from '../components/Navbar'
+import { updateUserProfileApi } from '../services/api'
+import { logoutAuthUser } from '../services/authService'
+import { ProfilePerspective, useAuthStore } from '../store/useAuthStore'
 
 export interface ProfileSessionItem {
   id: string
@@ -378,10 +372,20 @@ export default function Profile() {
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
 
-  const [availability, setAvailability] = useState<AvailabilitySlot[]>(DEFAULT_AVAILABILITY)
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>(
+    (user as any)?.availability && (user as any).availability.length > 0
+      ? (user as any).availability
+      : DEFAULT_AVAILABILITY
+  )
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM' })
   const [selectedDuration, setSelectedDuration] = useState<number>(60)
   const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
+
+  useEffect(() => {
+    if ((user as any)?.availability) {
+      setAvailability((user as any).availability)
+    }
+  }, [user])
 
   const calculateEndTime = (startStr: string, durationMin: number): string => {
     const timeToMinutes = (timeStr: string): number => {
@@ -481,7 +485,10 @@ export default function Profile() {
       timeEnd: timeEndStr
     }
 
-    setAvailability(prev => [...prev, newSlotItem])
+    const updated = [...availability, newSlotItem]
+    setAvailability(updated)
+    updateUserProfileApi({ availability: updated })
+    updateUser({ availability: updated })
     toast.success(`Slot added: ${newSlot.timeStart} - ${timeEndStr}`)
 
     // Auto-advance start time by duration + 20 min break
@@ -494,7 +501,10 @@ export default function Profile() {
   }
 
   const handleRemoveAvailability = (id: string) => {
-    setAvailability(prev => prev.filter(av => av.id !== id))
+    const updated = availability.filter(av => av.id !== id)
+    setAvailability(updated)
+    updateUserProfileApi({ availability: updated })
+    updateUser({ availability: updated })
     toast.success('Availability slot removed')
   }
 

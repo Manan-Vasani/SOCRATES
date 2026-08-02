@@ -96,8 +96,12 @@ export const updateUserProfileApi = async (data: {
   name?: string
   bio?: string
   subjects?: string[]
+  learningSubjects?: string[]
+  academicLevel?: string
+  education?: string
   hourlyRate?: number
   avatar?: string
+  availability?: any[]
 }) => {
   try {
     const response = await api.put('/auth/profile', data)

@@ -413,35 +413,67 @@ export default function TutorSchedule() {
       const slots: TimeSlot[] = []
       const availableSubjects = tutor.subjects
 
-      const slotTimes = status === 'green' 
-        ? ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
-        : status === 'yellow'
-        ? ['10:00 AM', '01:30 PM', '04:00 PM']
-        : ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
+      const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      const dayName = WEEKDAYS[dayOfWeek]
 
-      const mockTopics = ['Graph Traversals & BFS', 'Dynamic Programming Prep', 'Tree Recursion & Heaps']
-      slotTimes.forEach((time, idx) => {
-        const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
-        // Dynamic realistic balance: mix of Group Split (yellow) and Private 1-on-1 (red)
-        const allowGroup = isSlotBooked ? (dayNum + idx) % 3 !== 0 : true
-        const topic = isSlotBooked && idx % 2 === 0 ? mockTopics[(dayNum + idx) % mockTopics.length] : undefined
-        const durationMin = idx % 3 === 0 ? 20 : idx % 3 === 1 ? 30 : 60
-        const maxMembers = getDurationMaxMembers(durationMin)
-        const currentMembers = isSlotBooked && allowGroup ? ((dayNum + idx) % maxMembers) + 1 : 1
+      const isCurrentUserTutor = user && (user.role === 'tutor' || user.role === 'both') && 
+        (String(tutor.name).toLowerCase() === String(user.fullName).toLowerCase() || 
+         String(tutor.name).toLowerCase() === String(user.name).toLowerCase() || 
+         tutor.id === user._id)
 
-        slots.push({
-          time,
-          subject: isSlotBooked ? availableSubjects[idx % availableSubjects.length] : '',
-          topic,
-          availableDurations: '20, 30, 60 min',
-          isBooked: isSlotBooked,
-          bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined,
-          allowGroupSplit: allowGroup,
-          durationMin,
-          maxMembers,
-          currentMembers
+      const customSlots = isCurrentUserTutor && (user as any).availability && (user as any).availability.length > 0
+        ? (user as any).availability.filter((slot: any) => slot.dayOfWeek === dayName)
+        : null
+
+      if (customSlots) {
+        customSlots.forEach((slot: any, idx: number) => {
+          const isSlotBooked = backendBookings.some((b: any) => {
+            const bookingDate = new Date(b.date)
+            const sameDate = bookingDate.getDate() === dayNum && bookingDate.getMonth() === month && bookingDate.getFullYear() === year
+            return sameDate && b.time === slot.timeStart
+          })
+
+          slots.push({
+            time: slot.timeStart,
+            subject: tutor.subjects[0] || 'Computer Science',
+            availableDurations: '20, 30, 60 min',
+            isBooked: isSlotBooked,
+            allowGroupSplit: true,
+            durationMin: 60,
+            maxMembers: 3,
+            currentMembers: isSlotBooked ? 1 : 0
+          })
         })
-      })
+      } else {
+        const slotTimes = status === 'green' 
+          ? ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
+          : status === 'yellow'
+          ? ['10:00 AM', '01:30 PM', '04:00 PM']
+          : ['09:00 AM', '11:30 AM', '02:00 PM', '04:30 PM']
+
+        const mockTopics = ['Graph Traversals & BFS', 'Dynamic Programming Prep', 'Tree Recursion & Heaps']
+        slotTimes.forEach((time, idx) => {
+          const isSlotBooked = status === 'red' || (status === 'yellow' && idx === 1)
+          const allowGroup = isSlotBooked ? (dayNum + idx) % 3 !== 0 : true
+          const topic = isSlotBooked && idx % 2 === 0 ? mockTopics[(dayNum + idx) % mockTopics.length] : undefined
+          const durationMin = idx % 3 === 0 ? 20 : idx % 3 === 1 ? 30 : 60
+          const maxMembers = getDurationMaxMembers(durationMin)
+          const currentMembers = isSlotBooked && allowGroup ? ((dayNum + idx) % maxMembers) + 1 : 1
+
+          slots.push({
+            time,
+            subject: isSlotBooked ? availableSubjects[idx % availableSubjects.length] : '',
+            topic,
+            availableDurations: '20, 30, 60 min',
+            isBooked: isSlotBooked,
+            bookedBy: isSlotBooked ? MOCK_STUDENT_NAMES[(dayNum + idx) % MOCK_STUDENT_NAMES.length] : undefined,
+            allowGroupSplit: allowGroup,
+            durationMin,
+            maxMembers,
+            currentMembers
+          })
+        })
+      }
 
       const dateString = dateObj.toLocaleDateString('en-US', {
         weekday: 'short',

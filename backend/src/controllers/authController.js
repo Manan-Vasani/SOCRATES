@@ -160,6 +160,7 @@ const updateProfile = async (req, res) => {
     user.profileImage = req.body.profileImage || req.body.avatar;
   }
   if (req.body.subjects) user.subjects = req.body.subjects;
+  if (req.body.availability !== undefined) user.availability = req.body.availability;
 
   if (req.body.password) {
     user.password = req.body.password;
@@ -184,6 +185,7 @@ const updateProfile = async (req, res) => {
       bio: updatedUser.bio,
       subjects: updatedUser.subjects,
       hourlyRate: updatedUser.hourlyRate,
+      availability: updatedUser.availability,
       isVerified: updatedUser.isVerified,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
