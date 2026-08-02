@@ -255,6 +255,7 @@ export default function TutorSchedule() {
   const [selectedDay, setSelectedDay] = useState<DaySchedule | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<20 | 30 | 60>(60)
+  const [selectedSubject, setSelectedSubject] = useState<string>('')
   const [bookingTopic, setBookingTopic] = useState('')
   const [allowGroupSplitBooking, setAllowGroupSplitBooking] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -380,7 +381,7 @@ export default function TutorSchedule() {
 
         slots.push({
           time,
-          subject: availableSubjects[idx % availableSubjects.length],
+          subject: isSlotBooked ? availableSubjects[idx % availableSubjects.length] : '',
           topic,
           availableDurations: '20, 30, 60 min',
           isBooked: isSlotBooked,
@@ -431,12 +432,13 @@ export default function TutorSchedule() {
 
     setIsSubmitting(true)
     const calculatedFee = Math.round((tutor.hourlyRate * selectedDuration) / 60)
+    const activeSubject = selectedSubject || tutor.subjects[0] || 'General Session'
 
     const res = await createTutorBookingApi(tutor.id, {
       studentName: 'Alex Mercer',
       date: selectedDay.fullDateStr,
       time: selectedSlot.time,
-      subject: selectedSlot.subject,
+      subject: activeSubject,
       duration: selectedDuration,
       topic: bookingTopic,
       fee: calculatedFee
@@ -445,6 +447,7 @@ export default function TutorSchedule() {
     setIsSubmitting(false)
     selectedSlot.isBooked = true
     selectedSlot.bookedBy = 'Alex Mercer'
+    selectedSlot.subject = activeSubject
     selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
     selectedSlot.allowGroupSplit = allowGroupSplitBooking
 
@@ -932,6 +935,29 @@ export default function TutorSchedule() {
 
               {/* Slot Selection Form */}
               <form onSubmit={handleConfirmBooking} className="space-y-5">
+                {/* Subject Selector */}
+                {tutor.subjects && tutor.subjects.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5">
+                        <BookOpen size={13} className="text-[#0066cc]" />
+                        <span>Select Subject / Learning Area</span>
+                      </label>
+                    </div>
+                    <select
+                      value={selectedSubject || tutor.subjects[0]}
+                      onChange={(e) => setSelectedSubject(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-colors cursor-pointer"
+                    >
+                      {tutor.subjects.map((sub, idx) => (
+                        <option key={idx} value={sub}>
+                          {sub}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Session Duration Selector (20 Min, 30 Min, 60 Min) */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -1051,8 +1077,8 @@ export default function TutorSchedule() {
                                 <div className="font-sans font-bold text-xs tracking-tight">
                                   {slot.time}
                                 </div>
-                                <div className={`text-[11px] font-semibold truncate ${isSelected ? 'text-white/95' : 'text-[#3a3a3c]'}`}>
-                                  {slot.subject}
+                                <div className={`text-[11px] font-semibold truncate ${isSelected ? 'text-white/95' : 'text-emerald-700 font-medium'}`}>
+                                  {slot.isBooked && slot.subject ? slot.subject : 'Available'}
                                 </div>
                               </div>
                               <div className="shrink-0 flex items-center justify-center">
