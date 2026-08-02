@@ -64,8 +64,8 @@ export default function ResetPassword() {
     },
   })
 
-  const passwordRegister = register('password')
-  const confirmPasswordRegister = register('confirmPassword')
+  const { ref: passwordFormRef, ...passwordRegister } = register('password')
+  const { ref: confirmPasswordFormRef, ...confirmPasswordRegister } = register('confirmPassword')
 
   const passwordValue = watch('password', '')
   const confirmPasswordValue = watch('confirmPassword', '')
@@ -123,6 +123,7 @@ export default function ResetPassword() {
                 placeholder="Enter new password"
                 autoComplete="new-password"
                 error={errors.password?.message}
+                ref={passwordFormRef}
                 {...passwordRegister}
                 onFocus={() => setIsPasswordFocused(true)}
                 onBlur={(e) => {
@@ -154,6 +155,7 @@ export default function ResetPassword() {
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 error={errors.confirmPassword?.message}
+                ref={confirmPasswordFormRef}
                 {...confirmPasswordRegister}
                 onFocus={() => setIsConfirmPasswordFocused(true)}
                 onBlur={(e) => {
