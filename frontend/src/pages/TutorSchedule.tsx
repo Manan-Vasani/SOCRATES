@@ -565,7 +565,7 @@ export default function TutorSchedule() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-24">
+    <div className="min-h-dvh bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-24" style={{ minHeight: '100dvh' }}>
       {/* Background Subtle Gradient */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,102,204,0.035)_0%,_transparent_60%)] pointer-events-none z-0" />
 
