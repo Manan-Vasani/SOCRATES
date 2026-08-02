@@ -215,37 +215,32 @@ const DAY_OPTIONS: DropdownOption<string>[] = [
   { value: 'Sunday', label: 'Sunday' },
 ]
 
-const TIME_OPTIONS: DropdownOption<string>[] = [
-  { value: '08:00 AM', label: '08:00 AM' },
-  { value: '08:30 AM', label: '08:30 AM' },
-  { value: '09:00 AM', label: '09:00 AM' },
-  { value: '09:30 AM', label: '09:30 AM' },
-  { value: '10:00 AM', label: '10:00 AM' },
-  { value: '10:30 AM', label: '10:30 AM' },
-  { value: '11:00 AM', label: '11:00 AM' },
-  { value: '11:30 AM', label: '11:30 AM' },
-  { value: '12:00 PM', label: '12:00 PM' },
-  { value: '12:30 PM', label: '12:30 PM' },
-  { value: '01:00 PM', label: '01:00 PM' },
-  { value: '01:30 PM', label: '01:30 PM' },
-  { value: '02:00 PM', label: '02:00 PM' },
-  { value: '02:30 PM', label: '02:30 PM' },
-  { value: '03:00 PM', label: '03:00 PM' },
-  { value: '03:30 PM', label: '03:30 PM' },
-  { value: '04:00 PM', label: '04:00 PM' },
-  { value: '04:30 PM', label: '04:30 PM' },
-  { value: '05:00 PM', label: '05:00 PM' },
-  { value: '05:30 PM', label: '05:30 PM' },
-  { value: '06:00 PM', label: '06:00 PM' },
-  { value: '06:30 PM', label: '06:30 PM' },
-  { value: '07:00 PM', label: '07:00 PM' },
-  { value: '07:30 PM', label: '07:30 PM' },
-  { value: '08:00 PM', label: '08:00 PM' },
-  { value: '08:30 PM', label: '08:30 PM' },
-  { value: '09:00 PM', label: '09:00 PM' },
-  { value: '09:30 PM', label: '09:30 PM' },
-  { value: '10:00 PM', label: '10:00 PM' },
-]
+const generateTimeOptions = (): DropdownOption<string>[] => {
+  const options: DropdownOption<string>[] = []
+  let current = 9 * 60 // 9:00 AM in minutes
+  const end = 21 * 60 // 9:00 PM in minutes
+
+  const minutesToTime = (totalMin: number): string => {
+    const normalized = totalMin % 1440
+    let hours = Math.floor(normalized / 60)
+    const minutes = normalized % 60
+    const modifier = hours >= 12 ? 'PM' : 'AM'
+    hours = hours % 12
+    if (hours === 0) hours = 12
+    const hStr = hours < 10 ? `0${hours}` : `${hours}`
+    const mStr = minutes < 10 ? `0${minutes}` : `${minutes}`
+    return `${hStr}:${mStr} ${modifier}`
+  }
+
+  while (current <= end) {
+    const timeStr = minutesToTime(current)
+    options.push({ value: timeStr, label: timeStr })
+    current += 10
+  }
+  return options
+}
+
+const TIME_OPTIONS = generateTimeOptions()
 
 const DURATION_OPTIONS: DropdownOption<number>[] = [
   { value: 60, label: '60 Min' },
@@ -371,9 +366,35 @@ export default function Profile() {
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
 
   const [availability, setAvailability] = useState<AvailabilitySlot[]>(DEFAULT_AVAILABILITY)
-  const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM', timeEnd: '11:00 AM' })
+  const [newSlot, setNewSlot] = useState({ dayOfWeek: 'Monday', timeStart: '09:00 AM' })
   const [selectedDuration, setSelectedDuration] = useState<number>(60)
   const [bookmarkedTutors, setBookmarkedTutors] = useState<BookmarkedTutor[]>(MOCK_BOOKMARKED_TUTORS)
+
+  const calculateEndTime = (startStr: string, durationMin: number): string => {
+    const timeToMinutes = (timeStr: string): number => {
+      const [time, modifier] = timeStr.split(' ')
+      let [hours, minutes] = time.split(':').map(Number)
+      if (modifier === 'PM' && hours !== 12) hours += 12
+      if (modifier === 'AM' && hours === 12) hours = 0
+      return hours * 60 + minutes
+    }
+
+    const minutesToTime = (totalMin: number): string => {
+      const normalized = totalMin % 1440
+      let hours = Math.floor(normalized / 60)
+      const minutes = normalized % 60
+      const modifier = hours >= 12 ? 'PM' : 'AM'
+      hours = hours % 12
+      if (hours === 0) hours = 12
+      const hStr = hours < 10 ? `0${hours}` : `${hours}`
+      const mStr = minutes < 10 ? `0${minutes}` : `${minutes}`
+      return `${hStr}:${mStr} ${modifier}`
+    }
+
+    const startMin = timeToMinutes(startStr)
+    const endMin = startMin + durationMin
+    return minutesToTime(endMin)
+  }
 
   const handleAddAvailability = () => {
     const timeToMinutes = (timeStr: string): number => {
@@ -396,66 +417,39 @@ export default function Profile() {
       return `${hStr}:${mStr} ${modifier}`
     }
 
-    let startMin = timeToMinutes(newSlot.timeStart)
-    let endMin = timeToMinutes(newSlot.timeEnd)
-    if (endMin <= startMin) {
-      endMin += 1440 // Crosses midnight
-    }
+    const startMin = timeToMinutes(newSlot.timeStart)
+    const endMin = startMin + selectedDuration
+    const timeEndStr = minutesToTime(endMin)
 
-    const duration = selectedDuration
-    const breakDuration = 20
-    const newSlotsToAdd: AvailabilitySlot[] = []
-    let currentStart = startMin
-    let addedCount = 0
-    let skippedCount = 0
+    // Check if duplicate slot exists
+    const isDuplicate = availability.some(
+      (slot) =>
+        slot.dayOfWeek === newSlot.dayOfWeek &&
+        slot.timeStart === newSlot.timeStart &&
+        slot.timeEnd === timeEndStr
+    )
 
-    while (currentStart + duration <= endMin) {
-      const currentEnd = currentStart + duration
-      const timeStartStr = minutesToTime(currentStart)
-      const timeEndStr = minutesToTime(currentEnd)
-
-      // Check if duplicate slot exists
-      const isDuplicate = availability.some(
-        (slot) =>
-          slot.dayOfWeek === newSlot.dayOfWeek &&
-          slot.timeStart === timeStartStr &&
-          slot.timeEnd === timeEndStr
-      ) || newSlotsToAdd.some(
-        (slot) =>
-          slot.dayOfWeek === newSlot.dayOfWeek &&
-          slot.timeStart === timeStartStr &&
-          slot.timeEnd === timeEndStr
-      )
-
-      if (!isDuplicate) {
-        newSlotsToAdd.push({
-          id: `av-${Date.now()}-${addedCount}`,
-          dayOfWeek: newSlot.dayOfWeek,
-          timeStart: timeStartStr,
-          timeEnd: timeEndStr
-        })
-        addedCount++
-      } else {
-        skippedCount++
-      }
-
-      currentStart = currentEnd + breakDuration
-    }
-
-    if (newSlotsToAdd.length === 0) {
-      if (skippedCount > 0) {
-        toast.error('All generated slots already exist!')
-      } else {
-        toast.error('Time span is too short for selected duration!')
-      }
+    if (isDuplicate) {
+      toast.error('This availability slot already exists!')
       return
     }
 
-    setAvailability(prev => [...prev, ...newSlotsToAdd])
-    if (skippedCount > 0) {
-      toast.success(`Generated ${addedCount} slots with 20-min breaks (${skippedCount} duplicates skipped)`)
-    } else {
-      toast.success(`Generated ${addedCount} slots with 20-min breaks!`)
+    const newSlotItem: AvailabilitySlot = {
+      id: `av-${Date.now()}`,
+      dayOfWeek: newSlot.dayOfWeek,
+      timeStart: newSlot.timeStart,
+      timeEnd: timeEndStr
+    }
+
+    setAvailability(prev => [...prev, newSlotItem])
+    toast.success(`Slot added: ${newSlot.timeStart} - ${timeEndStr}`)
+
+    // Auto-advance start time by duration + 20 min break
+    const nextStartMin = startMin + selectedDuration + 20
+    const limitMin = 21 * 60 // 09:00 PM max start
+    if (nextStartMin <= limitMin) {
+      const nextStartStr = minutesToTime(nextStartMin)
+      setNewSlot(prev => ({ ...prev, timeStart: nextStartStr }))
     }
   }
 
@@ -1117,14 +1111,9 @@ export default function Profile() {
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
-                        <CustomDropdown<string>
-                          options={TIME_OPTIONS}
-                          value={newSlot.timeEnd}
-                          onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeEnd: val }))}
-                          className="w-full"
-                          buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                          align="center"
-                        />
+                        <div className="w-full py-2 px-3.5 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg text-xs font-bold text-[#7a7a7a] h-[34px] flex items-center select-none">
+                          {calculateEndTime(newSlot.timeStart, selectedDuration)}
+                        </div>
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Session</label>
