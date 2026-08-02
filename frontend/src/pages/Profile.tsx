@@ -746,39 +746,41 @@ export default function Profile() {
                 ))}
               </div>
 
-              {/* Three column layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Left Column (Teaching Expertise + badges) */}
-                <div className="lg:col-span-4 space-y-6">
-                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
-                    <div className="h-5 w-36 bg-[#f3f3f6] rounded-lg" />
+              {/* Teaching Domains, Credentials, and Availability Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Left Column: Teaching Expertise & verified badges (6 cols) */}
+                <div className="md:col-span-6 space-y-6">
+                  <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                    <div className="h-5 w-44 bg-[#f3f3f6] rounded-lg" />
                     <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
                     <div className="flex gap-2">
                       <div className="h-7 w-12 bg-[#f3f3f6] rounded-lg" />
                       <div className="h-7 w-16 bg-[#f3f3f6] rounded-lg" />
                     </div>
                   </div>
-                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
+                  <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
                     <div className="h-5 w-36 bg-[#f3f3f6] rounded-lg" />
                     <div className="space-y-3">
-                      <div className="h-12 w-full bg-[#f3f3f6] rounded-2xl" />
-                      <div className="h-12 w-full bg-[#f3f3f6] rounded-2xl" />
+                      <div className="h-12 w-full bg-[#f3f3f6] rounded-xl" />
+                      <div className="h-12 w-full bg-[#f3f3f6] rounded-xl" />
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column (Manage Availability Hours) */}
-                <div className="lg:col-span-8">
-                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-6">
-                    <div className="h-5 w-44 bg-[#f3f3f6] rounded-lg" />
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
-                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
-                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
-                      <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                {/* Right Column: Availability Scheduler (6 cols) */}
+                <div className="md:col-span-6 flex">
+                  <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between min-h-[364px]">
+                    <div className="space-y-4">
+                      <div className="h-5 w-48 bg-[#f3f3f6] rounded-lg" />
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                        <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                        <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                        <div className="h-9 bg-[#f3f3f6] rounded-lg" />
+                      </div>
+                      <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
                     </div>
-                    <div className="h-10 w-full bg-[#f3f3f6] rounded-xl" />
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-4">
                       <div className="h-10 bg-[#f3f3f6] rounded-xl" />
                       <div className="h-10 bg-[#f3f3f6] rounded-xl" />
                     </div>
@@ -788,7 +790,7 @@ export default function Profile() {
             </div>
 
             {/* Earnings Records table skeleton */}
-            <div className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4">
+            <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
               <div className="h-5 w-48 bg-[#f3f3f6] rounded-lg" />
               <div className="space-y-3">
                 <div className="h-8 bg-[#f3f3f6] rounded-lg" />
