@@ -1084,9 +1084,15 @@ export default function TutorSchedule() {
                           disabled={isPrivateBooked}
                           onClick={() => {
                             if (isBookedByMe) {
-                              toast.error('You Already Booked This Session', {
-                                description: 'You are the primary host of this tutoring session. You cannot join or split fee on your own booked slot.',
-                              })
+                              if (isJoinedByMe) {
+                                toast.info('You Already Joined This Group', {
+                                  description: 'You are already a member of this group session. No action needed!',
+                                })
+                              } else {
+                                toast.error('You Already Booked This Session', {
+                                  description: 'You are the primary host of this tutoring session. You cannot join or split fee on your own booked slot.',
+                                })
+                              }
                               return
                             }
                             if (isGroupableBooked) {
@@ -1121,12 +1127,12 @@ export default function TutorSchedule() {
                               <div className="flex items-center justify-between gap-1 w-full">
                                 <span className="font-bold text-xs text-blue-950 tracking-tight">{slot.time}</span>
                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-200/90 text-blue-900 border border-blue-300/60 shrink-0">
-                                  {isJoinedByMe ? 'Joined Group' : 'Your Session'}
+                                  {isJoinedByMe ? 'Joined' : 'Your Session'}
                                 </span>
                               </div>
                               <div className="text-[10px] font-semibold text-blue-900 truncate">
                                 {isJoinedByMe ? (
-                                  <><strong className="font-bold text-blue-950">You</strong> joined this group</>
+                                  <>You already joined the group</>
                                 ) : (
                                   <>Booked by <strong className="font-bold text-blue-950">You (Host)</strong></>
                                 )}
