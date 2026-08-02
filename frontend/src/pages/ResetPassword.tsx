@@ -38,8 +38,10 @@ export default function ResetPassword() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
-  const [hasPasswordBeenTouched, setHasPasswordBeenTouched] = useState(false)
-  const [hasConfirmPasswordBeenTouched, setHasConfirmPasswordBeenTouched] = useState(false)
+
+  // Input focus tracking states for smooth animated expansion
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
 
   // Retrieve email, token & otp from URL query params or sessionStorage
   const urlToken = searchParams.get('token')
@@ -62,13 +64,13 @@ export default function ResetPassword() {
     },
   })
 
+  const passwordRegister = register('password')
+  const confirmPasswordRegister = register('confirmPassword')
+
   const passwordValue = watch('password', '')
   const confirmPasswordValue = watch('confirmPassword', '')
 
   const isMatching = passwordValue === confirmPasswordValue && confirmPasswordValue.length > 0
-
-  const passwordRegister = register('password')
-  const confirmPasswordRegister = register('confirmPassword')
 
   const onSubmit = async (data: ResetPasswordFields) => {
     setIsLoading(true)
@@ -105,7 +107,7 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-[420px] flex flex-col items-start gap-4">
+      <div className="w-full max-w-[420px] min-w-[320px] flex flex-col items-start gap-4 shrink-0">
         <BackToHome />
         <AuthCard>
           <AuthHeader
@@ -114,7 +116,7 @@ export default function ResetPassword() {
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* New Password Field Group */}
+            {/* New Password Field */}
             <div className="space-y-1.5">
               <PasswordInput
                 label="New Password"
@@ -122,12 +124,16 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 error={errors.password?.message}
                 {...passwordRegister}
-                onFocus={() => setHasPasswordBeenTouched(true)}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={(e) => {
+                  passwordRegister.onBlur(e)
+                  setIsPasswordFocused(false)
+                }}
               />
 
-              {/* Password Requirements Panel - once revealed, stays open so card NEVER shrinks on button click */}
+              {/* Password Requirements Panel - closed by default, opens on focus or typing */}
               <AnimatePresence>
-                {(hasPasswordBeenTouched || passwordValue.length > 0) && (
+                {(isPasswordFocused || passwordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -141,7 +147,7 @@ export default function ResetPassword() {
               </AnimatePresence>
             </div>
 
-            {/* Confirm Password Field Group */}
+            {/* Confirm Password Field */}
             <div className="space-y-1.5">
               <PasswordInput
                 label="Confirm Password"
@@ -149,12 +155,16 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 error={errors.confirmPassword?.message}
                 {...confirmPasswordRegister}
-                onFocus={() => setHasConfirmPasswordBeenTouched(true)}
+                onFocus={() => setIsConfirmPasswordFocused(true)}
+                onBlur={(e) => {
+                  confirmPasswordRegister.onBlur(e)
+                  setIsConfirmPasswordFocused(false)
+                }}
               />
 
-              {/* Confirm Password Requirements Panel - once revealed, stays open so card NEVER shrinks on button click */}
+              {/* Confirm Password Requirements Panel - matches Signup.tsx exactly */}
               <AnimatePresence>
-                {(hasConfirmPasswordBeenTouched || confirmPasswordValue.length > 0) && (
+                {(isConfirmPasswordFocused || confirmPasswordValue.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -205,7 +215,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none inline-flex items-center justify-center gap-2 disabled:opacity-75"
+              className="w-full py-3 rounded-xl bg-[#0066cc] text-white text-sm font-semibold hover:bg-[#0077ed] hover:shadow-md hover:shadow-[#0066cc]/20 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] cursor-pointer transition-all duration-200 shadow-sm select-none inline-flex items-center justify-center gap-2 disabled:opacity-75 mt-2"
             >
               {isLoading ? (
                 <>
