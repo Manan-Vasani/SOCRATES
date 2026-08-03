@@ -53,6 +53,13 @@ app.get('/health', (req, res) => {
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     readyState: mongoose.connection.readyState,
     timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      RENDER: process.env.RENDER,
+      FRONTEND_URL: process.env.FRONTEND_URL,
+      GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL,
+      isProd: process.env.NODE_ENV === 'production' || process.env.RENDER === 'true',
+    }
   });
 });
 
