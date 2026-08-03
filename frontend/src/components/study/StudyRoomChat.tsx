@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Send,
   Users,
@@ -16,6 +17,7 @@ import {
   Upload,
   Eye,
   Download,
+  Trash2,
   X,
   Paperclip,
 } from 'lucide-react'
@@ -135,6 +137,12 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
     ])
 
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const deleteResource = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    setResources((prev) => prev.filter((r) => r.id !== id))
+    if (previewFile?.id === id) setPreviewFile(null)
   }
 
   useEffect(() => {
@@ -417,7 +425,24 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
                     {r.uploadedBy} • {r.time} • {r.size}
                   </div>
                 </div>
-                <Eye size={14} className="text-[#a1a1a6] group-hover:text-[#0066cc] transition-colors shrink-0" />
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {r.type === 'image' && (
+                    <button
+                      onClick={() => setPreviewFile(r)}
+                      className="p-1.5 rounded-xl hover:bg-black/5 text-[#a1a1a6] hover:text-[#0066cc] transition-colors cursor-pointer"
+                      title="View Photo"
+                    >
+                      <Eye size={15} />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => deleteResource(r.id, e)}
+                    className="p-1.5 rounded-xl hover:bg-red-50 text-[#a1a1a6] hover:text-red-500 transition-colors cursor-pointer"
+                    title="Delete File"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -499,10 +524,14 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
         </div>
       )}
 
-      {/* File Preview Modal (Large Window) */}
-      {previewFile && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl w-[90vw] max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      {/* File Preview Modal (Portal to Document Body) */}
+      {previewFile && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[999999] flex items-center justify-center p-3 md:p-4 animate-in fade-in duration-200">
+          <div className={`bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-all ${
+            previewFile.type === 'pdf'
+              ? 'w-[75vw] max-w-3xl h-[95vh]'
+              : 'w-[90vw] max-w-4xl h-[88vh]'
+          }`}>
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-[#fafafa]">
               <div className="flex items-center gap-3 min-w-0">
@@ -523,12 +552,14 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
             </div>
 
             {/* Modal Body / Viewer */}
-            <div className="flex-1 p-6 flex items-center justify-center bg-[#f5f5f7] overflow-y-auto">
+            <div className="flex-1 p-0 flex items-center justify-center bg-[#525659] overflow-hidden relative">
               {previewFile.url ? (
                 previewFile.type === 'image' ? (
-                  <img src={previewFile.url} alt={previewFile.name} className="max-h-[65vh] rounded-2xl object-contain shadow-xl" />
+                  <div className="w-full h-full flex items-center justify-center p-6 bg-[#1a1a1e] overflow-auto">
+                    <img src={previewFile.url} alt={previewFile.name} className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" />
+                  </div>
                 ) : (
-                  <iframe src={previewFile.url} title={previewFile.name} className="w-full h-[65vh] rounded-2xl border border-[#e5e5e7] bg-white shadow-sm" />
+                  <iframe src={`${previewFile.url}#toolbar=1&navpanes=0`} title={previewFile.name} className="w-full h-full border-0 bg-white" />
                 )
               ) : (
                 <div className="text-center py-12 space-y-4">
@@ -536,8 +567,8 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
                     {previewFile.type === 'pdf' ? <FileText size={36} /> : <ImageIcon size={36} />}
                   </div>
                   <div>
-                    <p className="text-base font-bold text-[#1d1d1f]">{previewFile.name}</p>
-                    <p className="text-xs text-[#7a7a7a] mt-1">Shared by {previewFile.uploadedBy} • {previewFile.size}</p>
+                    <p className="text-base font-bold text-white">{previewFile.name}</p>
+                    <p className="text-xs text-white/70 mt-1">Shared by {previewFile.uploadedBy} • {previewFile.size}</p>
                   </div>
                 </div>
               )}
@@ -547,6 +578,13 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
             <div className="px-6 py-4 border-t border-[#e5e5e7] bg-white flex items-center justify-between">
               <span className="text-xs text-[#a1a1a6]">SOCRATES Study Session File Viewer</span>
               <div className="flex gap-2">
+                <button
+                  onClick={(e) => deleteResource(previewFile.id, e)}
+                  className="px-4 py-2.5 rounded-2xl text-xs font-semibold text-red-500 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer flex items-center gap-1.5"
+                  title="Delete File"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
                 <button
                   onClick={() => setPreviewFile(null)}
                   className="px-5 py-2.5 rounded-2xl text-xs font-semibold text-[#525252] hover:bg-[#f0f0f2] transition-colors cursor-pointer"
@@ -565,7 +603,8 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
