@@ -1116,10 +1116,10 @@ export default function Profile() {
             </div>
 
             {/* Enrolled Subjects & Bookmarked Tutors & Study History Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Left Column: Enrolled Subjects & Study Rooms (7 cols) */}
-              <div className="md:col-span-7 space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+              {/* Card 1: Enrolled Subjects */}
+              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs flex flex-col justify-between h-full">
+                <div className="space-y-4 flex-1">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
                     <span>Enrolled Learning Subjects</span>
                     <span className="text-xs text-[#7a7a7a] font-normal">{getLearningSubjects().length} Active</span>
@@ -1166,8 +1166,11 @@ export default function Profile() {
                     )}
                   </div>
                 </div>
+              </div>
 
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+              {/* Card 2: Recent Study Room History */}
+              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs flex flex-col justify-between h-full">
+                <div className="space-y-4 flex-1">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f]">Recent Study Room History</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
@@ -1189,9 +1192,9 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Right Column: Bookmarked Tutors (5 cols) */}
-              <div className="md:col-span-5">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs min-h-[352px]">
+              {/* Card 3: Bookmarked Tutors */}
+              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs min-h-[352px] flex flex-col justify-between h-full">
+                <div className="space-y-4 flex-1">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
                     <span>Bookmarked Tutors</span>
                     <span className="text-xs text-[#7a7a7a] font-normal">{bookmarkedTutors.length} Saved</span>
