@@ -7,7 +7,7 @@
 | Innovation | 9/10 | ✅ Excellent |
 | Complexity | 10/10 | ✅ Perfect for 4-5 members |
 | Industry Relevance | 10/10 | ✅ Real-world use case |
-| Learning Opportunity | 10/10 | ✅ Full-stack learning |
+| Learning Opportunity | 10/10 | ✅ Full-stack + DevOps + ML |
 | Presentation Impact | 10/10 | ✅ Impressive demo |
 | SGP Suitability (4 members) | 10/10 | ✅ Ideal fit |
 
@@ -15,32 +15,35 @@
 
 ## 👥 RECOMMENDED TEAM STRUCTURE (4 PEOPLE)
 
-### **Member 1: Frontend Developer (UI/UX)**
+### **Member 1: Frontend Developer (UI/UX & Landing)**
 **Time Allocation:** 4-5 months
 
 **Responsibilities:**
-- Home Page & Landing Page
-- Tutor Search & Filter UI
-- Tutor Profile Pages
-- Session Booking UI
+- Home Page & Landing Page (Apple-style product tiles)
+- Tutor Search & Filter UI (split-screen, sidebar filters)
+- Tutor Profile Pages (sticky sub-nav, scheduler, reviews)
+- Session Booking UI (calendar, Razorpay checkout)
 - Responsive Design (Mobile/Tablet/Desktop)
 
 **Features to Build:**
-- Homepage with search bar
-- Advanced filter options (subject, price, rating, experience)
-- Tutor profile cards with ratings/reviews
-- Booking calendar interface
-- Payment checkout UI
+- Homepage with hero tile + alternating dark/parchment tiles
+- Advanced filter options (subject, price, rating, availability chips)
+- Tutor profile cards with ratings/reviews (store-utility-card)
+- Booking calendar interface (calendar-scheduler-genius)
+- Payment checkout UI (Razorpay)
 
 **Libraries/Tools:**
-- React.js with Vite
-- Tailwind CSS
-- React Router
-- Axios (API calls)
-- React Query (data fetching)
+- React 19 + TypeScript + Vite
+- Tailwind CSS v4 (`@tailwindcss/vite`)
+- React Router v7
+- Axios + TanStack Query
+- **lucide-react** (MANDATORY - zero raw emojis)
+- Framer Motion
+- FullCalendar
+- @xenova/transformers (browser sentiment/intent)
 
 **Time Breakdown:**
-- Setup & Design System: 3 days
+- Setup & Design System (per DESIGN-apple.md): 3 days
 - Home & Search Page: 8 days
 - Tutor Profiles: 6 days
 - Booking UI: 7 days
@@ -53,125 +56,155 @@
 **Time Allocation:** 4-5 months
 
 **Responsibilities:**
-- Student Dashboard
-- Tutor Dashboard
-- Calendar System (integration)
-- Real-time Chat UI
-- Notifications UI
-- Session Recording Download Page
+- Student Dashboard (upcoming sessions, payment history, favorites, AI summaries)
+- Tutor Dashboard (earnings, bookings, student management, availability calendar)
+- Real-time Chat UI (iMessage-style bubbles, typing indicators)
+- Video Call Page (Jitsi embed, controls)
+- Notifications UI (toast, bell dropdown)
+- AI Chat Panel (floating Socratic assistant)
 
 **Features to Build:**
-- Student dashboard (upcoming sessions, payment history, favorites)
-- Tutor dashboard (earnings, bookings, student management)
+- Student dashboard with session history + AI summaries
+- Tutor dashboard with earnings chart + availability manager
 - FullCalendar integration for session scheduling
-- Chat interface with typing indicators
+- Chat interface with Socket.IO (imessage-bubble components)
 - Session history pages
-- Recording management interface
+- Notification system (push-notification-toast)
 
 **Libraries/Tools:**
-- React.js with Vite
-- Tailwind CSS
-- Socket.IO Client (real-time)
-- FullCalendar.io
-- Axios
-- Framer Motion (animations)
+- React 19 + TypeScript + Vite
+- Tailwind CSS v4
+- Socket.IO Client
+- FullCalendar
+- Axios + TanStack Query
+- Framer Motion
+- @jitsi/react-sdk
+- @xenova/transformers
+- Recharts (earnings charts)
 
 **Time Breakdown:**
 - Student Dashboard: 8 days
 - Tutor Dashboard: 8 days
 - Calendar Integration: 6 days
-- Chat UI (paired with real-time): 5 days
+- Chat UI: 5 days
+- Video Call UI: 4 days
 - Notifications: 3 days
-- Recording Interface: 2 days
-- **Total: ~32 days**
+- AI Chat Panel: 3 days
+- **Total: ~37 days**
 
 ---
 
-### **Member 3: Backend Developer (Core APIs)**
+### **Member 3: Backend Developer (Core APIs & Auth)**
 **Time Allocation:** 4-5 months
 
 **Responsibilities:**
-- Authentication & Authorization
-- User Management APIs
-- Booking/Session Management APIs
-- Search & Filter APIs
-- Notifications System
-- Admin Panel Backend
+- Authentication & Authorization (JWT, bcrypt, roles)
+- User Management APIs (register, profile, password reset)
+- Tutor Profile APIs (CRUD, verification status)
+- Booking/Session Management APIs (CRUD, conflict prevention)
+- Search & Filter APIs (compound indexes, pagination)
+- Review & Rating APIs
+- Admin Panel Backend (user management, tutor approval, stats)
+- Notification System (DB + Socket.IO push)
 
 **Features to Build:**
-- User registration & login (JWT)
-- Password reset functionality
-- Role-based access control (Student/Tutor/Admin)
-- Tutor profile management
+- User registration & login (Student/Tutor/Admin roles)
+- Password reset + email verification (Nodemailer)
+- Role-based access control
+- Tutor profile management (Cloudinary uploads)
 - Session booking/cancellation/rescheduling
-- Search API with filters
-- Notification system
-- Admin management endpoints
+- Search API with filters (subject, price, rating)
+- Review system (create, read, moderate)
+- Admin endpoints (block users, approve tutors, platform stats)
 
 **Tech Stack:**
-- Node.js with Express.js
-- JWT (authentication)
-- bcrypt (password hashing)
-- Nodemailer (email notifications)
-- Mongoose (ODM)
+- Node.js 20 + Express.js (CommonJS)
+- MongoDB + Mongoose
+- JWT + bcrypt
+- Nodemailer (Gmail App Password)
+- Cloudinary (Multer + Sharp)
+- Joi / express-validator
+- express-async-errors
+- Winston (structured JSON logging)
+- Helmet, CORS, express-rate-limit, sanitize-html
 
 **Time Breakdown:**
 - Authentication & JWT: 5 days
 - User Management APIs: 4 days
+- Tutor Profile APIs: 3 days
 - Booking APIs (CRUD): 6 days
 - Search & Filter APIs: 4 days
-- Notifications: 3 days
+- Review APIs: 3 days
 - Admin APIs: 4 days
+- Notifications: 3 days
 - Testing & Debugging: 4 days
-- **Total: ~30 days**
+- **Total: ~36 days**
 
 ---
 
-### **Member 4: Backend Developer + DevOps (Database & Advanced Features)**
+### **Member 4: Backend + DevOps + AI/ML (Database, Real-time, Infrastructure, Local ML)**
 **Time Allocation:** 4-5 months
 
 **Responsibilities:**
-- Database Design & Management (MongoDB)
-- Payment Integration (Stripe)
-- Real-time Communication (Socket.IO)
-- Video Calling Backend (WebRTC signaling)
-- Session Recording Storage
-- Deployment & DevOps
-- Admin Dashboard Backend
+- Database Design & Management (MongoDB schemas, indexes, optimization)
+- Payment Integration (Razorpay: orders, verify, webhooks, payouts)
+- Real-time Communication (Socket.IO server, rooms, presence)
+- Video Calling Backend (Jitsi room management)
+- AI Microservice (Python FastAPI + Local ML models)
+- n8n Workflow Automation (3 core workflows)
+- Deployment & DevOps (Docker, CI/CD, Vercel, Render)
+- Monitoring & Logging (Winston, health checks)
 
 **Features to Build:**
-- MongoDB database design & collections
-- Stripe payment processing
-- Payment history & invoicing
-- Socket.IO real-time chat
-- WebRTC signaling server
-- Session recording cloud storage (AWS S3 or similar)
-- Review & rating system
-- Admin panel backend
-- Database optimization
+- MongoDB collections (8) + critical compound indexes
+- Razorpay integration (test → production)
+- Socket.IO: chat, typing, presence, notifications
+- Jitsi room generation + session mapping
+- **AI Service (Python FastAPI):**
+  - Tutor matching (sentence-transformers embeddings)
+  - Recommendations (hybrid CF + content-based)
+  - Sentiment analysis (Xenova BERT)
+  - Intent detection (zero-shot)
+  - Performance prediction (RandomForest)
+  - Schedule optimization (OR-Tools)
+- **n8n Workflows:**
+  - Tutor verification (OCR + admin approval)
+  - Async session summaries (Gemini → Email → MongoDB)
+  - Weekly leaderboard (Cron → Sheets → Gemini → Gmail)
+- Docker + docker-compose (local stack)
+- GitHub Actions CI/CD (test + deploy)
+- Vercel (FE) + Render (BE) deployment
+- MongoDB Atlas + Cloudinary configuration
+- Seed script for demo data
 
 **Tech Stack:**
-- Node.js & Express.js
-- MongoDB Atlas
-- Mongoose ODM
-- Socket.IO (real-time)
-- Stripe API
-- AWS S3 (or Firebase Storage)
-- WebRTC (for signaling)
-- PM2 (process management)
-- Render or Railway (deployment)
+- Node.js + Express.js
+- MongoDB Atlas + Mongoose
+- Socket.IO
+- Razorpay API
+- @jitsi/react-sdk (backend room management)
+- **Python 3.11 + FastAPI + Uvicorn**
+- **sentence-transformers, scikit-learn, XGBoost, OR-Tools, transformers**
+- **n8n (Docker)**
+- Docker + Docker Compose
+- GitHub Actions
+- Winston (JSON logging)
+- PM2 (production process manager)
+- Vercel + Render
 
 **Time Breakdown:**
-- Database Design: 3 days
-- Payment Integration: 5 days
+- Database Design & Indexes: 4 days
+- Razorpay Integration: 5 days
 - Socket.IO Setup: 4 days
-- WebRTC Signaling: 6 days
-- Session Recording: 7 days
-- Admin Dashboard: 5 days
-- Cloud Storage Setup: 3 days
-- Deployment & DevOps: 4 days
+- Jitsi Room Management: 3 days
+- **AI Service Development: 10 days**
+- **n8n Workflows: 4 days**
+- Docker + CI/CD: 4 days
+- Deployment (Vercel/Render): 3 days
+- Admin Dashboard Backend: 3 days
+- Monitoring/Logging/Seed: 3 days
 - Testing & Optimization: 4 days
-- **Total: ~41 days**
+- **Total: ~47 days**
 
 ---
 
@@ -181,37 +214,20 @@
 
 #### Feature 1: Authentication System
 - **Time:** 4-5 days
-- **What's Included:**
-  - User Registration (Student/Tutor/Admin roles)
-  - Login with JWT tokens
-  - Password reset email
-  - Email verification
-  - Session management
+- **Includes:** Registration (Student/Tutor/Admin), JWT login, password reset email, email verification, session management
 - **Team:** Member 3 (Backend)
 - **Status:** Critical Path
 
 #### Feature 2: Tutor Profiles
-- **Time:** 4 days (Frontend) + 2 days (Backend) = 6 days
-- **What's Included:**
-  - Tutor info (name, photo, bio)
-  - Subjects (array of subjects)
-  - Experience & qualifications
-  - Hourly rate
-  - Initial rating display
-  - Edit profile functionality
-- **Team:** Member 1 (Frontend) + Member 3 (Backend)
+- **Time:** 4 days (FE) + 2 days (BE) = 6 days
+- **Includes:** Info (name, photo, bio), subjects, experience, hourly rate, rating, edit profile, photo upload (Cloudinary)
+- **Team:** Member 1 (FE) + Member 3 (BE)
 - **Status:** Critical Path
 
 #### Feature 3: Search & Filters
-- **Time:** 3 days (Frontend) + 4 days (Backend) = 7 days
-- **What's Included:**
-  - Search by subject/keyword
-  - Filter by price range
-  - Filter by rating (4+ stars, etc.)
-  - Filter by experience level
-  - Pagination
-  - Search suggestions/autocomplete
-- **Team:** Member 1 (Frontend) + Member 3 (Backend)
+- **Time:** 3 days (FE) + 4 days (BE) = 7 days
+- **Includes:** Search by subject/keyword, filter by price/rating/experience, pagination, autocomplete, compound index optimization
+- **Team:** Member 1 (FE) + Member 3 (BE)
 - **Status:** Critical Path
 
 ---
@@ -219,152 +235,96 @@
 ### **Phase 2: Core Booking System (Weeks 4-6)**
 
 #### Feature 4: Session Booking System
-- **Time:** 5 days (Frontend) + 6 days (Backend) = 11 days
-- **What's Included:**
-  - View available time slots
-  - Book a session
-  - Cancel session (with refund logic)
-  - Reschedule session
-  - Booking confirmation
-  - Payment before booking
-- **Team:** Member 1 & Member 2 (Frontend) + Member 3 & Member 4 (Backend)
+- **Time:** 5 days (FE) + 6 days (BE) = 11 days
+- **Includes:** Available slots, book/cancel/reschedule, booking confirmation, payment before booking, conflict prevention
+- **Team:** Member 1 & 2 (FE) + Member 3 & 4 (BE)
 - **Status:** Critical Path
-- **Complexity:** ⭐⭐⭐
 
 #### Feature 5: Calendar Scheduling
-- **Time:** 4 days (Frontend) + 3 days (Backend) = 7 days
-- **What's Included:**
-  - Student calendar (see upcoming sessions)
-  - Tutor calendar (manage availability)
-  - Available slot creation (tutor)
-  - Sync with database
-  - Conflict prevention
-  - FullCalendar integration
-- **Team:** Member 2 (Frontend) + Member 4 (Backend)
+- **Time:** 4 days (FE) + 3 days (BE) = 7 days
+- **Includes:** Student calendar, tutor availability manager, slot creation, FullCalendar integration, conflict prevention
+- **Team:** Member 2 (FE) + Member 4 (BE)
 - **Status:** Critical Path
-- **Tools:** FullCalendar.io library
 
-#### Feature 6: Payment System
+#### Feature 6: Payment System (Razorpay)
 - **Time:** 4 days
-- **What's Included:**
-  - Stripe integration
-  - Session payment checkout
-  - Payment history tracking
-  - Invoice generation
-  - Refund handling
-  - Payment status updates
-- **Team:** Member 4 (Backend)
+- **Includes:** Razorpay order creation, payment verification, webhook handling, payment history, refund logic, invoices
+- **Team:** Member 4 (BE)
 - **Status:** Critical Path
-- **Tools:** Stripe API, Stripe Checkout
 
 ---
 
 ### **Phase 3: Real-time Features (Weeks 7-10)**
 
 #### Feature 7: Real-Time Chat
-- **Time:** 5 days (Frontend) + 3 days (Backend) = 8 days
-- **What's Included:**
-  - Student ↔ Tutor messaging
-  - Message history
-  - Typing indicators
-  - Online/offline status
-  - Notification for new messages
-  - Message timestamps
-- **Team:** Member 2 (Frontend) + Member 4 (Backend)
+- **Time:** 5 days (FE) + 3 days (BE) = 8 days
+- **Includes:** Student↔Tutor messaging, history, typing indicators, online/offline, notifications, timestamps
+- **Team:** Member 2 (FE) + Member 4 (BE)
 - **Status:** Important
-- **Tools:** Socket.IO
-- **Complexity:** ⭐⭐⭐
 
-#### Feature 8: Live Video Session (MOST COMPLEX)
-- **Time:** 10 days (Frontend) + 12 days (Backend) = 22 days
-- **What's Included:**
-  - Join meeting room
-  - Video calling
-  - Audio calling
-  - Screen sharing
-  - End session functionality
-  - Automatic recording trigger
-  - Session quality indicator
-  - Bandwidth management
-- **Team:** Member 2 (Frontend) + Member 4 (Backend) + Optional 5th person (Video Specialist)
-- **Status:** Most Critical & Complex
-- **Complexity:** ⭐⭐⭐⭐⭐
-- **Technologies:**
-  - WebRTC (peer-to-peer video)
-  - STUN/TURN servers
-  - Socket.IO (signaling)
-  - NAT traversal handling
-- **Option:** Use Daily.co or Jitsi API instead (easier, 5 days total)
+#### Feature 8: Live Video Session (Jitsi — NOT WebRTC)
+- **Time:** 5 days (FE) + 3 days (BE) = 8 days (vs 22 for raw WebRTC)
+- **Includes:** Jitsi room generation, join meeting, video/audio, screen share, leave, session mapping
+- **Team:** Member 2 (FE) + Member 4 (BE)
+- **Status:** Critical (but LOW risk with Jitsi)
+- **Tech:** @jitsi/react-sdk + meet.jit.si (free)
 
-#### Feature 9: Session Recording (ADVANCED)
-- **Time:** 6 days
-- **What's Included:**
-  - Record video sessions
-  - Cloud storage (S3/Firebase)
-  - Download recordings
-  - Access control (student can download)
-  - Storage management
-  - Automatic cleanup of old recordings
-- **Team:** Member 4 (Backend)
-- **Status:** Advanced Feature (for impressive SGP)
-- **Complexity:** ⭐⭐⭐⭐⭐
-- **Tools:** AWS S3, MediaRecorder API, FFmpeg
+#### Feature 9: Notifications
+- **Time:** 3 days (FE) + 2 days (BE) = 5 days
+- **Includes:** Bell icon + dropdown, toast popups (push-notification-toast), real-time via Socket.IO, DB persistence
+- **Team:** Member 2 (FE) + Member 3 (BE)
 
 ---
 
-### **Phase 4: Dashboards & Management (Weeks 11-12)**
+### **Phase 4: AI Features & Admin (Weeks 11-14)**
 
-#### Feature 10: Student Dashboard
-- **Time:** 4 days
-- **What's Included:**
-  - Upcoming sessions list
-  - Payment history
-  - Favorite tutors
-  - Session recordings (can access)
-  - Reviews history
-  - Edit profile
-  - Quick book feature
-- **Team:** Member 2 (Frontend)
-- **Status:** Important
+#### Feature 10: AI Integration (Local-First + Gemini)
+- **Time:** 10 days (Member 4 AI Service) + 3 days (FE) = 13 days
+- **Includes:**
+  - Socratic AI Assistant (Gemini)
+  - Session Summarization (Gemini → n8n async)
+  - Tutor Matching (sentence-transformers embeddings)
+  - Smart Recommendations (hybrid CF + content)
+  - Sentiment Analysis (@xenova/transformers)
+  - Intent Detection (zero-shot)
+  - Performance Prediction (RandomForest)
+  - Lesson Prep for Tutors (Gemini)
+  - Schedule Optimization (OR-Tools)
+- **Team:** Member 4 (AI Service) + Member 2 (FE AI Chat) + Member 3 (BE AI endpoints)
 
-#### Feature 11: Tutor Dashboard
-- **Time:** 5 days
-- **What's Included:**
-  - Total earnings/stats
-  - Bookings (upcoming & past)
-  - Session history
-  - Student management
-  - Availability management
-  - Performance metrics
-  - Reviews received
-  - Availability calendar
-- **Team:** Member 2 (Frontend) + Member 4 (Backend)
-- **Status:** Important
+#### Feature 11: Admin Panel
+- **Time:** 5 days (FE) + 3 days (BE) = 8 days
+- **Includes:** User management (search, block/unblock), tutor approval queue (n8n workflow), payment monitoring, revenue stats, system health
+- **Team:** Member 1 (FE) + Member 3 (BE)
 
-#### Feature 12: Admin Panel
-- **Time:** 5 days
-- **What's Included:**
-  - User management (view, block, delete)
-  - Tutor verification
-  - Payment monitoring
-  - Dispute resolution
-  - Revenue reports
-  - User analytics
-  - System health monitoring
-- **Team:** Member 1 (UI) + Member 3 (Backend APIs)
-- **Status:** Important
+#### Feature 12: Dashboard Enhancements
+- **Time:** 4 days (FE) + 2 days (BE) = 6 days
+- **Includes:** Student: favorites, AI summaries, quick re-book. Tutor: earnings chart, student list, availability calendar, performance metrics
+- **Team:** Member 2 (FE) + Member 3/4 (BE)
 
 #### Feature 13: Review System
-- **Time:** 2 days (Frontend) + 2 days (Backend) = 4 days
-- **What's Included:**
-  - Leave ratings (1-5 stars)
-  - Write reviews
-  - Edit reviews
-  - Delete reviews
-  - Average rating calculation
-  - Review moderation (admin)
-- **Team:** Member 1 (Frontend) + Member 3 (Backend)
-- **Status:** Nice to Have
+- **Time:** 2 days (FE) + 2 days (BE) = 4 days
+- **Includes:** 1-5 star ratings, comments, edit/delete, average calculation, admin moderation (OpenAI Moderation API)
+- **Team:** Member 1 (FE) + Member 3 (BE)
+
+---
+
+### **Phase 5: Polish & Deploy (Weeks 15-16)**
+
+#### Feature 14: Responsive + Performance
+- **Time:** 4 days
+- **Includes:** Mobile/tablet/desktop testing, loading skeletons, lazy images, code-split routes, Lighthouse 85+
+- **Team:** Member 1 & 2
+
+#### Feature 15: Testing + Security
+- **Time:** 3 days
+- **Includes:** Jest + Supertest (auth, booking, payments), Helmet headers, rate limiting, input sanitization, MongoDB index verification
+- **Team:** Member 3 & 4
+
+#### Feature 16: Deployment & Demo Prep
+- **Time:** 4 days
+- **Includes:** Vercel (FE), Render (BE), MongoDB Atlas, Cloudinary, seed demo data (15 tutors, 10 students, bookings, reviews, chats), demo video, slides
+- **Team:** Member 4 (deploy) + All (test + demo)
 
 ---
 
@@ -376,9 +336,9 @@
   "_id": ObjectId,
   "name": String,
   "email": String (unique),
-  "password": String (hashed with bcrypt),
+  "password": String (bcrypt hashed),
   "role": String (enum: "student", "tutor", "admin"),
-  "profilePhoto": String (URL to image),
+  "profilePhoto": String (Cloudinary URL),
   "phone": String,
   "createdAt": Date,
   "updatedAt": Date,
@@ -387,7 +347,7 @@
 }
 ```
 
-### **Tutors Collection (Extended User Profile)**
+### **Tutors Collection (Extended Profile)**
 ```javascript
 {
   "_id": ObjectId,
@@ -403,8 +363,9 @@
   "verificationDate": Date,
   "totalEarnings": Number,
   "totalSessions": Number,
-  "responseTime": Number (in minutes),
-  "languages": [String]
+  "responseTime": Number (minutes),
+  "languages": [String],
+  "embedding": [Float32] (384-dim for AI matching)
 }
 ```
 
@@ -417,12 +378,14 @@
   "subject": String,
   "startTime": Date,
   "endTime": Date,
-  "duration": Number (in minutes),
+  "duration": Number (minutes),
   "status": String (enum: "booked", "completed", "cancelled", "no-show"),
   "paymentId": ObjectId (ref: Payments),
-  "recordingUrl": String (optional),
+  "jitsiRoom": String,
+  "recordingUrl": String (optional, Cloudinary),
+  "summary": String (markdown, from AI),
   "notes": String,
-  "cancelledBy": String (student/tutor),
+  "cancelledBy": String,
   "cancellationReason": String
 }
 ```
@@ -435,12 +398,13 @@
   "studentId": ObjectId (ref: Users),
   "tutorId": ObjectId (ref: Users),
   "amount": Number,
-  "currency": String (default: "USD"),
+  "currency": String (default: "INR"),
   "status": String (enum: "pending", "completed", "failed", "refunded"),
-  "stripePaymentId": String,
+  "razorpayOrderId": String,
+  "razorpayPaymentId": String,
   "paymentDate": Date,
-  "refundAmount": Number (optional),
-  "refundDate": Date (optional)
+  "refundAmount": Number,
+  "refundDate": Date
 }
 ```
 
@@ -455,7 +419,9 @@
   "comment": String,
   "createdAt": Date,
   "updatedAt": Date,
-  "helpful": Number (count)
+  "helpful": Number,
+  "sentiment": String (POSITIVE/NEGATIVE from AI),
+  "moderated": Boolean
 }
 ```
 
@@ -485,232 +451,216 @@
 }
 ```
 
+### **Notifications Collection**
+```javascript
+{
+  "_id": ObjectId,
+  "userId": ObjectId (ref: Users),
+  "type": String (booking, message, payment, review, system),
+  "title": String,
+  "body": String,
+  "data": Object (ref IDs),
+  "read": Boolean,
+  "createdAt": Date
+}
+// TTL Index: createdAt, expireAfterSeconds: 2592000 (30 days)
+```
+
 ---
 
-## 🛠️ COMPLETE TECH STACK
+## 🛠️ COMPLETE TECH STACK (Aligned with SOCRATES_Final_Tech_Stack.md)
 
 ### **Frontend Stack**
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Framework | React.js 18+ | UI library |
-| Build Tool | Vite | Fast bundling |
-| Styling | Tailwind CSS | Utility-first CSS |
-| Routing | React Router v6 | Page navigation |
-| HTTP Client | Axios | API calls |
-| State Management | Context API or Zustand | Global state |
-| Real-time | Socket.IO Client | Live chat & notifications |
-| Calendar | FullCalendar.io | Session scheduling |
-| UI Components | Headless UI / Radix UI | Accessible components |
-| Animation | Framer Motion | Smooth animations |
-| Icons | React Icons | Icon library |
-| Forms | React Hook Form | Form management |
-| Validation | Zod | Schema validation |
-| Testing | Vitest + React Testing Library | Unit & integration tests |
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| Framework | React | ^19.x | UI library |
+| Build Tool | Vite | ^6.x | Dev server + bundler |
+| CSS | Tailwind CSS | v4 | Utility-first (Apple tokens) |
+| Routing | React Router | ^7.x | Client-side navigation |
+| State (Client) | Zustand | ^5.x | Auth, theme, notifications |
+| State (Server) | TanStack Query | ^5.x | API caching, refetch |
+| HTTP Client | Axios | ^1.7+ | Interceptors, API calls |
+| Forms | React Hook Form | ^7.x | Minimal re-renders |
+| Validation | Zod | ^3.x | Schema validation |
+| Bridge | @hookform/resolvers | ^3.x | Zod ↔ RHF |
+| Animation | Framer Motion | ^11.x | Transitions, micro-animations |
+| Calendar | FullCalendar | ^6.x | Scheduling widget |
+| **Icons** | **lucide-react** | ^0.4.x | **MANDATORY - Vector only** |
+| Dates | date-fns | ^4.x | Formatting |
+| Toasts | Sonner | ^2.x | Notifications |
+| Real-time | Socket.IO Client | ^4.8+ | WebSocket |
+| Class Merge | clsx | ^2.x | Conditional classes |
+| **Local ML** | **@xenova/transformers** | ^2.x | **Sentiment/Intent in browser** |
+| Video | @jitsi/react-sdk | latest | Jitsi Meet embed |
+| Linting | ESLint | ^9.x | Code quality |
+| Formatting | Prettier | ^3.x | Auto-format |
 
 ### **Backend Stack**
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| Runtime | Node.js | 20 LTS | JS runtime |
+| Framework | Express.js | ^4.21+ | Web server |
+| Database | MongoDB | Latest | NoSQL |
+| ODM | Mongoose | ^8.x | Schema, validation |
+| Auth | jsonwebtoken | ^9.x | JWT tokens |
+| Hashing | bcrypt | ^5.x | Password hashing |
+| Security | Helmet | ^8.x | HTTP headers |
+| CORS | cors | ^2.8+ | Cross-origin |
+| Rate Limit | express-rate-limit | ^7.x | 100 req/15min auth |
+| Sanitize | sanitize-html | ^2.x | XSS prevention |
+| Validation | Joi | ^17.x | Body validation |
+| Alt Validation | express-validator | ^7.x | Middleware validation |
+| Real-time | Socket.IO | ^4.8+ | WebSocket server |
+| Payments | Razorpay | ^2.x | INR/UPI/Cards |
+| File Upload | Multer | ^1.x | Multipart handling |
+| Image Proc | Sharp | ^0.33+ | Resize/compress |
+| Cloud Storage | Cloudinary | Latest | Images/videos (25GB free) |
+| Email | Nodemailer | ^6.x | Verification, booking emails |
+| HTTP Client | Axios | ^1.7+ | External APIs (Razorpay, Gemini, n8n) |
+| Env | dotenv | ^16.x | .env loading |
+| IDs | uuid | ^10.x | Unique identifiers |
+| Compression | compression | ^1.x | Gzip responses |
+| **Logging** | **winston** | ^3.x | **Structured JSON logs** |
+| Async Errors | express-async-errors | ^3.x | No try-catch needed |
+| Dev Restart | Nodemon | ^3.x | Auto-reload |
+| Linting | ESLint | ^9.x | Code quality |
+| Formatting | Prettier | ^3.x | Formatting |
+
+### **AI Microservice Stack (Python)**
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Runtime | Node.js 18+ | JavaScript runtime |
-| Framework | Express.js | Web server |
-| Database | MongoDB | NoSQL database |
-| ODM | Mongoose | MongoDB object modeling |
-| Authentication | JWT + bcrypt | Secure auth |
-| Real-time | Socket.IO | WebSocket library |
-| Video | WebRTC | Peer-to-peer video |
-| Storage | AWS S3 or Firebase | Video/recording storage |
-| Payments | Stripe API | Payment processing |
-| Email | Nodemailer | Email notifications |
-| File Upload | Multer | File handling |
-| Validation | Joi or Zod | Input validation |
-| Logging | Winston or Pino | Application logs |
-| Testing | Jest + Supertest | Backend tests |
-| Process Manager | PM2 | Production process management |
+| Framework | FastAPI | Async API framework |
+| Server | Uvicorn | ASGI server |
+| Embeddings | sentence-transformers | all-MiniLM-L6-v2 (384-dim) |
+| ML | scikit-learn | RandomForest, CF, similarity |
+| Boosting | XGBoost | Performance prediction |
+| Optimization | OR-Tools | Schedule optimization |
+| NLP | transformers (HF) | BERT, zero-shot (server alt) |
+| Validation | Pydantic | Request/response schemas |
+| HTTP | httpx | Async HTTP client |
+| Cache | redis-py | Embedding cache (optional) |
+
+### **Workflow Automation**
+| Tool | Purpose |
+|------|---------|
+| n8n (Docker) | Async workflows: verification, summaries, leaderboards |
 
 ### **Deployment Stack**
 | Component | Technology |
 |-----------|-----------|
-| Frontend Hosting | Vercel or Netlify |
-| Backend Hosting | Render, Railway, or Heroku |
-| Database Hosting | MongoDB Atlas (free tier available) |
-| Storage | AWS S3 (free tier) or Firebase Storage |
-| Domain | Namecheap or GoDaddy |
-| SSL Certificate | Let's Encrypt (free via Render/Vercel) |
-| CDN | Cloudflare (free tier) |
+| Frontend | Vercel (auto-deploy, HTTPS, CDN) |
+| Backend | Render (750 hrs free, auto-deploy) |
+| Database | MongoDB Atlas (512MB free) |
+| Images | Cloudinary (25GB free) |
+| Version Control | GitHub (private, Issues, PRs) |
+| CI/CD | GitHub Actions (2000 min free) |
+| Process Manager | PM2 (production) |
+| Containerization | Docker + Docker Compose (local) |
 
 ---
 
-## 📅 RECOMMENDED DEVELOPMENT TIMELINE (4-5 Months = ~20 weeks)
+## 📅 RECOMMENDED DEVELOPMENT TIMELINE (16 Weeks = ~4 Months)
 
 | Week | Phase | Key Deliverables | Team Focus |
 |------|-------|-----------------|-----------|
-| Week 1 | Planning & Setup | Project setup, design mockups, API design | All |
-| Week 2 | Design System | UI components, Tailwind setup, design tokens | Members 1 & 2 |
-| Week 3 | Authentication | Login/Register, JWT, password reset | Member 3 |
-| Week 4 | Tutor Profiles | Profile CRUD, upload photo, display | Members 1 & 3 |
-| Week 5 | Search & Filters | Filter logic, search API, UI implementation | Members 1 & 3 |
-| Week 6 | Booking System - Part 1 | Booking UI, availability checking | Members 1 & 3 |
-| Week 7 | Booking System - Part 2 | Complete booking flow, payment prep | Members 4 & All |
-| Week 8 | Calendar Integration | FullCalendar, availability management | Members 2 & 4 |
-| Week 9 | Chat System | Socket.IO setup, real-time chat | Members 2 & 4 |
-| Week 10 | Payment Integration | Stripe integration, payment flow | Member 4 |
-| Week 11 | Video Calling - Part 1 | WebRTC signaling, join room | Members 2 & 4 |
-| Week 12 | Video Calling - Part 2 | Screen sharing, audio/video controls | Members 2 & 4 |
-| Week 13 | Recording Feature | Session recording, cloud storage | Member 4 |
-| Week 14 | Dashboards | Student/Tutor/Admin dashboards | Members 1, 2 & 3 |
-| Week 15 | Reviews & Polish | Review system, UI refinements | Members 1 & 3 |
-| Week 16 | Testing & Bug Fix | Unit tests, integration tests, debugging | All |
-| Week 17 | Deployment & DevOps | Deploy to production, monitoring | Member 4 |
-| Week 18 | Performance | Optimization, database indexing | Members 3 & 4 |
-| Week 19 | Documentation | Code documentation, API docs, README | All |
-| Week 20 | Final Presentation | Demo video, presentation slides | All |
+| 1 | Setup & Design | Repo, branch rules, Vite+React+TS, Express, MongoDB Atlas, .env.example, DESIGN-apple.md tokens, wireframes | All |
+| 2 | Design System | Tailwind config, Button/Input/Card/Modal/Loader, Navbar (global-nav + sub-nav-frosted), React Router placeholders | M1, M2 |
+| 3 | Auth APIs | POST /register, /login, /me, password reset, Nodemailer, JWT, bcrypt | M3 |
+| 4 | Auth UI + Profiles | Register/Login pages, Tutor Profile CRUD, Cloudinary upload, protected routes | M1, M3 |
+| 5 | Search & Filters | GET /tutors/search (compound index), Search page (sidebar chips), Home page hero | M1, M3 |
+| 6 | Booking APIs | Availability CRUD, Session booking (conflict check), cancel/reschedule | M3, M4 |
+| 7 | Booking UI + Razorpay | Calendar scheduler, Razorpay order/verify/webhook, confirmation page | M1, M2, M4 |
+| 8 | Dashboards (Basic) | Student: upcoming, payments. Tutor: bookings, earnings, availability mgr | M2, M3 |
+| 9 | Real-time Chat | Socket.IO server, rooms, typing, presence, Chat page (imessage-bubble) | M2, M4 |
+| 10 | Video (Jitsi) | Room generation, Video Call page (@jitsi/react-sdk), controls, notifications | M2, M4 |
+| 11 | AI Service Deploy | FastAPI service, sentence-transformers, matching, sentiment, intent, prediction | M4 |
+| 12 | AI Features + n8n | Socratic (Gemini), summaries (n8n), recommendations, lesson prep, tutor verification workflow | M2, M3, M4 |
+| 13 | Admin Panel | User management, tutor approval (n8n), stats, payment records | M1, M3 |
+| 14 | Dashboard Polish | AI summaries, earnings charts, favorites, quick re-book, performance metrics | M2, M3 |
+| 15 | Responsive + Test | Mobile/desktop fix, Lighthouse, Jest/Supertest, security hardening, index verify | All |
+| 16 | Deploy + Demo | Vercel + Render, seed data, E2E test, demo video (5min), slides (15-20) | All |
 
 ---
 
-## ⚠️ RISK ANALYSIS & HARD PARTS
+## ⚠️ RISK ANALYSIS & MITIGATION
 
-### **Critical Risks (Must Handle)**
-
-#### 1. **WebRTC Implementation** ⭐⭐⭐⭐⭐
-- **Problem:** NAT traversal, STUN/TURN server setup
-- **Impact:** Video calling won't work without proper setup
-- **Solution:**
-  - Use Daily.co API (recommended for college project) - easier
-  - Or use Jitsi API - open source but simpler than raw WebRTC
-  - If raw WebRTC: Must implement STUN/TURN servers (costs money)
-- **Time Saved:** 5 days if using API instead of WebRTC
-- **Risk Level:** HIGH
-
-#### 2. **Real-Time Synchronization** ⭐⭐⭐⭐
-- **Problem:** Socket.IO connection drops, message delays
-- **Impact:** Chat/notifications become unreliable
-- **Solution:**
-  - Implement reconnection logic with exponential backoff
-  - Queue messages when offline
-  - Server-side message persistence
-  - Test with network throttling
-- **Time Cost:** 2-3 days
-- **Risk Level:** HIGH
-
-#### 3. **Session Recording** ⭐⭐⭐⭐⭐
-- **Problem:** Large file sizes, encoding, storage costs
-- **Impact:** Storage overflows, slow downloads
-- **Solution:**
-  - Stream recording directly to S3
-  - Implement video compression with FFmpeg
-  - Set automatic deletion after 30 days
-  - Use S3 presigned URLs for secure downloads
-- **Time Cost:** 6-7 days
-- **Risk Level:** MEDIUM-HIGH
-- **Alternative:** Skip this for basic version, add later
-
-#### 4. **Payment Integration** ⭐⭐⭐
-- **Problem:** PCI compliance, refund logic, failed payments
-- **Impact:** Users lose money, chargebacks
-- **Solution:**
-  - Use Stripe's hosted checkout (safer)
-  - Implement webhook handlers properly
-  - Test with Stripe test keys first
-  - Add dispute resolution in admin panel
-- **Time Cost:** 4-5 days
-- **Risk Level:** MEDIUM
-
-#### 5. **Database Performance** ⭐⭐⭐
-- **Problem:** Slow queries with thousands of tutors/sessions
-- **Impact:** Search/filter becomes sluggish
-- **Solution:**
-  - Create proper indexes on frequently queried fields
-  - Use MongoDB aggregation pipeline for complex queries
-  - Implement pagination (never fetch all records)
-  - Cache popular searches with Redis (optional)
-- **Time Cost:** 2-3 days
-- **Risk Level:** MEDIUM
-
-#### 6. **Timezone Handling** ⭐⭐
-- **Problem:** Tutors and students in different timezones
-- **Impact:** Confused scheduling, missed sessions
-- **Solution:**
-  - Store all times in UTC in database
-  - Convert to user's local timezone on frontend
-  - Use libraries like date-fns or Day.js
-  - Display timezone clearly in UI
-- **Time Cost:** 1-2 days
-- **Risk Level:** LOW-MEDIUM
-
-#### 7. **Mobile Responsiveness** ⭐⭐
-- **Problem:** App doesn't work well on phones
-- **Impact:** Users can't book or join from mobile
-- **Solution:**
-  - Use Tailwind CSS responsive classes
-  - Test on real devices (not just browser)
-  - Make video calling mobile-friendly
-  - Use responsive images
-- **Time Cost:** Already included (Member 1 responsibility)
-- **Risk Level:** LOW-MEDIUM
+| Risk | Level | Mitigation |
+|------|-------|------------|
+| **Video Calling** | LOW | Use **Jitsi (@jitsi/react-sdk)** — 5 days, free, no STUN/TURN. Skip raw WebRTC. |
+| **Real-time Sync** | MEDIUM | Socket.IO reconnection + exponential backoff, offline message queue, server persistence |
+| **AI Local Models** | MEDIUM | Pre-download models in Docker build, cache embeddings in Redis, fallback to Gemini |
+| **Razorpay Webhooks** | LOW | Use ngrok for local testing, idempotent handlers, proper signature verification |
+| **DB Performance** | LOW | Compound indexes from Day 1, pagination always, explain() queries |
+| **Timezone Bugs** | LOW | Store UTC, convert on frontend (date-fns-tz), display timezone in UI |
+| **Mobile Video** | LOW | Jitsi handles mobile; test on real devices |
+| **n8n Reliability** | LOW | Retry on webhook failure, manual re-trigger endpoint, logs in n8n UI |
 
 ---
 
-## 🎯 SIMPLIFIED VERSION (FOR GUARANTEED SUCCESS)
+## 🎯 SIMPLIFIED VERSION (12 Weeks — Guaranteed Success)
 
-If you want to **reduce risk**, implement this **basic version** instead:
-
-### **Basic Feature Set (Recommended for College SGP)**
+**Core Features Only:**
 ✅ Authentication (4 days)
 ✅ Tutor Profiles (6 days)
 ✅ Search & Filters (7 days)
 ✅ Session Booking (11 days)
 ✅ Calendar Integration (7 days)
-✅ Payments with Stripe (4 days)
-✅ Real-time Chat with Socket.IO (8 days)
+✅ Razorpay Payments (4 days)
+✅ Real-time Chat (8 days)
+✅ Jitsi Video (8 days)
 ✅ Student Dashboard (4 days)
 ✅ Tutor Dashboard (5 days)
-✅ Reviews System (4 days)
+✅ Reviews (4 days)
+✅ **Basic AI: Socratic Assistant only (Gemini, 3 days)**
 
-**Skip/Postpone:**
-❌ Raw WebRTC video calling (use Daily.co API instead if needed) - 22 days saved
-❌ Session recording - 6 days saved
-❌ Admin panel (complex) - 5 days saved
+**Skip/Defer:**
+❌ Local ML matching/recommendations (add post-SGP)
+❌ Sentiment/Intent/Prediction (add post-SGP)
+❌ n8n workflows (manual approval, cron jobs later)
+❌ Admin Panel (basic user list only)
+❌ Session Recording
+❌ Schedule Optimization
 
-### **Timeline for Basic Version: 12-14 weeks (3-3.5 months)**
-
-This is **safer, more achievable, and still impressive** for a college SGP!
+**Timeline: 12 weeks** — Still impressive, shippable, extensible.
 
 ---
 
 ## 📊 EFFORT DISTRIBUTION (4 PEOPLE)
 
-| Member | Frontend | Backend | Database | Real-time | Video | DevOps |
+| Member | Frontend | Backend | Database | Real-time | AI/ML | DevOps |
 |--------|----------|---------|----------|-----------|-------|--------|
-| Member 1 | 70% | - | - | - | - | - |
-| Member 2 | 30% | - | - | 40% | 50% | - |
-| Member 3 | - | 60% | 20% | - | - | - |
-| Member 4 | - | 40% | 80% | 60% | 50% | 100% |
+| Member 1 | 80% | - | - | - | - | - |
+| Member 2 | 50% | - | - | 30% | 10% (AI UI) | - |
+| Member 3 | - | 70% | 20% | - | - | - |
+| Member 4 | - | 30% | 80% | 70% | 90% | 100% |
 
-**Total Effort:** ~320 work days
-**Per Person:** ~80 work days (4-5 months = ~80 days at 1-2 people per feature)
-**Weekly Commitment:** 15-20 hours per person for 20 weeks
+**Total: ~150 work days** | **Per Person: ~37-40 days** | **Weekly: 15-20 hrs × 16 weeks**
 
 ---
 
-## ✨ FINAL VERDICT FOR 4-PERSON COLLEGE SGP
+## ✨ FINAL VERDICT
 
 | Aspect | Rating | Notes |
 |--------|--------|-------|
-| **Feasibility** | 9/10 | ✅ Excellent for 4 people |
-| **Impressiveness** | 10/10 | ✅ Will wow professors |
-| **Learning Value** | 10/10 | ✅ Learn full-stack + real-time |
-| **Complexity** | 8/10 | ⚠️ Hard, but manageable |
-| **Time Estimate** | 4-5 months | ✅ Realistic if focused |
-| **Risk Level** | MEDIUM | ⚠️ WebRTC & Recording are hard |
-| **Recommendation** | **HIGHLY RECOMMENDED** | 🎯 Perfect SGP project |
-
-### **To Maximize Success:**
-1. **Use Daily.co API** instead of raw WebRTC (saves 5 days, much more reliable)
-2. **Skip session recording** in first version (can add later)
-3. **Make optional admin panel** (implement basic version only)
-4. **Start early** on video calling (most complex part)
-5. **Weekly code reviews** to catch issues early
-6. **Set up CI/CD pipeline** to automate testing
+| **Feasibility** | 9/10 | ✅ Jitsi + Local ML + n8n reduces risk |
+| **Impressiveness** | 10/10 | ✅ Full-stack + AI + DevOps + System Design |
+| **Learning Value** | 10/10 | ✅ React 19, TS, Tailwind v4, FastAPI, ML, Docker, CI/CD |
+| **Complexity** | 7/10 | ⚠️ Manageable with Jitsi (not WebRTC) |
+| **Time Estimate** | 16 weeks | ✅ Realistic with parallel tracks |
+| **Risk Level** | LOW-MED | ✅ Mitigated by tech choices |
+| **Recommendation** | **HIGHLY RECOMMENDED** | 🎯 Perfect SGP — portfolio-grade |
 
 ---
 
-**Let's build something amazing! 🚀**
+### **To Maximize Success:**
+1. **Use Jitsi (@jitsi/react-sdk)** — not WebRTC (saves 14 days, zero infrastructure)
+2. **Local ML in Python FastAPI** — sentence-transformers + scikit-learn, not cloud APIs
+3. **n8n for async** — verification, summaries, leaderboards off main thread
+4. **Docker from Week 1** — consistent env, easy CI/CD
+5. **Winston logging from Day 1** — structured JSON, request IDs
+6. **Weekly code reviews** — catch drift early
+7. **Seed demo data early** — test with realistic volume
+
+---
+
+**Let's build something exceptional! 🚀**

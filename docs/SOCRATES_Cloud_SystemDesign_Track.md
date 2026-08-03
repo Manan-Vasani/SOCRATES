@@ -2,261 +2,10 @@
 ## What YOU Should Do Beyond the Base Project
 
 > **Your field**: Cloud Computing & System Design  
-> **Your role in team**: Likely Member 4 (Backend + DevOps) — the most aligned with your career  
+> **Your role in team**: Likely Member 4 (Backend + DevOps + AI/ML) — the most aligned with your career  
 > **Goal**: Turn a college SGP into a portfolio piece that shows real cloud & system design skills
 
----
-
-## 🎯 THE BIG IDEA
-
-Your teammates will build the app. **Your job is to make the app production-grade** — the kind of infrastructure a real company would use. This is where you go from "college student" to "someone who understands how real systems work."
-
----
-
-## LEVEL 1 — DO DURING THE PROJECT (Weeks 1-20)
-
-These are things you should implement as part of the project itself.
-
-### 1. Architecture: Draw the System Design
-
-Before writing any code, draw the full system architecture. This is what interviewers ask you in system design rounds.
-
-```
-                        ┌─────────────┐
-                        │  Cloudflare │  ← CDN + DDoS Protection
-                        │    (Free)   │
-                        └──────┬──────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                                  ▼
-     ┌─────────────────┐              ┌─────────────────┐
-     │   Vercel (FE)   │              │  Render (BE)     │
-     │   React SPA     │   ───API──→  │  Express.js      │
-     │   Static Files  │   ←──JSON──  │  Socket.IO       │
-     └─────────────────┘              └────────┬─────────┘
-                                               │
-                          ┌────────────────┬────┴─────┬──────────────┐
-                          ▼                ▼          ▼              ▼
-                   ┌───────────┐   ┌────────────┐ ┌────────┐  ┌──────────┐
-                   │  MongoDB  │   │ Cloudinary │ │ Jitsi  │  │ Gemini   │
-                   │  Atlas    │   │ (Images)   │ │ (Video)│  │ (AI API) │
-                   └───────────┘   └────────────┘ └────────┘  └──────────┘
-```
-
-**What to document**:
-- Why each service was chosen
-- How data flows between them
-- What happens when one service goes down (failure modes)
-- Request lifecycle: user clicks "Book" → what happens at each layer
-
-### 2. Containerize with Docker
-
-Don't just deploy raw Node.js. Containerize it.
-
-```dockerfile
-# backend/Dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-
-EXPOSE 5000
-
-CMD ["node", "server.js"]
-```
-
-```yaml
-# docker-compose.yml (for local development)
-services:
-  backend:
-    build: ./backend
-    ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - mongo
-
-  mongo:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-volumes:
-  mongo-data:
-```
-
-**Why this matters**: Every cloud job expects Docker knowledge. This shows you understand containers, networking, and reproducible environments.
-
-### 3. CI/CD Pipeline with GitHub Actions
-
-Set up automated testing and deployment on every push.
-
-```yaml
-# .github/workflows/ci.yml
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [dev, main]
-  pull_request:
-    branches: [dev]
-
-jobs:
-  test-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: cd backend && npm ci
-      - run: cd backend && npm test
-
-  test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: cd frontend && npm ci
-      - run: cd frontend && npm run build
-
-  deploy:
-    needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Auto-deploy triggered"
-      # Vercel and Render auto-deploy from GitHub
-```
-
-**Why this matters**: CI/CD is the backbone of any cloud workflow. Demonstrating it shows maturity.
-
-### 4. Environment & Secret Management
-
-```
-.env.example (committed)          .env (NEVER committed)
-─────────────────────             ────────────────────
-PORT=5000                         PORT=5000
-MONGODB_URI=                      MONGODB_URI=mongodb+srv://user:pass@cluster...
-JWT_SECRET=                       JWT_SECRET=a8f3k2...
-RAZORPAY_KEY_ID=                  RAZORPAY_KEY_ID=rzp_test_...
-RAZORPAY_KEY_SECRET=              RAZORPAY_KEY_SECRET=...
-CLOUDINARY_CLOUD_NAME=            CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=               CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=            CLOUDINARY_API_SECRET=...
-GEMINI_API_KEY=                   GEMINI_API_KEY=...
-NODEMAILER_EMAIL=                 NODEMAILER_EMAIL=...
-NODEMAILER_PASSWORD=              NODEMAILER_PASSWORD=...
-CLIENT_URL=http://localhost:5173  CLIENT_URL=https://your-app.vercel.app
-```
-
-Set these in Render/Vercel dashboards for production. Never hardcode secrets.
-
-### 5. API Rate Limiting & Security Layers
-
-```
-                  Request Flow (System Design Perspective)
-
-  Client Request
-       │
-       ▼
-  ┌─────────────┐
-  │ Cloudflare   │  Layer 1: DDoS protection, SSL termination
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ Rate Limiter │  Layer 2: 100 req/15min per IP on auth routes
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ Helmet       │  Layer 3: Secure HTTP headers
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ CORS         │  Layer 4: Only allow your frontend domain
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ Auth (JWT)   │  Layer 5: Verify user identity
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ Validation   │  Layer 6: Joi/Zod validate request body
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ Sanitize     │  Layer 7: Strip XSS from inputs
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ Controller   │  Layer 8: Business logic
-  └──────┬──────┘
-         ▼
-  ┌─────────────┐
-  │ MongoDB      │  Layer 9: Database query
-  └─────────────┘
-```
-
-**Document this diagram in your report.** This is literally what a system design interview answer looks like.
-
-### 6. Database Indexing & Query Optimization
-
-```javascript
-// Explain to your team why these indexes matter
-
-// Without index: MongoDB scans ALL documents (slow at scale)
-// With index: MongoDB jumps directly to matching documents
-
-// Example: Tutor search
-tutorSchema.index({ subjects: 1 });          // Search by subject
-tutorSchema.index({ hourlyRate: 1 });        // Filter by price
-tutorSchema.index({ rating: -1 });           // Sort by rating (descending)
-tutorSchema.index({ subjects: 1, hourlyRate: 1, rating: -1 }); // Compound index for combined filters
-
-// Example: Session queries
-sessionSchema.index({ studentId: 1, status: 1 });  // "My upcoming sessions"
-sessionSchema.index({ tutorId: 1, startTime: -1 }); // "Tutor's session history"
-
-// Example: Chat messages
-messageSchema.index({ conversationId: 1, createdAt: 1 }); // Load conversation in order
-
-// TTL index: Auto-delete old notifications after 30 days
-notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 });
-```
-
-### 7. Logging & Monitoring
-
-```javascript
-// Structured logging (not just console.log)
-const winston = require('winston');
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
-  ],
-});
-
-// Usage
-logger.info('Session booked', { sessionId, studentId, tutorId });
-logger.error('Payment failed', { error: err.message, razorpayOrderId });
-```
-
-**Why this matters**: In production, `console.log` is useless. Structured logs with timestamps, request IDs, and context is how real systems debug issues.
+> **Note**: Level 1 (During Project) implementation details are in `DEVOPS_GUIDE.md`. This doc focuses on Level 2+ (Post-Project) growth.
 
 ---
 
@@ -272,41 +21,54 @@ Create a proper High-Level Design doc like engineers write at companies:
 # SOCRATES: High-Level Design Document
 
 ## 1. Requirements
-  - Functional: User auth, search, booking, payments, chat, video
-  - Non-Functional: <100ms API response, 99.9% uptime, handle 1000 concurrent users
+  - Functional: User auth, search, booking, payments, chat, video, AI tutoring, admin
+  - Non-Functional: <100ms API response (p99), 99.9% uptime, handle 1000 concurrent users
 
 ## 2. Capacity Estimation
   - 1000 daily active users
   - 50 sessions/day average
   - 500 messages/day
-  - Storage: ~2GB/month (profiles + chat)
+  - Storage: ~2GB/month (profiles + chat + embeddings)
 
-## 3. API Design (REST)
-  - List all endpoints with methods
+## 3. API Design (REST + WebSocket)
+  - REST: Auth, Users, Tutors, Sessions, Payments, Reviews, Admin, AI proxy
+  - WebSocket: Chat, Typing, Presence, Notifications
+  - AI Service: Matching, Recommendations, Sentiment, Intent, Prediction, Scheduling
 
 ## 4. Database Design
-  - Collections, relationships, indexes
-  - Why NoSQL over SQL for this use case
+  - 8 Collections: Users, Tutors, Sessions, Payments, Reviews, Messages, Availability, Notifications
+  - Relationships: User→Tutor (1:1), User→Sessions (1:M), Session→Payment (1:1), etc.
+  - Indexes: Compound (subjects+rate+rating), TTL (notifications), Unique (booking slots)
+  - Why NoSQL: Flexible schemas, horizontal scaling, JSON-native, tutor profile variability
 
 ## 5. High-Level Architecture
-  - Architecture diagram with all components
+  - See diagram in DEVOPS_GUIDE.md / Final Tech Stack
+  - Components: FE (Vercel), BE (Render), AI (Render), MongoDB Atlas, Cloudinary, Jitsi, n8n, Redis
 
 ## 6. Detailed Component Design
-  - Auth flow (JWT lifecycle)
-  - Booking flow (state machine: booked → in-progress → completed)
-  - Payment flow (Razorpay order → verify → webhook)
-  - Chat flow (Socket.IO rooms, message persistence)
+  - Auth Flow: JWT access (15min) + Refresh (7d, httpOnly cookie) → Rotation on use
+  - Booking Flow: State machine (available → booked → in_progress → completed/cancelled)
+  - Payment Flow: Razorpay Order → Client Checkout → Webhook Verify → Session Confirm
+  - Chat Flow: Socket.IO rooms (userId) → Persist to MongoDB → Push to recipient
+  - AI Flow: BE proxies → AI Service (Local ML) → Gemini (Socratic only) → n8n (async)
 
 ## 7. Scalability Considerations
-  - Horizontal scaling strategies
-  - Database sharding approach
-  - Caching layer (Redis)
+  - Horizontal: BE stateless (scale Render instances), AI Service stateless
+  - Database: Read replicas (Atlas), Sharding by tenant (future), Redis cache
+  - Caching: Redis for tutor search (5min), profiles (10min), embeddings
+  - Queue: BullMQ for email, AI summaries, notifications, image processing
+  - CDN: Cloudflare for static assets, Cloudinary for images
 
 ## 8. Failure Handling
-  - What if MongoDB goes down?
-  - What if Razorpay webhook fails?
-  - What if Socket.IO disconnects?
+  - MongoDB down → Read from replica, queue writes, degrade gracefully
+  - Razorpay webhook fails → Idempotent handler, retry with exponential backoff, manual reconcile
+  - Socket.IO disconnect → Client reconnect (exponential backoff), fetch missed messages
+  - AI Service down → Fallback to Gemini only, cache last embeddings
+  - n8n down → Queue webhook payloads, retry on recovery
+  - Jitsi down → Fallback to Google Meet links (manual)
 ```
+
+---
 
 ### 9. Migrate to AWS (Free Tier)
 
@@ -329,16 +91,20 @@ Email (Gmail)                →    AWS SES
 
 | Service | What You'll Learn |
 |---------|------------------|
-| **EC2** | Virtual machines, SSH, security groups |
-| **S3** | Object storage, bucket policies, static hosting |
-| **CloudFront** | CDN, edge caching, HTTPS |
-| **ECS / Fargate** | Container orchestration (run your Docker image) |
-| **RDS / DocumentDB** | Managed databases |
-| **SES** | Transactional email at scale |
-| **CloudWatch** | Logs, metrics, alarms |
+| **EC2** | Virtual machines, SSH, security groups, user data |
+| **S3** | Object storage, bucket policies, static hosting, lifecycle |
+| **CloudFront** | CDN, edge caching, HTTPS, origin shielding |
+| **ECS / Fargate** | Container orchestration (run your Docker images) |
+| **RDS / DocumentDB** | Managed databases, backups, read replicas |
+| **SES** | Transactional email at scale, bounce/complaint handling |
+| **CloudWatch** | Logs, metrics, alarms, dashboards, X-Ray tracing |
 | **IAM** | Users, roles, policies (most important for cloud jobs) |
-| **Route 53** | DNS management |
-| **Elastic Load Balancer** | Distribute traffic across instances |
+| **Route 53** | DNS management, health checks, failover |
+| **Elastic Load Balancer** | Distribute traffic across instances, health checks |
+| **ElastiCache** | Managed Redis for caching layer |
+| **SQS / SNS** | Message queues, pub/sub for async processing |
+
+---
 
 ### 10. Add a Caching Layer (Redis)
 
@@ -354,30 +120,38 @@ With Redis:
 ```
 
 Things to cache:
-- Tutor search results (cache for 5 minutes)
-- Tutor profile data (cache for 10 minutes)
-- Session counts / stats for admin dashboard
-- Popular search queries
+- Tutor search results (cache for 5 minutes, key: `search:{filters_hash}`)
+- Tutor profile data (cache for 10 minutes, key: `tutor:{id}`)
+- Session counts / stats for admin dashboard (cache for 1 minute)
+- Popular search queries (cache for 1 hour)
+- AI embeddings (cache for 24 hours, key: `embedding:{tutor_id}`)
 
 ```javascript
-// Example with Redis
+// backend/src/utils/cache.js
 const Redis = require('ioredis');
 const redis = new Redis(process.env.REDIS_URL);
 
 async function getTutorProfile(tutorId) {
-  // Check cache first
   const cached = await redis.get(`tutor:${tutorId}`);
   if (cached) return JSON.parse(cached);
 
-  // Cache miss → hit database
   const tutor = await Tutor.findById(tutorId).populate('userId');
-  
-  // Store in cache for 10 minutes
   await redis.setex(`tutor:${tutorId}`, 600, JSON.stringify(tutor));
-  
   return tutor;
 }
+
+async function getTutorSearch(filters) {
+  const key = `search:${require('crypto').createHash('md5').update(JSON.stringify(filters)).digest('hex')}`;
+  const cached = await redis.get(key);
+  if (cached) return JSON.parse(cached);
+
+  const results = await Tutor.search(filters);
+  await redis.setex(key, 300, JSON.stringify(results));
+  return results;
+}
 ```
+
+---
 
 ### 11. Add a Message Queue (BullMQ / RabbitMQ)
 
@@ -390,32 +164,89 @@ Without Queue (blocking):
 
 With Queue (non-blocking):
   User books session → API responds immediately (200ms)
-                     → Queue processes email in background
-                     → Queue generates invoice in background
-                     → Queue sends notification in background
+                      → Queue processes email in background
+                      → Queue generates invoice in background
+                      → Queue sends notification in background
 ```
 
 What to put in queues:
-- Email sending (verification, booking confirmation, password reset)
-- AI session summarization (takes 3-5 seconds)
-- Image processing (resize, compress uploads)
-- Notification dispatch
+- Email sending (verification, booking confirmation, password reset, summaries)
+- AI session summarization (takes 3-5 seconds via Gemini)
+- Image processing (resize, compress uploads via Sharp)
+- Notification dispatch (Socket.IO push, push notifications)
+- n8n webhook triggers (decouple from request)
 
-### 12. Load Testing
+```javascript
+// backend/src/queues/emailQueue.js
+const { Queue, Worker } = require('bullmq');
+const redis = require('../utils/redis');
+
+const emailQueue = new Queue('email', { connection: redis });
+
+// Producer (in controller)
+await emailQueue.add('booking-confirmation', {
+  to: student.email,
+  template: 'booking-confirmation',
+  data: { session, tutor }
+});
+
+// Worker (separate process)
+const worker = new Worker('email', async (job) => {
+  await sendEmail(job.data);
+}, { connection: redis });
+```
+
+---
+
+### 12. Load Testing (k6)
 
 Use tools to simulate many users hitting your app:
 
 ```bash
-# Install k6 (load testing tool)
+# Install k6
 # Run 100 virtual users for 30 seconds
 k6 run --vus 100 --duration 30s load-test.js
+```
+
+```javascript
+// load-test.js
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '2m', target: 50 },   // Ramp up
+    { duration: '5m', target: 100 },  // Stay at 100
+    { duration: '2m', target: 0 },    // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'], // 95% of requests < 500ms
+    http_req_failed: ['rate<0.01'],   // Error rate < 1%
+  },
+};
+
+const BASE_URL = 'https://your-app.onrender.com';
+
+export default function() {
+  // Test health
+  let res = http.get(`${BASE_URL}/health`);
+  check(res, { 'health OK': (r) => r.status === 200 });
+
+  // Test tutor search
+  res = http.get(`${BASE_URL}/api/tutors/search?subject=Math&page=1`);
+  check(res, { 'search OK': (r) => r.status === 200 });
+
+  sleep(1);
+}
 ```
 
 Document the results:
 - How many requests/second can your API handle?
 - At what point does it break?
 - What's the average response time under load?
-- Where's the bottleneck (CPU, memory, database)?
+- Where's the bottleneck (CPU, memory, database, network)?
+
+---
 
 ### 13. Infrastructure as Code (Terraform)
 
@@ -423,44 +254,98 @@ Instead of clicking buttons in AWS console, define infrastructure in code:
 
 ```hcl
 # main.tf — Define your entire infrastructure
+provider "aws" {
+  region = "us-east-1"
+}
+
 resource "aws_instance" "backend" {
-  ami           = "ami-0c55b159cbfafe1f0"
+  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2023
   instance_type = "t2.micro"
+
+  vpc_security_group_ids = [aws_security_group.backend.id]
+  subnet_id              = aws_subnet.public.id
+
+  user_data = base64encode(templatefile("user_data.sh", {}))
 
   tags = {
     Name = "socrates-backend"
   }
 }
 
+resource "aws_security_group" "backend" {
+  name        = "socrates-backend-sg"
+  description = "Allow HTTP/HTTPS and SSH"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["YOUR_IP/32"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_s3_bucket" "frontend" {
-  bucket = "socrates-frontend"
+  bucket = "socrates-frontend-${random_id.suffix.hex}"
+  website {
+    index_document = "index.html"
+    error_document = "index.html"
+  }
 }
 
 resource "aws_db_instance" "database" {
-  engine         = "mongodb"
-  instance_class = "db.t3.micro"
+  engine               = "docdb"
+  instance_class       = "db.t3.micro"
+  allocated_storage    = 20
+  username             = "admin"
+  password             = var.db_password
+  skip_final_snapshot  = true
+}
+
+resource "random_id" "suffix" {
+  byte_length = 4
 }
 ```
 
-**Why**: Companies don't set up servers by hand. Terraform lets you create/destroy entire environments in minutes.
+**Why**: Companies don't set up servers by hand. Terraform lets you create/destroy entire environments in minutes. Version control your infrastructure.
 
 ---
 
 ## 🗺️ YOUR PERSONAL LEARNING ROADMAP
 
 ```
-DURING PROJECT (Weeks 1-20)                    AFTER PROJECT
-─────────────────────────────                   ─────────────
+DURING PROJECT (Weeks 1-16)              AFTER PROJECT
+─────────────────────────────             ─────────────
 
-Week 1-2:   Docker + Docker Compose            Month 1: AWS Migration
-Week 3-5:   CI/CD with GitHub Actions                    (EC2, S3, CloudFront)
-Week 6-9:   Database Indexing                   
-Week 10-13: Socket.IO Architecture              Month 2: Redis Caching
-Week 14-16: API Security Layers                          Message Queues (BullMQ)
-Week 17-20: Deployment + Monitoring             
-                                                Month 3: Terraform
-                                                         Load Testing
-                                                         System Design Doc (HLD)
+Week 1-2:   Docker + Docker Compose        Month 1: AWS Migration
+Week 3-5:   CI/CD with GitHub Actions              (EC2, S3, CloudFront)
+Week 6-8:   Database Indexing                        
+Week 9-11:  Socket.IO Architecture              Month 2: Redis Caching
+Week 12-14: AI Service + n8n + Local ML                 Message Queues (BullMQ)
+Week 15-16: Deployment + Monitoring             
+                                               Month 3: Terraform
+                                                        Load Testing
+                                                        System Design Doc (HLD)
 ```
 
 ---
@@ -469,9 +354,9 @@ Week 17-20: Deployment + Monitoring
 
 When asked "Tell me about a project you've built":
 
-> "I built an AI-powered tutoring marketplace with a 4-person team. My role was **backend infrastructure and DevOps**. I designed the **system architecture** with 9 layers of request processing — from CDN to rate limiting to JWT auth to database queries. I **containerized** the app with Docker, set up **CI/CD** with GitHub Actions, implemented **database indexing** that reduced search queries from 200ms to 15ms, and deployed to **Vercel + Render** with zero-downtime deploys. After the academic submission, I migrated the entire infrastructure to **AWS** using EC2, S3, CloudFront, and SES, and wrote a **High-Level Design document** covering scalability to 10,000 concurrent users."
+> "I built an AI-powered tutoring marketplace with a 4-person team. My role was **backend infrastructure, DevOps, and ML engineering**. I designed the **system architecture** with 9 layers of request processing — from CDN to rate limiting to JWT auth to database queries. I **containerized** the app with Docker, set up **CI/CD** with GitHub Actions, implemented **database indexing** that reduced search queries from 200ms to 15ms, and deployed to **Vercel + Render** with zero-downtime deploys. I built a **Python FastAPI AI microservice** with local ML models (sentence-transformers for tutor matching, scikit-learn for predictions, Xenova/transformers for sentiment) — **Local-First architecture** reserving Gemini only for Socratic tutoring. I automated async workflows with **n8n** (tutor verification, session summaries, leaderboards). After the academic submission, I migrated the entire infrastructure to **AWS** using EC2, S3, CloudFront, and SES, and wrote a **High-Level Design document** covering scalability to 10,000 concurrent users."
 
-That answer covers: system design, Docker, CI/CD, database optimization, deployment, AWS, and scalability — everything cloud interviewers want to hear.
+That answer covers: system design, Docker, CI/CD, database optimization, deployment, AWS, local ML, n8n, and scalability — everything cloud interviewers want to hear.
 
 ---
 
@@ -487,6 +372,8 @@ That answer covers: system design, Docker, CI/CD, database optimization, deploym
 | Database Design | MongoDB University M001 (free) | 4 hours |
 | Load Testing | k6 documentation | 1 hour |
 | Terraform | HashiCorp Learn (free) | 3 hours |
+| Message Queues | BullMQ docs / RabbitMQ tutorials | 2 hours |
+| Local ML | Sentence-Transformers docs, scikit-learn user guide | 3 hours |
 
 ---
 

@@ -1,1124 +1,479 @@
 # SOCRATES: AI & ML FEATURES INTEGRATION GUIDE 🤖
+## Local-First Architecture — Aligned with MASTER_SYSTEM_PROMPT & Final Tech Stack
 
-## Table of Contents
-1. [AI/ML Features Overview](#1-aiml-features-overview)
-2. [AI Language Models (LLMs)](#2-ai-language-models-llms)
-3. [Speech & Audio Processing](#3-speech--audio-processing)
-4. [Computer Vision](#4-computer-vision)
-5. [Recommendation Systems](#5-recommendation-systems)
-6. [Predictive Analytics](#6-predictive-analytics)
-7. [Natural Language Processing](#7-natural-language-processing)
-8. [Implementation Guide](#8-implementation-guide)
-9. [AI Tools & Services](#9-ai-tools--services)
-10. [Complete Tech Stack with AI](#10-complete-tech-stack-with-ai)
+> **🔑 LOCAL-FIRST RULE**: Build custom ML models (scikit-learn, PyTorch, sentence-transformers, Ollama) for tutor matching, similarity scoring, classification, sentiment, recommendations. **Reserve external LLM APIs (Gemini/OpenAI) ONLY for open-ended multi-step tutoring responses where local models are insufficient.**
 
 ---
 
-# 1. AI/ML FEATURES OVERVIEW
+## 1. AI/ML FEATURES OVERVIEW (Stack-Aligned)
 
-## **10 AI Features to Add to Your Project**
+| # | Feature | Provider | Model / Approach | Cost | Install |
+|---|---------|----------|------------------|------|---------|
+| 1 | **AI Tutoring Assistant (Socratic)** | Google Gemini | gemini-1.5-flash (Socratic prompt) | FREE (60 req/min) | `npm i @google/generative-ai` |
+| 2 | **Session Summarization** | Google Gemini | gemini-1.5-flash (structured prompt) | FREE | Same package |
+| 3 | **Sentiment Analysis (Reviews)** | **Local (Hugging Face)** | **Xenova/bert-base-uncased-finetuned-sst-2-english** | **FREE** | `npm i @xenova/transformers` |
+| 4 | **Content Moderation** | OpenAI | Moderation API | FREE (~$0.002/req) | `npm i openai` |
+| 5 | **Tutor Matching / Similarity** | **Local (Python)** | **sentence-transformers (all-MiniLM-L6-v2) + cosine similarity** | **FREE** | `pip install sentence-transformers scikit-learn` |
+| 6 | **Smart Tutor Recommendations** | **Local (Python/JS)** | **Collaborative filtering + embedding similarity** | **FREE** | `npm i @xenova/transformers` or Python service |
+| 7 | **Student Performance Prediction** | **Local (Python)** | **scikit-learn RandomForest / XGBoost** | **FREE** | `pip install scikit-learn xgboost` |
+| 8 | **Intent Detection (Chat)** | **Local (Hugging Face)** | **Xenova/bert-base-uncased (zero-shot)** | **FREE** | `npm i @xenova/transformers` |
+| 9 | **Intelligent Scheduling** | **Local (Python)** | **Constraint optimization (OR-Tools)** | **FREE** | `pip install ortools` |
+| 10 | **AI Lesson Prep for Tutors** | Google Gemini | gemini-1.5-flash (student history → lesson plan) | FREE | Same package |
 
-### **Feature 1: AI Tutoring Assistant** ⭐⭐⭐⭐⭐
-```
-What It Does:
-- Help students with homework/questions
-- Provide explanations in real-time
-- Suggest learning resources
-
-Technology: OpenAI GPT-4 / Claude 3 / Gemini
-Difficulty: ⭐⭐⭐
-Implementation Time: 3-4 days
-Impressive Factor: 10/10
-```
-
-### **Feature 2: Smart Tutor Recommendations** ⭐⭐⭐⭐
-```
-What It Does:
-- Recommend best tutors for each student
-- Match by learning style, schedule, price
-- Personalized suggestions
-
-Technology: Recommendation Engine (ML)
-Difficulty: ⭐⭐⭐⭐
-Implementation Time: 4-5 days
-Impressive Factor: 9/10
-```
-
-### **Feature 3: Automated Session Summarization** ⭐⭐⭐⭐
-```
-What It Does:
-- Summarize what was taught
-- Extract key learning points
-- Generate study notes
-
-Technology: OpenAI GPT-4 / Claude
-Difficulty: ⭐⭐⭐
-Implementation Time: 2-3 days
-Impressive Factor: 9/10
-```
-
-### **Feature 4: Real-Time Speech-to-Text** ⭐⭐⭐
-```
-What It Does:
-- Transcribe live sessions
-- Create searchable transcripts
-- Auto-captions for accessibility
-
-Technology: Google Cloud Speech-to-Text / Deepgram
-Difficulty: ⭐⭐⭐
-Implementation Time: 2-3 days
-Impressive Factor: 8/10
-```
-
-### **Feature 5: Sentiment Analysis** ⭐⭐⭐
-```
-What It Does:
-- Analyze review sentiment
-- Detect student satisfaction
-- Monitor teaching quality
-
-Technology: Hugging Face / Google NLP / AWS Comprehend
-Difficulty: ⭐⭐
-Implementation Time: 1-2 days
-Impressive Factor: 7/10
-```
-
-### **Feature 6: Smart Content Moderation** ⭐⭐⭐
-```
-What It Does:
-- Auto-filter inappropriate reviews
-- Detect spam/harmful content
-- Moderate messages
-
-Technology: Perspective API / OpenAI Moderation
-Difficulty: ⭐⭐
-Implementation Time: 1-2 days
-Impressive Factor: 8/10
-```
-
-### **Feature 7: Student Performance Prediction** ⭐⭐⭐⭐
-```
-What It Does:
-- Predict student progress
-- Recommend additional sessions
-- Identify struggling students
-
-Technology: Scikit-learn / TensorFlow
-Difficulty: ⭐⭐⭐⭐
-Implementation Time: 4-5 days
-Impressive Factor: 9/10
-```
-
-### **Feature 8: Intelligent Scheduling** ⭐⭐⭐⭐
-```
-What It Does:
-- Find optimal meeting times
-- Reduce scheduling friction
-- Predict booking trends
-
-Technology: Python ML / Google Calendar API
-Difficulty: ⭐⭐⭐
-Implementation Time: 3-4 days
-Impressive Factor: 8/10
-```
-
-### **Feature 9: AI Chat Support Bot** ⭐⭐⭐
-```
-What It Does:
-- Answer FAQs automatically
-- Handle support tickets
-- Multi-language support
-
-Technology: OpenAI ChatGPT / Claude / Rasa
-Difficulty: ⭐⭐⭐
-Implementation Time: 2-3 days
-Impressive Factor: 8/10
-```
-
-### **Feature 10: Face Recognition & Attendance** ⭐⭐⭐⭐
-```
-What It Does:
-- Auto-detect student participation
-- Track attendance
-- Engagement metrics
-
-Technology: face-api.js / TensorFlow.js
-Difficulty: ⭐⭐⭐⭐
-Implementation Time: 3-4 days
-Impressive Factor: 9/10
-```
+> **Total AI Cost: ~₹0/month** (all free tiers, local models run on CPU)
 
 ---
 
-# 2. AI LANGUAGE MODELS (LLMs)
+## 2. ARCHITECTURE: AI MICROSERVICE (Python FastAPI)
 
-## **OpenAI GPT-4 / GPT-3.5** (MOST POPULAR)
-
-| Aspect | Details |
-|--------|---------|
-| **Website** | https://openai.com/api |
-| **Models** | GPT-4, GPT-3.5-turbo, GPT-4-turbo |
-| **Cost** | $0.005-0.06 per 1K tokens (pay-as-you-go) |
-| **Free Trial** | $5 credit for 3 months |
-| **Best For** | General AI assistant, summarization |
-| **Install** | `npm install openai` |
-| **Setup** | Get API key from openai.com/api-keys |
-
-### **Installation & Setup**
-```bash
-npm install openai
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FRONTEND (React 19 + Vite)                   │
+│  @xenova/transformers (sentiment, intent in browser)           │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ Axios + TanStack Query
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              BACKEND (Node.js 20 + Express.js)                  │
+│  Orchestrates: Auth, Booking, Payments, Chat, n8n webhooks     │
+└────────┬────────────┬────────────┬────────────┬─────────────────┘
+         │            │            │            │
+         ▼            ▼            ▼            ▼
+  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐
+  │ MongoDB  │ │Cloudinary│ │  Jitsi   │ │     n8n        │
+  │  Atlas   │ │ (Images) │ │  (Video) │ │ (Workflows)    │
+  └──────────┘ └──────────┘ └──────────┘ └───────┬────────┘
+                                                  │
+         ┌────────────────────────────────────────┼────────────────┐
+         │                                        │                │
+         ▼                                        ▼                ▼
+  ┌──────────────┐                        ┌──────────────┐ ┌──────────────┐
+  │  AI Service  │                        │  Gemini API  │ │ Gmail/Slack  │
+  │  (Python/    │                        │  (External   │ │ Sheets/      │
+  │   FastAPI)   │                        │   LLM Only)  │ │ Discord      │
+  │  Local ML    │                        └──────────────┘ └──────────────┘
+  │  First!      │
+  │  (sklearn,   │
+  │   PyTorch,   │
+  │   transformers)
+  └──────────────┘
 ```
 
-### **Example: AI Tutoring Assistant**
-```javascript
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-async function getTutoringHelp(question) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: "You are a helpful tutor. Explain concepts clearly and step-by-step."
-      },
-      {
-        role: "user",
-        content: question
-      }
-    ],
-    temperature: 0.7,
-    max_tokens: 500
-  });
-
-  return response.choices[0].message.content;
-}
-
-// Usage
-const help = await getTutoringHelp("Explain quadratic equations");
-console.log(help);
-```
-
-### **Pricing Example**
-- 1000 characters (150 tokens) = ~$0.00015
-- Monthly: 1000 messages × $0.00015 = $0.15
-- **Very affordable!**
+**AI Service Endpoints** (FastAPI, port 8001):
+- `POST /match/tutors` — Embedding similarity search
+- `POST /recommend/tutors` — Collaborative filtering + content-based
+- `POST /analyze/sentiment` — Review sentiment (Xenova BERT)
+- `POST /analyze/intent` — Chat intent detection (zero-shot)
+- `POST /predict/performance` — Student dropout risk (RandomForest)
+- `POST /optimize/schedule` — Slot optimization (OR-Tools)
+- `GET /health` — Service health
 
 ---
 
-## **Google Gemini API** (FASTEST & CHEAPEST)
+## 3. LOCAL ML IMPLEMENTATIONS
 
-| Aspect | Details |
-|--------|---------|
-| **Website** | https://ai.google.dev |
-| **Models** | Gemini 1.5 Pro, 1.5 Flash |
-| **Cost** | $0.075 per 1M input tokens (VERY CHEAP) |
-| **Free Tier** | 60 requests/minute free |
-| **Best For** | All-purpose, multimodal |
-| **Install** | `npm install @google/generative-ai` |
+### 3.1 Tutor Matching — Embedding Similarity (Python)
 
-### **Installation & Setup**
-```bash
-npm install @google/generative-ai
+```python
+# ai-service/app/services/matching.py
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+model = SentenceTransformer('all-MiniLM-L6-v2')  # 384-dim, fast CPU
+
+def compute_tutor_embedding(tutor: dict) -> np.ndarray:
+    """Build text representation: subjects + bio + experience"""
+    text = f"{' '.join(tutor['subjects'])} {tutor['bio']} {tutor['experience']} years"
+    return model.encode([text])[0]
+
+def match_tutors(student_profile: dict, tutors: list, top_k: int = 10) -> list:
+    """Return top_k tutors ranked by semantic similarity + hard filters"""
+    student_text = f"{' '.join(student_profile['subjects'])} {student_profile.get('learning_goals', '')}"
+    student_emb = model.encode([student_text])[0]
+    
+    tutor_embs = np.array([compute_tutor_embedding(t) for t in tutors])
+    similarities = cosine_similarity([student_emb], tutor_embs)[0]
+    
+    # Apply hard filters (price, rating, availability)
+    filtered = []
+    for i, tutor in enumerate(tutors):
+        if tutor['hourlyRate'] <= student_profile.get('max_budget', 9999):
+            if tutor['rating'] >= student_profile.get('min_rating', 0):
+                filtered.append((tutor, similarities[i]))
+    
+    filtered.sort(key=lambda x: x[1], reverse=True)
+    return [t for t, _ in filtered[:top_k]]
 ```
 
-### **Example: Session Summarization**
-```javascript
-import { GoogleGenerativeAI } from "@google/generative-ai";
+### 3.2 Smart Recommendations — Hybrid (Python)
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+```python
+# ai-service/app/services/recommendations.py
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
 
-async function summarizeSession(sessionTranscript) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  
-  const prompt = `Summarize this tutoring session in bullet points:
-  
-${sessionTranscript}
+def collaborative_filtering(student_id: str, interactions: list, tutor_embs: np.ndarray, k: int = 5):
+    """User-based CF: find similar students, recommend their liked tutors"""
+    # Build user-item matrix (sparse)
+    # For MVP: use embedding similarity as proxy
+    student_emb = tutor_embs[student_id]  # precomputed
+    distances, indices = NearestNeighbors(n_neighbors=k+1, metric='cosine').fit(tutor_embs).kneighbors([student_emb])
+    return indices[0][1:]  # exclude self
 
-Focus on:
-- Key topics covered
-- Learning objectives achieved
-- Homework/next steps`;
+def content_based_recommendations(student_profile: dict, tutor_embs: np.ndarray, k: int = 10):
+    """Embedding similarity + metadata filters"""
+    # Reuse match_tutors logic
+    pass
 
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-}
+def hybrid_recommend(student_id: str, student_profile: dict, tutors: list, k: int = 10):
+    """Blend CF + content-based (weighted)"""
+    cf_scores = collaborative_filtering(student_id, ..., k*2)
+    cb_scores = content_based_recommendations(student_profile, ..., k*2)
+    # Merge with 0.6 CF + 0.4 CB weights
+    return merged[:k]
 ```
 
----
-
-## **Anthropic Claude API** (BEST FOR SAFETY)
-
-| Aspect | Details |
-|--------|---------|
-| **Website** | https://claude.ai/api |
-| **Models** | Claude 3.5 Sonnet, Opus, Haiku |
-| **Cost** | $0.003-0.024 per 1K tokens |
-| **Free Trial** | $5 credit for 3 months |
-| **Best For** | Long-form content, analysis |
-| **Install** | `npm install @anthropic-ai/sdk` |
-
-### **Installation & Setup**
-```bash
-npm install @anthropic-ai/sdk
-```
-
-### **Example: Content Moderation**
-```javascript
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic();
-
-async function moderateReview(reviewText) {
-  const message = await client.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: `Is this review appropriate? Check for:
-1. Hate speech
-2. Spam/advertising
-3. Personal attacks
-4. Off-topic content
-
-Review: "${reviewText}"
-
-Respond with: APPROVED or REJECTED with reason.`
-      }
-    ]
-  });
-
-  return message.content[0].type === 'text' ? message.content[0].text : '';
-}
-```
-
----
-
-## **Cost Comparison**
-
-| Provider | Per 1M Tokens | Monthly (1000 requests) |
-|----------|---------------|----------------------|
-| **Google Gemini** | $0.075 | $0.25 |
-| **OpenAI GPT-3.5** | $0.50 | $1.50 |
-| **Claude Haiku** | $0.80 | $2.40 |
-| **OpenAI GPT-4** | $30 | $90 |
-
-**WINNER: Google Gemini (Cheapest) or Claude (Best quality)**
-
----
-
-# 3. SPEECH & AUDIO PROCESSING
-
-## **Google Cloud Speech-to-Text**
-
-| Aspect | Details |
-|--------|---------|
-| **Website** | https://cloud.google.com/speech-to-text |
-| **Cost** | $0.006 per 15 seconds, 60 free minutes/month |
-| **Features** | Real-time, multiple languages, punctuation |
-| **Install** | `npm install @google-cloud/speech` |
-| **Accuracy** | ~95% |
-
-### **Real-Time Transcription**
-```bash
-npm install @google-cloud/speech
-```
+### 3.3 Sentiment Analysis (Browser + Server)
 
 ```javascript
-const speech = require('@google-cloud/speech');
-const client = new speech.SpeechClient();
+// frontend/src/lib/sentiment.js (runs in browser via @xenova/transformers)
+import { pipeline } from '@xenova/transformers';
 
-async function transcribeAudio(audioUri) {
-  const audio = {
-    uri: audioUri, // GCS path like gs://bucket/audio.wav
-  };
-
-  const config = {
-    encoding: 'LINEAR16',
-    sampleRateHertz: 16000,
-    languageCode: 'en-US',
-  };
-
-  const request = {
-    audio: audio,
-    config: config,
-  };
-
-  const [response] = await client.recognize(request);
-  const transcription = response.results
-    .map(result =>
-      result.alternatives[0] ? result.alternatives[0].transcript : ''
-    )
-    .join('\n');
-
-  return transcription;
-}
-```
-
----
-
-## **Deepgram (EASIER & FASTER)**
-
-| Aspect | Details |
-|--------|---------|
-| **Website** | https://deepgram.com |
-| **Cost** | $0.0043 per minute, free tier available |
-| **Speed** | Faster than Google |
-| **Install** | `npm install @deepgram/sdk` |
-| **Best For** | Live transcription, real-time |
-
-### **Installation**
-```bash
-npm install @deepgram/sdk
-```
-
-### **Live Transcription**
-```javascript
-import { createClient } from "@deepgram/sdk";
-
-const deepgram = createClient({
-  apiKey: process.env.DEEPGRAM_API_KEY,
-});
-
-async function liveTranscribe(mediaStream) {
-  const connection = deepgram.listen.live({
-    model: "nova-2",
-    language: "en",
-    smart_format: true, // Auto-punctuation
-  });
-
-  connection.on("open", () => {
-    console.log("Connected to Deepgram");
-  });
-
-  connection.on("results", (data) => {
-    const transcript = data.channel.alternatives[0].transcript;
-    console.log("Transcript:", transcript);
-  });
-
-  // Send audio stream
-  mediaStream.getAudioTracks()[0].onended = () => {
-    connection.finish();
-  };
-}
-```
-
----
-
-## **Text-to-Speech (Optional)**
-
-| Provider | Cost | Quality |
-|----------|------|---------|
-| **Google Cloud Text-to-Speech** | $0.004 per 1000 chars | 9/10 |
-| **OpenAI TTS** | $0.015 per 1000 chars | 9/10 |
-| **ElevenLabs** | $0.30/1000 chars | 10/10 |
-| **Azure Speech Services** | $0.016 per 1000 chars | 8/10 |
-
----
-
-# 4. COMPUTER VISION
-
-## **Face Recognition & Engagement Detection**
-
-### **Option 1: TensorFlow.js (Frontend, No Server)**
-
-```bash
-npm install @tensorflow/tfjs @tensorflow-models/face-detection
-```
-
-```javascript
-import * as tf from '@tensorflow/tfjs';
-import * as faceDetection from '@tensorflow-models/face-detection';
-
-async function detectStudentEngagement(video) {
-  const detector = await faceDetection.createDetector(
-    faceDetection.SupportedModels.MediaPipeFaceDetector
-  );
-
-  const faces = await detector.estimateFaces(video);
-  
-  return {
-    facesDetected: faces.length,
-    isLooking: faces.length > 0,
-    confidence: faces[0]?.confidence || 0
-  };
+let classifier = null;
+export async function analyzeSentiment(text: string) {
+  if (!classifier) {
+    classifier = await pipeline('sentiment-analysis', 'Xenova/bert-base-uncased-finetuned-sst-2-english');
+  }
+  const [result] = await classifier(text);
+  return { label: result.label, confidence: result.score }; // POSITIVE/NEGATIVE
 }
 
-// Track during video session
-setInterval(async () => {
-  const engagement = await detectStudentEngagement(videoElement);
-  console.log("Student engagement:", engagement);
-}, 1000);
-```
-
----
-
-### **Option 2: Google Cloud Vision API (Accurate)**
-
-| Aspect | Details |
-|--------|---------|
-| **Website** | https://cloud.google.com/vision |
-| **Cost** | $0.50-10 per 1000 requests |
-| **Accuracy** | 99%+ |
-| **Features** | Face, object, text detection |
-| **Install** | `npm install @google-cloud/vision` |
-
-```bash
-npm install @google-cloud/vision
-```
-
-```javascript
-const vision = require('@google-cloud/vision');
-const client = new vision.ImageAnnotatorClient();
-
-async function detectFaces(imageUrl) {
-  const request = {
-    image: { source: { imageUri: imageUrl } },
-  };
-
-  const [result] = await client.faceDetection(request);
-  const faces = result.faceAnnotations;
-
-  return {
-    faceCount: faces.length,
-    emotions: faces.map(face => ({
-      joyLikelihood: face.joyLikelihood,
-      sorrowLikelihood: face.sorrowLikelihood,
-      angerLikelihood: face.angerLikelihood,
-      surpriseLikelihood: face.surpriseLikelihood,
-    }))
-  };
-}
-```
-
----
-
-## **Document Analysis & Plagiarism Detection**
-
-### **Google Document AI**
-```bash
-npm install @google-cloud/documentai
-```
-
----
-
-# 5. RECOMMENDATION SYSTEMS
-
-## **Collaborative Filtering (Recommend Best Tutors)**
-
-### **Simple Implementation with ML.js**
-
-```bash
-npm install simple-statistics math-ml
-```
-
-```javascript
-// Calculate tutor similarity score
-function recommendTutors(student, allTutors) {
-  const studentPreferences = {
-    price: student.budgetPerHour,
-    rating: student.preferredMinRating,
-    experience: student.preferredYears,
-    subjects: student.learningTopics,
-    schedule: student.availableHours
-  };
-
-  const scores = allTutors.map(tutor => {
-    let score = 0;
-
-    // Price match (lower is better within budget)
-    if (tutor.hourlyRate <= studentPreferences.price) {
-      score += 20;
-    }
-
-    // Rating match
-    if (tutor.rating >= studentPreferences.rating) {
-      score += tutor.rating * 5;
-    }
-
-    // Subject expertise
-    const commonSubjects = tutor.subjects.filter(s =>
-      studentPreferences.subjects.includes(s)
-    ).length;
-    score += commonSubjects * 10;
-
-    // Schedule availability
-    const scheduleMatch = tutor.availableHours.filter(h =>
-      studentPreferences.schedule.includes(h)
-    ).length;
-    score += scheduleMatch * 5;
-
-    return { tutor: tutor._id, score };
-  });
-
-  return scores
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5); // Top 5 recommendations
-}
-```
-
----
-
-## **Advanced: TensorFlow.js Recommendation Engine**
-
-```bash
-npm install @tensorflow/tfjs @tensorflow/tfjs-layers
-```
-
-```javascript
-import * as tf from '@tensorflow/tfjs';
-
-// Simple neural network for recommendations
-function createRecommendationModel() {
-  const model = tf.sequential({
-    layers: [
-      tf.layers.dense({
-        inputShape: [10], // 10 features
-        units: 64,
-        activation: 'relu'
-      }),
-      tf.layers.dropout({ rate: 0.3 }),
-      tf.layers.dense({
-        units: 32,
-        activation: 'relu'
-      }),
-      tf.layers.dense({
-        units: 1,
-        activation: 'sigmoid' // Probability score
-      })
-    ]
-  });
-
-  model.compile({
-    optimizer: tf.train.adam(0.001),
-    loss: 'binaryCrossentropy',
-    metrics: ['accuracy']
-  });
-
-  return model;
-}
-
-// Train on historical matches
-async function trainRecommendationModel(trainingData) {
-  const model = createRecommendationModel();
-  
-  const xs = tf.tensor2d(trainingData.features);
-  const ys = tf.tensor2d(trainingData.matches, [trainingData.matches.length, 1]);
-
-  await model.fit(xs, ys, {
-    epochs: 50,
-    batchSize: 32,
-    validationSplit: 0.2
-  });
-
-  return model;
-}
-```
-
----
-
-# 6. PREDICTIVE ANALYTICS
-
-## **Predict Student Performance & Dropout Risk**
-
-### **Using Scikit-learn (Python Backend)**
-
-```bash
-pip install scikit-learn pandas numpy flask
+// backend: same model via @xenova/transformers (Node) or Python transformers
 ```
 
 ```python
-# Python backend (separate service)
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
-import pandas as pd
-import pickle
-
-# Load historical data
-data = pd.read_csv('student_performance.csv')
-
-# Features: sessions_attended, avg_score, response_time, etc
-X = data[['sessions_attended', 'avg_score', 'response_time', 'hours_studied']]
-y = data['will_improve']  # Binary: 1 = improvement, 0 = dropout
-
-# Train model
-model = RandomForestClassifier(n_estimators=100)
-model.fit(X, y)
-
-# Save model
-with open('dropout_model.pkl', 'wb') as f:
-    pickle.dump(model, f)
-
-# API endpoint
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
-
-@app.route('/predict-performance', methods=['POST'])
-def predict_performance():
-    student_data = request.json
-    
-    # Predict
-    features = [[
-        student_data['sessions_attended'],
-        student_data['avg_score'],
-        student_data['response_time'],
-        student_data['hours_studied']
-    ]]
-    
-    prediction = model.predict(features)[0]
-    probability = model.predict_proba(features)[0][1]
-    
-    return jsonify({
-        'will_improve': bool(prediction),
-        'confidence': float(probability)
-    })
+# ai-service/app/services/sentiment.py (Python alternative)
+from transformers import pipeline
+classifier = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
+def analyze(text): return classifier(text)[0]
 ```
 
----
-
-# 7. NATURAL LANGUAGE PROCESSING
-
-## **Sentiment Analysis (Analyze Review Sentiment)**
-
-### **Using Hugging Face Transformers (EASIEST)**
-
-```bash
-npm install @xenova/transformers
-```
+### 3.4 Intent Detection (Zero-Shot, Browser + Server)
 
 ```javascript
+// frontend/src/lib/intent.js
 import { pipeline } from '@xenova/transformers';
 
-// Create sentiment analyzer
-const classifier = await pipeline(
-  'sentiment-analysis',
-  'Xenova/bert-base-uncased-finetuned-sst-2-english'
-);
+let classifier = null;
+const INTENTS = ['booking_session', 'ask_for_help', 'complaint', 'payment_issue', 'technical_support', 'greeting'];
 
-// Analyze tutor reviews
-async function analyzeReviews(reviews) {
-  const results = await Promise.all(
-    reviews.map(async (review) => {
-      const [result] = await classifier(review.text);
-      return {
-        review: review.text,
-        sentiment: result.label, // POSITIVE or NEGATIVE
-        confidence: result.score
-      };
-    })
-  );
-
-  return results;
+export async function detectIntent(message: string) {
+  if (!classifier) {
+    classifier = await pipeline('zero-shot-classification', 'Xenova/bert-base-mnli');
+  }
+  const result = await classifier(message, INTENTS);
+  return { intent: result.labels[0], confidence: result.scores[0] };
 }
+```
 
-// Usage
-const reviews = [
-  { text: "Excellent tutor! Very helpful and patient" },
-  { text: "Waste of money, tutor not responsive" },
-  { text: "Great learning experience, will book again" }
-];
+### 3.5 Student Performance Prediction (Python)
 
-const analysis = await analyzeReviews(reviews);
-console.log(analysis);
+```python
+# ai-service/app/services/prediction.py
+import pickle
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+MODEL_PATH = 'models/performance_rf.pkl'
+SCALER_PATH = 'models/scaler.pkl'
+
+def train_model(training_data: list):
+    """training_data: [{sessions, avg_score, response_time, hours_studied, will_improve}, ...]"""
+    X = np.array([[d['sessions'], d['avg_score'], d['response_time'], d['hours_studied']] for d in training_data])
+    y = np.array([d['will_improve'] for d in training_data])
+    
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+    model.fit(X_scaled, y)
+    
+    pickle.dump(model, open(MODEL_PATH, 'wb'))
+    pickle.dump(scaler, open(SCALER_PATH, 'wb'))
+
+def predict_performance(student_stats: dict) -> dict:
+    model = pickle.load(open(MODEL_PATH, 'rb'))
+    scaler = pickle.load(open(SCALER_PATH, 'rb'))
+    
+    features = np.array([[student_stats['sessions'], student_stats['avg_score'], 
+                          student_stats['response_time'], student_stats['hours_studied']]])
+    features_scaled = scaler.transform(features)
+    
+    prob = model.predict_proba(features_scaled)[0][1]  # P(will_improve)
+    return {'will_improve': prob > 0.5, 'confidence': float(prob)}
+```
+
+### 3.6 Intelligent Scheduling (Python OR-Tools)
+
+```python
+# ai-service/app/services/scheduling.py
+from ortools.sat.python import cp_model
+
+def optimize_tutor_schedule(tutor_availability: list, student_requests: list, constraints: dict):
+    """CP-SAT: maximize matched sessions respecting tutor hours, student prefs, timezone"""
+    model = cp_model.CpModel()
+    # Variables: x[tutor, student, slot] ∈ {0,1}
+    # Constraints: tutor max hours/day, student preferred times, no overlaps
+    # Objective: maximize sum(x) + weight * student_priority
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = 10
+    status = solver.Solve(model)
+    # Return matched pairs
+    return matches
 ```
 
 ---
 
-## **Intent Detection (Understand What User Wants)**
+## 4. GEMINI INTEGRATION (External LLM — Reserved Uses Only)
+
+```python
+# ai-service/app/services/gemini.py
+import google.generativeai as genai
+import os
+
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+SOCRATIC_SYSTEM_PROMPT = """You are a Socratic tutor. NEVER give direct answers.
+Ask ONE guiding question at a time. Help the student discover the solution.
+If they're stuck, offer a hint. Celebrate progress."""
+
+async def socratic_tutor(question: str, context: dict = None) -> str:
+    prompt = f"{SOCRATIC_SYSTEM_PROMPT}\n\nStudent: {question}"
+    if context:
+        prompt += f"\nContext: {context}"
+    response = await model.generate_content_async(prompt)
+    return response.text
+
+async def summarize_session(transcript: str) -> str:
+    prompt = f"""Summarize this tutoring session into structured markdown:
+    
+{transcript}
+
+Include:
+- Key concepts covered
+- Learning objectives achieved  
+- Homework / next steps
+- Resources recommended"""
+    response = await model.generate_content_async(prompt)
+    return response.text
+
+async def generate_lesson_prep(student_history: dict, upcoming_topic: str) -> str:
+    prompt = f"""Generate a 1-page lesson plan for a tutor.
+Student profile: {student_history}
+Upcoming topic: {upcoming_topic}
+
+Include:
+- Prerequisites check
+- 3 key learning objectives
+- Socratic questions to guide
+- Common misconceptions
+- Practice problems"""
+    response = await model.generate_content_async(prompt)
+    return response.text
+```
+
+---
+
+## 5. N8N WORKFLOWS (Async AI Processing)
+
+| Workflow | Trigger | n8n Nodes | Output |
+|----------|---------|-----------|--------|
+| **Tutor Verification** | Tutor applies | Webhook → Gemini OCR (cert PDF) → Google Sheets (whitelist) → Slack (Approve/Reject) → HTTP PUT `/api/admin/tutor/:id/status` | Tutor verified/rejected |
+| **Session Summary** | Session ends | Webhook → Gemini (transcript → markdown) → Gmail (student) → MongoDB (lesson log) | Email + DB summary |
+| **Weekly Leaderboard** | Cron (Sun 23:59) | MongoDB (top 5 karma) → Google Sheets → Gemini (certificate text) → Gmail (tutors) | Certificates emailed |
+| **AI Lesson Prep** | 30min before session | Webhook → Gemini (student history → lesson plan) → MongoDB (tutor prep) | Tutor sees prep in dashboard |
+
+---
+
+## 6. DEPLOYMENT: AI SERVICE
+
+```dockerfile
+# ai-service/Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8001
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+```
+
+```yaml
+# docker-compose.yml (add to root)
+services:
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./ai-service/.env
+    depends_on:
+      - redis  # for caching embeddings
+```
+
+```txt
+# ai-service/requirements.txt
+fastapi==0.109
+uvicorn==0.27
+sentence-transformers==3.0
+scikit-learn==1.5
+transformers==4.40
+torch==2.3 --index-url https://download.pytorch.org/whl/cpu
+xgboost==2.1
+ortools==9.10
+pydantic==2.7
+python-dotenv==1.0
+httpx==0.27
+redis==5.0
+```
+
+---
+
+## 7. FRONTEND INTEGRATION
 
 ```javascript
-const classifier = await pipeline('zero-shot-classification');
+// frontend/src/services/aiClient.js
+import axios from 'axios';
 
-async function detectUserIntent(message) {
-  const candidateLabels = [
-    'booking_session',
-    'ask_for_help',
-    'complaint',
-    'payment_issue',
-    'technical_support'
-  ];
+const aiService = axios.create({ baseURL: '/api/ai' }); // proxied via Vite to localhost:8001
+const backend = axios.create({ baseURL: '/api' });
 
-  const result = await classifier(message, candidateLabels);
+export const ai = {
+  // Local ML (via Python AI service)
+  matchTutors: (profile) => aiService.post('/match/tutors', profile),
+  recommendTutors: (studentId) => aiService.post('/recommend/tutors', { studentId }),
+  analyzeSentiment: (text) => aiService.post('/analyze/sentiment', { text }),
+  detectIntent: (message) => aiService.post('/analyze/intent', { message }),
+  predictPerformance: (stats) => aiService.post('/predict/performance', stats),
+  optimizeSchedule: (data) => aiService.post('/optimize/schedule', data),
 
-  return {
-    intent: result.labels[0],
-    confidence: result.scores[0]
-  };
-}
-
-// Usage
-detectUserIntent("I can't log in to my account");
-// Returns: { intent: 'technical_support', confidence: 0.95 }
-```
-
----
-
-# 8. IMPLEMENTATION GUIDE
-
-## **Step 1: Setup AI Backend**
-
-```bash
-# Create AI microservice
-mkdir ai-service
-cd ai-service
-npm init -y
-
-npm install express dotenv axios openai @google/generative-ai
-npm install @anthropic-ai/sdk
-
-# Create server.js
-cat > server.js << 'EOF'
-const express = require('express');
-const OpenAI = require('openai');
-
-const app = express();
-app.use(express.json());
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// AI Tutoring Endpoint
-app.post('/api/ai/tutoring-help', async (req, res) => {
-  try {
-    const { question } = req.body;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful tutor. Explain clearly."
-        },
-        {
-          role: "user",
-          content: question
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 500
-    });
-
-    res.json({
-      answer: response.choices[0].message.content
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Session Summarization Endpoint
-app.post('/api/ai/summarize-session', async (req, res) => {
-  try {
-    const { transcript } = req.body;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "user",
-          content: `Summarize this tutoring session:\n\n${transcript}`
-        }
-      ],
-      max_tokens: 300
-    });
-
-    res.json({
-      summary: response.choices[0].message.content
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.listen(3001, () => console.log('AI Service running on port 3001'));
-EOF
-
-# Create .env
-echo "OPENAI_API_KEY=sk_..." > .env
-echo "GOOGLE_API_KEY=..." >> .env
-
-# Run
-node server.js
-```
-
----
-
-## **Step 2: Connect Frontend to AI Service**
-
-```javascript
-// Frontend (React)
-async function getTutoringHelp(question) {
-  const response = await axios.post(
-    'http://localhost:3001/api/ai/tutoring-help',
-    { question }
-  );
-  return response.data.answer;
-}
-
-async function summarizeSession(transcript) {
-  const response = await axios.post(
-    'http://localhost:3001/api/ai/summarize-session',
-    { transcript }
-  );
-  return response.data.summary;
-}
-
-// Use in React component
-const [aiAnswer, setAiAnswer] = useState('');
-
-const handleGetHelp = async () => {
-  const answer = await getTutoringHelp(userQuestion);
-  setAiAnswer(answer);
+  // Gemini (via backend proxy)
+  socraticHelp: (question, context) => backend.post('/ai/socratic', { question, context }),
+  summarizeSession: (transcript) => backend.post('/ai/summarize', { transcript }),
+  generateLessonPrep: (sessionId) => backend.post('/ai/lesson-prep', { sessionId }),
 };
 ```
 
----
-
-## **Step 3: Add to Main Backend**
-
 ```javascript
-// Express backend (app.js)
-const aiService = axios.create({
-  baseURL: 'http://localhost:3001'
-});
+// frontend/src/hooks/useSocraticAI.js
+import { useState } from 'react';
+import { ai } from '@/services/aiClient';
 
-// Route to get tutoring help
-app.post('/api/tutoring/ai-help', async (req, res) => {
-  try {
-    const { question, studentId } = req.body;
+export function useSocraticAI() {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-    // Get AI response
-    const aiResponse = await aiService.post('/api/ai/tutoring-help', {
-      question
-    });
-
-    // Save to database
-    await AiInteraction.create({
-      studentId,
-      question,
-      answer: aiResponse.data.answer,
-      timestamp: new Date()
-    });
-
-    res.json(aiResponse.data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  async function ask(question: string) {
+    setLoading(true);
+    setMessages(m => [...m, { role: 'user', content: question }]);
+    try {
+      const { data } = await ai.socraticHelp(question);
+      setMessages(m => [...m, { role: 'assistant', content: data.answer }]);
+    } finally {
+      setLoading(false);
+    }
   }
-});
+  return { messages, ask, loading };
+}
 ```
 
 ---
 
-# 9. AI TOOLS & SERVICES COMPLETE LIST
+## 8. IMPLEMENTATION TIMELINE (Aligned with Development Workflow)
 
-## **LLM APIs (Language Models)**
+| Week | Phase | Backend (Member 3/4) | AI Service (Member 4) | Frontend (Member 1/2) |
+|------|-------|---------------------|----------------------|----------------------|
+| 14 | AI Integration | `POST /api/ai/socratic`, `/api/ai/summarize`, `/api/ai/moderate` | **Deploy FastAPI service**, implement matching, sentiment, intent endpoints | AI Chat panel (floating button), session summary display |
+| 15 | Admin + n8n | Admin APIs, n8n webhook triggers | Tutor matching CF, recommendation hybrid, performance prediction | Admin panel UI, tutor terminal with match scores |
+| 16 | Dashboards | Lesson prep endpoint, schedule optimizer | Deploy all local models, cache embeddings in Redis | Student/Tutor dashboards with AI insights, smart booking suggestions |
 
-| Tool | Cost | Best For | Link |
-|------|------|----------|------|
-| **OpenAI GPT-4** | $0.03/1K tokens | General, high quality | https://openai.com |
-| **Google Gemini** | $0.075/1M tokens | Cheapest, fastest | https://ai.google.dev |
-| **Claude 3** | $0.003/1K tokens | Safety, long-form | https://claude.ai/api |
-| **Llama 2** | FREE | Open-source, self-hosted | https://www.llama.com |
-| **Mistral** | $0.14/1M tokens | Balance of cost & quality | https://mistral.ai |
-| **Cohere** | $0.50/1K tokens | Text generation | https://cohere.com |
+**Total AI Implementation: ~10 days** (parallel with Phase 4)
 
 ---
 
-## **Speech & Audio**
+## 9. TOOLS & SERVICES (Stack-Aligned Only)
 
-| Tool | Cost | Features | Link |
-|------|------|----------|------|
-| **Google Speech-to-Text** | $0.006/15s | Real-time, 95% accurate | https://cloud.google.com/speech-to-text |
-| **Deepgram** | $0.0043/min | Fastest, live captions | https://deepgram.com |
-| **AssemblyAI** | $0.0125/min | Accurate, speaker identification | https://www.assemblyai.com |
-| **Rev AI** | $0.10/min | Human quality | https://www.rev.com/api |
-| **OpenAI Whisper** | $0.006/min | Open-source available | https://openai.com/whisper |
-
----
-
-## **Computer Vision**
-
-| Tool | Cost | Features | Link |
-|------|------|----------|------|
-| **Google Cloud Vision** | $0.50-10/1000 | Face, object, text | https://cloud.google.com/vision |
-| **AWS Rekognition** | $0.10-100 per million | Face recognition, comparison | https://aws.amazon.com/rekognition |
-| **Roboflow** | FREEMIUM | Custom vision models | https://roboflow.com |
-| **TensorFlow.js** | FREE | Frontend-only ML | https://www.tensorflow.org/js |
-| **Hugging Face** | FREE | Pre-trained models | https://huggingface.co |
+| Category | Tool | Purpose | Cost |
+|----------|------|---------|------|
+| **Local Embeddings** | sentence-transformers (all-MiniLM-L6-v2) | Tutor matching, semantic search | FREE |
+| **Local Classification** | @xenova/transformers (BERT, MNLI) | Sentiment, intent (browser + server) | FREE |
+| **Local ML** | scikit-learn, XGBoost | Prediction, recommendation | FREE |
+| **Optimization** | OR-Tools | Scheduling, constraint solving | FREE |
+| **External LLM** | Google Gemini 1.5 Flash | Socratic tutoring, summarization, lesson prep | FREE (60/min) |
+| **Moderation** | OpenAI Moderation API | Content safety | FREE (~$0.002/req) |
+| **Workflow** | n8n (self-hosted) | Async AI, approvals, notifications | FREE |
+| **Cache** | Redis (optional) | Embedding cache, rate limiting | FREE (local) |
 
 ---
 
-## **Recommendation & Analytics**
+## 10. COMPLETE DEPENDENCY LISTS
 
-| Tool | Cost | Best For | Link |
-|------|------|----------|------|
-| **Google Analytics 4** | FREE | User behavior tracking | https://analytics.google.com |
-| **Segment** | FREEMIUM | Data collection & routing | https://segment.com |
-| **Looker Studio** | FREE | Data visualization | https://datastudio.google.com |
-| **Mixpanel** | FREEMIUM | Event analytics | https://mixpanel.com |
-
----
-
-## **Content Moderation**
-
-| Tool | Cost | Features | Link |
-|------|------|----------|------|
-| **OpenAI Moderation** | $0.002/request | Detect harmful content | https://openai.com/blog/moderation-api |
-| **Perspective API** | FREE | Toxicity detection | https://www.perspectiveapi.com |
-| **Two Hat Security** | PAID | Enterprise moderation | https://www.twohat.com |
-
----
-
-# 10. COMPLETE TECH STACK WITH AI
-
-## **Updated Architecture**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    FRONTEND (React + Vite)                  │
-│  UI + Socket.IO + TensorFlow.js (Face Detection)           │
-└────────────────────┬────────────────────────────────────────┘
-                     │ API Calls
-                     ↓
-┌─────────────────────────────────────────────────────────────┐
-│              MAIN BACKEND (Express + Node.js)              │
-│  Auth, Booking, Payments, Chat Management                 │
-│  ↓ Orchestrates calls to specialized services             │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-        ┌────────────┼────────────┐
-        ↓            ↓            ↓
-    ┌────────┐  ┌────────┐  ┌──────────┐
-    │  AI    │  │ Speech │  │ Database │
-    │Service │  │Service │  │(MongoDB) │
-    └────────┘  └────────┘  └──────────┘
-        │            │
-        ├────────────┼────────────────────────┐
-        │            │                        │
-        ↓            ↓                        ↓
-    ┌────────┐  ┌──────────┐  ┌──────────────────┐
-    │OpenAI  │  │Deepgram  │  │Google Cloud      │
-    │GPT-4   │  │Speech    │  │Vision/Speech API │
-    │Claude  │  │AssemblyAI│  │                  │
-    │Gemini  │  └──────────┘  └──────────────────┘
-    └────────┘
-```
-
----
-
-## **Complete Dependency List with AI**
-
-### **Frontend Dependencies**
+### Frontend (package.json)
 ```bash
 npm install \
   react-router-dom axios @tanstack/react-query \
-  react-hook-form zod socket.io-client \
-  @fullcalendar/react date-fns react-toastify \
-  zustand @stripe/react-stripe-js @daily-co/daily-js \
-  @tensorflow/tfjs @tensorflow-models/face-detection \
+  react-hook-form zod @hookform/resolvers zustand \
+  socket.io-client framer-motion date-fns sonner \
+  lucide-react clsx \
+  @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction \
   @xenova/transformers \
-  headless-ui react-icons framer-motion \
-  tailwindcss
+  @jitsi/react-sdk
 ```
 
-### **Backend Dependencies**
+### Backend (package.json)
 ```bash
 npm install \
-  express mongoose dotenv jsonwebtoken bcrypt \
-  nodemailer socket.io stripe aws-sdk \
-  openai @google/generative-ai @anthropic-ai/sdk \
-  @google-cloud/speech @google-cloud/vision \
-  deepgram-sdk \
-  axios multer sharp uuid \
-  joi express-validator
+  express cors helmet mongoose dotenv jsonwebtoken bcrypt \
+  nodemailer socket.io razorpay cloudinary axios multer sharp \
+  uuid joi express-validator express-async-errors compression \
+  express-rate-limit sanitize-html winston \
+  @google/generative-ai openai @xenova/transformers
 ```
 
----
-
-## **AI Implementation Timeline**
-
-| Week | Feature | Backend | Frontend | Time |
-|------|---------|---------|----------|------|
-| 1-2 | **AI Tutor Assistant** | OpenAI setup | Chat UI | 3-4 days |
-| 2-3 | **Session Summarization** | Summarize logic | Display summary | 2 days |
-| 3 | **Sentiment Analysis** | Review analyzer | Display ratings | 2 days |
-| 4 | **Speech-to-Text** | Deepgram setup | Live captions | 2-3 days |
-| 5 | **Recommendations** | ML algorithm | Ranking display | 3-4 days |
-| 6 | **Content Moderation** | Moderation API | Auto-filter | 1-2 days |
-
-**Total AI Implementation: 14-18 days**
-
----
-
-## **Cost Estimation (Monthly)**
-
-| Service | Usage | Monthly Cost |
-|---------|-------|-------------|
-| OpenAI GPT-4 | 10k requests | $5 |
-| Google Gemini | 100k requests | $2 |
-| Deepgram | 100 hours | $43 |
-| Google Cloud Vision | 1000 requests | $5 |
-| Sentiment Analysis | 5000 reviews | FREE |
-| **TOTAL** | | ~$55 |
-
-**Very affordable for a complete AI-powered platform!**
-
----
-
-## **Impressive Features Checklist**
-
-- ✅ AI Tutoring Assistant (like ChatGPT)
-- ✅ Auto-summarize sessions
-- ✅ Real-time speech-to-text with captions
-- ✅ Sentiment analysis of reviews
-- ✅ Smart tutor recommendations
-- ✅ Automated content moderation
-- ✅ Student engagement detection (face recognition)
-- ✅ Performance prediction & analytics
-- ✅ AI chat support bot
-- ✅ Intelligent scheduling
-
-**This makes your project 10x more impressive! 🚀**
-
----
-
-## **Getting Started**
-
-### **Step 1: Get API Keys**
-```
-1. OpenAI: https://platform.openai.com/api-keys
-2. Google: https://cloud.google.com/docs/authentication/api-keys
-3. Deepgram: https://console.deepgram.com
-```
-
-### **Step 2: Setup AI Service**
+### AI Service (requirements.txt)
 ```bash
-mkdir ai-service
-cd ai-service
-npm init -y
-npm install express openai @google/generative-ai dotenv
-# Create server.js with AI endpoints
-```
-
-### **Step 3: Connect to Main Backend**
-```javascript
-// In main backend, call AI service
-const response = await axios.post('http://localhost:3001/api/ai/...', data);
-```
-
-### **Step 4: Add Frontend UI**
-```javascript
-// In React, display AI responses
-const [aiAnswer, setAiAnswer] = useState('');
-// Fetch from backend and display
+pip install fastapi uvicorn sentence-transformers scikit-learn xgboost ortools transformers torch pydantic python-dotenv httpx redis
 ```
 
 ---
 
-**Now your project has enterprise-grade AI features! 🤖✨**
+## 11. COST ESTIMATION (Monthly)
+
+| Service | Usage | Cost |
+|---------|-------|------|
+| Google Gemini API | 100k requests (tutoring + summaries) | ₹0 (free tier) |
+| OpenAI Moderation | 5k reviews | ~₹80 |
+| n8n (self-hosted Docker) | 3 workflows | ₹0 |
+| AI Service (Render/EC2) | 24/7 CPU inference | ₹0 (free tier) |
+| Redis (optional) | Embedding cache | ₹0 (local) |
+| **TOTAL** | | **~₹0-100/month** |
+
+---
+
+## 12. ZERO-TOLERANCE COMPLIANCE CHECKLIST
+
+- ✅ **No raw emojis** — lucide-react only
+- ✅ **Local ML first** — Embeddings, sentiment, intent, matching, prediction all local
+- ✅ **Gemini reserved** — Only Socratic tutoring, summarization, lesson prep
+- ✅ **No cloud Speech-to-Text** — Not in stack (use Jitsi native recording)
+- ✅ **No cloud Vision** — Not in stack
+- ✅ **No hardcoded hexes** — CSS variables only
+- ✅ **Typed everywhere** — TypeScript frontend, Pydantic AI service
+- ✅ **Anti-jank** — GPU transforms only, no layout thrashing
+
+---
+
+**This guide is the single source of truth for AI/ML implementation. All code must follow Local-First Directive.** 🤖✨
