@@ -234,12 +234,10 @@ const forgotPassword = async (req, res) => {
   user.resetPasswordExpire = expireTime;
   await user.save({ validateBeforeSave: false });
 
-  const isProd = process.env.NODE_ENV === 'production' || 
-                 (req.get('host') && req.get('host').includes('onrender.com')) ||
-                 (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.includes('onrender.com'));
+  const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
   const defaultFrontend = isProd ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173';
   let frontendUrl = process.env.FRONTEND_URL || defaultFrontend;
-  if (isProd && frontendUrl.includes('localhost')) {
+  if (isProd && (frontendUrl.includes('localhost') || frontendUrl.includes('google.com'))) {
     frontendUrl = 'https://socrates-steel.vercel.app';
   }
   const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;

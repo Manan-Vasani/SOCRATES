@@ -118,11 +118,9 @@ const googleAuthCallback = async (req, res) => {
               }, '*');
               window.close();
             } else {
-              const isProd = ${process.env.NODE_ENV === 'production' || 
-                               (req.get('host') && req.get('host').includes('onrender.com')) ||
-                               (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.includes('onrender.com'))};
+              const isProd = ${process.env.NODE_ENV === 'production' || process.env.RENDER === 'true'};
               let frontendUrl = '${process.env.FRONTEND_URL || ''}';
-              if (isProd && (!frontendUrl || frontendUrl.indexOf('localhost') !== -1)) {
+              if (isProd && (!frontendUrl || frontendUrl.indexOf('localhost') !== -1 || frontendUrl.indexOf('google.com') !== -1)) {
                 frontendUrl = 'https://socrates-steel.vercel.app';
               } else if (!frontendUrl) {
                 frontendUrl = 'http://localhost:5173';

@@ -32,13 +32,10 @@ router.get(
 // GET /auth/google/callback - Google OAuth redirect callback
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {
-    const isProd = process.env.NODE_ENV === 'production' || 
-                   (req.get('host') && req.get('host').includes('onrender.com')) ||
-                   (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.includes('onrender.com'));
+    const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
     const defaultFrontend = isProd ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173';
-    const hostOrigin = req.headers.referer ? new URL(req.headers.referer).origin : defaultFrontend;
-    let frontendUrl = process.env.FRONTEND_URL || hostOrigin;
-    if (isProd && frontendUrl.includes('localhost')) {
+    let frontendUrl = process.env.FRONTEND_URL || defaultFrontend;
+    if (isProd && (frontendUrl.includes('localhost') || frontendUrl.includes('google.com'))) {
       frontendUrl = 'https://socrates-steel.vercel.app';
     }
     if (err || !user) {
