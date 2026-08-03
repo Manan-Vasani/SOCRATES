@@ -11,6 +11,7 @@ const homepageRoutes = require('./routes/homepageRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const authRoutes = require('./routes/authRoutes');
 const tutorRoutes = require('./routes/tutorRoutes');
+const compileRoutes = require('./routes/compileRoutes');
 
 const { passport } = require('./config/passport');
 
@@ -43,6 +44,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/homepage', homepageRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/tutors', tutorRoutes);
+app.use('/api/v1/compile', compileRoutes);
 
 // Healthcheck Route
 app.get('/health', (req, res) => {

@@ -27,6 +27,7 @@ import {
   Upload,
   UserCheck,
   Users,
+  Video,
   X
 } from 'lucide-react'
 
@@ -901,19 +902,25 @@ export default function Profile() {
             </div>
 
             {/* Account Role Selector / Edit Trigger Right */}
-            <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium text-xs transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Edit3 size={14} /> Edit Profile
-                </button>
+            <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium text-xs transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit3 size={14} /> Edit Profile
+              </button>
+
+              <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
+                <Clock size={12} /> Member since{' '}
+                {new Date(user?.createdAt || Date.now()).toLocaleDateString(
+                  'en-US',
+                  { month: 'short', year: 'numeric' }
+                )}
               </div>
 
-              {/* View Perspective Toggles (For Hybrid Users) */}
+              {/* View Perspective Toggles (For Hybrid Users - Tight right under Member Since) */}
               {userRole === 'both' && (
-                <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] rounded-xl border border-[#e0e0e0] transform-gpu">
+                <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] rounded-xl border border-[#e0e0e0] transform-gpu mt-1">
                   <button
                     onClick={() => setViewPerspective('student')}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
@@ -936,14 +943,6 @@ export default function Profile() {
                   </button>
                 </div>
               )}
-
-              <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
-                <Clock size={12} /> Member since{' '}
-                {new Date(user?.createdAt || Date.now()).toLocaleDateString(
-                  'en-US',
-                  { month: 'short', year: 'numeric' }
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -1036,13 +1035,21 @@ export default function Profile() {
                     </div>
 
                     {session.status === 'Upcoming' ? (
-                      <button
-                        type="button"
-                        onClick={() => setCancellingSession(session)}
-                        className="w-[130px] py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1 shrink-0"
-                      >
-                        <X size={12} /> Cancel Session
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Link
+                          to={`/study-room/${session.id}`}
+                          className="w-[110px] py-1.5 rounded-xl bg-[#0066cc]/10 hover:bg-[#0066cc]/20 text-[#0066cc] border border-[#0066cc]/20 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1"
+                        >
+                          <Video size={12} /> Join Room
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setCancellingSession(session)}
+                          className="w-[110px] py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1"
+                        >
+                          <X size={12} /> Cancel
+                        </button>
+                      </div>
                     ) : (
                       <span className="w-[130px] py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none shrink-0">
                         <Check size={12} className="text-emerald-600 shrink-0" /> Completed
@@ -1080,9 +1087,6 @@ export default function Profile() {
                   <GraduationCap className="text-[#0066cc]" size={22} /> Student Dashboard
                 </h2>
               </div>
-              <span className="text-xs px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066cc] font-semibold">
-                Student Account Status: Active
-              </span>
             </div>
 
             {/* Student HUD Metrics Grid */}
@@ -1296,9 +1300,6 @@ export default function Profile() {
                   <UserCheck className="text-emerald-600" size={22} /> Tutor Dashboard
                 </h2>
               </div>
-              <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
-                Accepting Students • ${user?.hourlyRate || 45}/hr
-              </span>
             </div>
 
             {/* Tutor HUD Metrics */}
