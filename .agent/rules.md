@@ -10,6 +10,7 @@
 - **Check Latest Git Commits First**: This project is an active group collaboration on the `main` branch. BEFORE starting any task, research, or writing code, ALWAYS run `git fetch origin` (and inspect `git status` or `git diff HEAD origin/main`) to check for remote commits from teammates. If remote changes exist, pull them (`git pull origin main`) immediately.
 
 ## UI & Aesthetics
+- **Pixel-Perfect CSS Perfectionism (MANDATORY)**: The product creator is a strict perfectionist. Visual defects like misalignments, sloppy margins/paddings, inconsistent borders, lazy layout wrappers, or missing shadows/transitions are unacceptable. Write clean, complete, responsive, and gorgeous CSS for every element.
 - **No Raw Emojis in UI**: Never use raw Unicode emojis (e.g. 🚀, 🔒, ⭐) as UI icons. Use SVG vector icons from `lucide-react` or `react-icons`.
 - **Mandatory Strict CSS Rules**: You MUST follow all strict CSS performance, GPU acceleration, and anti-jank rules defined in [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt).
   - **No Reflow Animations**: Animate ONLY `transform` and `opacity`. Never animate `width`, `height`, `margin`, `padding`, `top`, `left`.
