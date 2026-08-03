@@ -118,7 +118,7 @@ const googleAuthCallback = async (req, res) => {
               }, '*');
               window.close();
             } else {
-              window.location.href = 'http://localhost:5173/dashboard?token=${token}';
+              window.location.href = '${process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173')}/dashboard?token=${token}';
             }
           </script>
           <p>Authentication successful. Redirecting to Dashboard...</p>

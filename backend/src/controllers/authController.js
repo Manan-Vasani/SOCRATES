@@ -234,7 +234,8 @@ const forgotPassword = async (req, res) => {
   user.resetPasswordExpire = expireTime;
   await user.save({ validateBeforeSave: false });
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const defaultFrontend = process.env.NODE_ENV === 'production' ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173';
+  const frontendUrl = process.env.FRONTEND_URL || defaultFrontend;
   const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
 
   // Send Brevo email

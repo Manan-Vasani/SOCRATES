@@ -32,7 +32,8 @@ router.get(
 // GET /auth/google/callback - Google OAuth redirect callback
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {
-    const hostOrigin = req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173';
+    const defaultFrontend = process.env.NODE_ENV === 'production' ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173';
+    const hostOrigin = req.headers.referer ? new URL(req.headers.referer).origin : defaultFrontend;
     const frontendUrl = process.env.FRONTEND_URL || hostOrigin;
     if (err || !user) {
       console.error('[Google OAuth Authentication Error]', err || info);

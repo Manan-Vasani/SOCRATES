@@ -122,7 +122,7 @@ export const updateUserProfileApi = async (data: {
 }
 
 // AI Microservice Recommendation Endpoint (FastAPI @ Port 8000)
-const AI_SERVICE_URL = 'http://localhost:8000/api/v1/ai'
+const AI_SERVICE_URL = (import.meta.env.VITE_AI_SERVICE_URL as string) || 'http://localhost:8000/api/v1/ai'
 
 export interface AiRecommendRequest {
   query?: string
