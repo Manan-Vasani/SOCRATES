@@ -330,7 +330,20 @@ export default function Profile() {
     return () => clearTimeout(timer)
   }, [])
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    phone: string
+    role: string
+    bio: string
+    hourlyRate: string | number
+    rate20Min: string | number
+    rate30Min: string | number
+    avatar: string
+    subjectsText: string
+    learningSubjectsText: string
+    academicLevel: string
+    education: string
+  }>({
     name: user?.fullName || user?.name || '',
     phone: (user as any)?.phone || '',
     role: user?.role || 'both',
@@ -564,9 +577,9 @@ export default function Profile() {
         phone: (user as any).phone || '',
         role: user.role,
         bio: user.bio,
-        hourlyRate: user.hourlyRate || 45,
-        rate20Min: (user as any).rate20Min || 15,
-        rate30Min: (user as any).rate30Min || 25,
+        hourlyRate: user.hourlyRate ?? '',
+        rate20Min: (user as any).rate20Min ?? '',
+        rate30Min: (user as any).rate30Min ?? '',
         avatar: user.avatar,
         subjectsText: user.subjects.join(', '),
         learningSubjectsText: (user as any).learningSubjects ? (user as any).learningSubjects.join(', ') : '',
