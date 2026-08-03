@@ -28,6 +28,7 @@ This file defines project-specific rules, style guidelines, and behavioral const
 
 ## User Interface & Design Rules
 
+- **Pixel-Perfect CSS Perfectionism (MANDATORY)**: The product creator is a strict perfectionist. Visual defects like misalignments, sloppy margins/paddings, inconsistent borders, lazy layout wrappers, or missing shadows/transitions are unacceptable. Write clean, complete, responsive, and gorgeous CSS for every element.
 - **Do Not Use Raw Emojis as UI Icons**: Never use raw Unicode emojis (e.g., 🔒, 🚀, ⭐, 📁, etc.) as icons in the website's user interface. Instead, use clean, professionally designed vector/SVG icons from `lucide-react` or `react-icons`, matching the design system.
 - **Modern Aesthetic**: Prioritize sleek, premium visuals with modern typography, cohesive color palettes, subtle micro-interactions (Framer Motion), and dynamic layout design.
 - **Strict CSS Performance & Anti-Jank Rules (MANDATORY)**:

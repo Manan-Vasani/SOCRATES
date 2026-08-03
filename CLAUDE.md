@@ -33,6 +33,7 @@ npm run seed     # Seed database
 - **Frontend Stack**: React 19, TypeScript, Vite, Tailwind CSS v4 (`@tailwindcss/vite`), Zustand, TanStack Query, React Router v7, Framer Motion, Lucide React icons.
 - **Backend Stack**: Node.js, Express (CommonJS), Mongoose, Socket.IO, JWT Auth, Cloudinary/Multer, Nodemailer, Razorpay.
 - **UI & Performance Guidelines (MANDATORY)**:
+  - **Pixel-Perfect CSS Perfectionism**: The product creator is a strict perfectionist. Visual defects like misalignments, sloppy margins/paddings, inconsistent borders, lazy layout wrappers, or missing shadows/transitions are unacceptable. Write clean, complete, responsive, and gorgeous CSS for every element.
   - You MUST strictly follow the anti-jank and performance rules in [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt).
   - Never use raw emojis as UI icons; use `lucide-react` or `react-icons`.
   - Maintain dark/light mode polished Apple-inspired aesthetic ([docs/DESIGN-apple.md](file:///d:/SOCRATES/docs/DESIGN-apple.md)).
