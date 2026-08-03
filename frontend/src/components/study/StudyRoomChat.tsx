@@ -425,16 +425,7 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
                     {r.uploadedBy} • {r.time} • {r.size}
                   </div>
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  {r.type === 'image' && (
-                    <button
-                      onClick={() => setPreviewFile(r)}
-                      className="p-1.5 rounded-xl hover:bg-black/5 text-[#a1a1a6] hover:text-[#0066cc] transition-colors cursor-pointer"
-                      title="View Photo"
-                    >
-                      <Eye size={15} />
-                    </button>
-                  )}
+                <div className="flex items-center shrink-0">
                   <button
                     onClick={(e) => deleteResource(r.id, e)}
                     className="p-1.5 rounded-xl hover:bg-red-50 text-[#a1a1a6] hover:text-red-500 transition-colors cursor-pointer"

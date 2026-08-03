@@ -54,13 +54,13 @@ const SHAPE_TOOLS: { key: Tool; icon: React.ReactNode; label: string }[] = [
 
 const COLORS = [
   { value: '#1d1d1f', name: 'Black' },
+  { value: '#6b7280', name: 'Gray' },
+  { value: '#ffffff', name: 'White' },
   { value: '#0066cc', name: 'Blue' },
   { value: '#10b981', name: 'Green' },
   { value: '#8b5cf6', name: 'Purple' },
   { value: '#f59e0b', name: 'Amber' },
   { value: '#ef4444', name: 'Red' },
-  { value: '#ec4899', name: 'Pink' },
-  { value: '#6b7280', name: 'Gray' },
 ]
 
 const STROKE_WIDTHS = [
@@ -109,24 +109,30 @@ export default function Whiteboard() {
   const transformStartPos = useRef<Point>({ x: 0, y: 0 })
   const transformInitialBBox = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
 
-  // Resize canvas to fill container with HiDPI
+  // Auto-switch default active color based on background mode (Dark/Chalkboard -> White, Light/Dots/Grid -> Black)
   useEffect(() => {
-    const resize = () => {
-      const canvas = canvasRef.current
-      const container = containerRef.current
-      if (!canvas || !container) return
-      const dpr = window.devicePixelRatio || 1
-      const rect = container.getBoundingClientRect()
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
-      const ctx = canvas.getContext('2d')
-      if (ctx) ctx.scale(dpr, dpr)
+    const isDarkBg = bgType === 'dark' || bgType === 'chalkboard'
+    if (isDarkBg && (color === '#1d1d1f' || color === '#000000')) {
+      setColor('#ffffff')
+    } else if (!isDarkBg && color === '#ffffff') {
+      setColor('#1d1d1f')
     }
-    resize()
-    window.addEventListener('resize', resize)
-    return () => window.removeEventListener('resize', resize)
+  }, [bgType])
+
+  // Dynamic ResizeObserver & window resize listener to ensure background & drawings never vanish on zoom
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const handleResize = () => {
+      window.dispatchEvent(new Event('whiteboard-resize'))
+    }
+    const observer = new ResizeObserver(handleResize)
+    observer.observe(container)
+    window.addEventListener('resize', handleResize)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', handleResize)
+    }
   }, [])
 
   const drawBackground = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
@@ -383,9 +389,24 @@ export default function Whiteboard() {
     const canvas = canvasRef.current
     const container = containerRef.current
     if (!canvas || !container) return
+    const dpr = window.devicePixelRatio || 1
+    const rect = container.getBoundingClientRect()
+    const targetWidth = Math.max(1, Math.floor(rect.width * dpr))
+    const targetHeight = Math.max(1, Math.floor(rect.height * dpr))
+
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+      canvas.width = targetWidth
+      canvas.height = targetHeight
+      canvas.style.width = `${rect.width}px`
+      canvas.style.height = `${rect.height}px`
+    }
+
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const rect = container.getBoundingClientRect()
+
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
     const w = rect.width
     const h = rect.height
 
@@ -457,9 +478,16 @@ export default function Whiteboard() {
         ctx.restore()
       }
     }
+    ctx.restore()
   }, [strokes, currentStroke, drawBackground, textItems, selectedId, selectedKind, getElementBBox])
 
   useEffect(() => { redraw() }, [redraw])
+
+  useEffect(() => {
+    const handleResize = () => redraw()
+    window.addEventListener('whiteboard-resize', handleResize)
+    return () => window.removeEventListener('whiteboard-resize', handleResize)
+  }, [redraw])
 
   // Auto-focus text input when editing position is set
   useEffect(() => {
@@ -1091,6 +1119,8 @@ export default function Whiteboard() {
                   key={c.value}
                   onClick={() => handleColorChange(c.value)}
                   className={`w-5 h-5 rounded-full transition-all cursor-pointer transform-gpu ${
+                    c.value === '#ffffff' ? 'border border-[#d0d0d5]' : ''
+                  } ${
                     color === c.value ? 'ring-2 ring-[#0066cc] ring-offset-2 scale-110' : 'hover:scale-110'
                   }`}
                   style={{ backgroundColor: c.value }}
