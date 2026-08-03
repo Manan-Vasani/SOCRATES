@@ -1020,12 +1020,10 @@ export default function Profile() {
                     </span>
                   </div>
 
-                  {session.topic && (
-                    <div className="p-2.5 rounded-xl bg-[#fafafc] border border-[#f0f0f2] text-xs text-[#525252] flex items-start gap-1.5">
-                      <Tag size={12} className="text-[#0066cc] shrink-0 mt-0.5" />
-                      <span>Topic: <strong className="text-[#1d1d1f] font-medium">{session.topic}</strong></span>
-                    </div>
-                  )}
+                  <div className="p-2.5 rounded-xl bg-[#fafafc] border border-[#f0f0f2] text-xs text-[#525252] flex items-start gap-1.5">
+                    <Tag size={12} className="text-[#0066cc] shrink-0 mt-0.5" />
+                    <span>Topic: <strong className="text-[#1d1d1f] font-medium">{session.topic || 'None'}</strong></span>
+                  </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
                     <div className="text-[#7a7a7a]">
