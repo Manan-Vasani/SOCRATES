@@ -14,6 +14,7 @@ import TutorSchedule from './pages/TutorSchedule'
 import StudyRoom from './pages/StudyRoom'
 import PracticePage from './pages/PracticePage'
 import CommunityPage from './pages/CommunityPage'
+import RecordingsPage from './pages/RecordingsPage'
 import { useAuthStore } from './store/useAuthStore'
 import { fetchAuthenticatedUser } from './services/authService'
 import './App.css'
@@ -85,6 +86,7 @@ function App() {
         <Route path="/study-room/:roomId" element={<StudyRoom />} />
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/community" element={<CommunityPage />} />
+        <Route path="/recordings" element={<RecordingsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />

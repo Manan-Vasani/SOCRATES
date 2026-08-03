@@ -1,0 +1,392 @@
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import {
+  Video,
+  FileText,
+  Download,
+  Play,
+  Search,
+  Sparkles,
+  Clock,
+  Calendar,
+  User,
+  CheckCircle2,
+  Share2,
+  Bookmark,
+  ChevronRight,
+  FileCode,
+  X,
+  Eye,
+} from 'lucide-react'
+import { toast } from 'sonner'
+
+interface SessionRecord {
+  id: string
+  title: string
+  subject: string
+  tutorName: string
+  tutorAvatar?: string
+  date: string
+  duration: string
+  fileSize: string
+  thumbnailUrl: string
+  videoUrl: string
+  aiSummary: string[]
+  keyEquations: string[]
+  transcript: { time: string; speaker: string; text: string }[]
+}
+
+const SAMPLE_RECORDINGS: SessionRecord[] = [
+  {
+    id: 'rec-1',
+    title: 'Advanced Calculus: Integration by Parts & Partial Fractions',
+    subject: 'Mathematics',
+    tutorName: 'Dr. Alex Vance',
+    date: 'Aug 2, 2026',
+    duration: '45 mins',
+    fileSize: '320 MB',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=800&auto=format&fit=crop',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    aiSummary: [
+      'Derived the Product Rule origin for Integration by Parts: ∫ u dv = uv - ∫ v du.',
+      'Demonstrated ILATE rule priority for choosing u (Inverse trig, Logarithmic, Algebraic, Trigonometric, Exponential).',
+      'Solved 3 complex improper integral problems on the digital whiteboard.',
+    ],
+    keyEquations: [
+      '\\int u \\, dv = uv - \\int v \\, du',
+      '\\int \\frac{1}{x^2 + a^2} dx = \\frac{1}{a} \\arctan\\left(\\frac{x}{a}\\right) + C',
+    ],
+    transcript: [
+      { time: '00:02', speaker: 'Dr. Alex Vance', text: 'Welcome back! Today we are diving into advanced integration techniques.' },
+      { time: '05:14', speaker: 'You', text: 'Can we go over how to pick u when both algebraic and trig functions appear?' },
+      { time: '05:30', speaker: 'Dr. Alex Vance', text: 'Great question! Remember the ILATE rule hierarchy. Algebraic comes before Trigonometric.' },
+      { time: '22:40', speaker: 'Dr. Alex Vance', text: 'Let us draw this step on the whiteboard and check our boundary limits.' },
+    ],
+  },
+  {
+    id: 'rec-2',
+    title: 'Data Structures: Graph Traversal & Dijkstra Algorithm',
+    subject: 'Computer Science',
+    tutorName: 'Elena Rostova',
+    date: 'Jul 30, 2026',
+    duration: '60 mins',
+    fileSize: '410 MB',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800&auto=format&fit=crop',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    aiSummary: [
+      'Implemented Min-Heap priority queue optimization for Dijkstra in Python.',
+      'Analyzed O((V + E) log V) time complexity vs O(V^2) unoptimized matrix approach.',
+      'Ran live test cases in SOCRATES Code Sandbox IDE.',
+    ],
+    keyEquations: [
+      'd[v] = \\min(d[v], d[u] + w(u, v))',
+      'Time\\ Complexity = O((V + E) \\log V)',
+    ],
+    transcript: [
+      { time: '00:05', speaker: 'Elena Rostova', text: 'Let us start by building an adjacency list representation of our graph.' },
+      { time: '14:20', speaker: 'You', text: 'Why do we use a priority queue instead of a standard FIFO queue?' },
+      { time: '14:45', speaker: 'Elena Rostova', text: 'Because we always want to extract the vertex with the smallest distance estimation next.' },
+    ],
+  },
+  {
+    id: 'rec-3',
+    title: 'Quantum Mechanics: Wave Packet Dispersion & Uncertainty',
+    subject: 'Physics',
+    tutorName: 'Prof. Sarah Jenkins',
+    date: 'Jul 28, 2026',
+    duration: '50 mins',
+    fileSize: '380 MB',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?q=80&w=800&auto=format&fit=crop',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    aiSummary: [
+      'Derived the Heisenberg Uncertainty Principle Δx Δp ≥ ħ/2 from Fourier transform pairs.',
+      'Simulated Gaussian wave packet broadening over time on the shared canvas.',
+    ],
+    keyEquations: [
+      '\\Delta x \\cdot \\Delta p \\ge \\frac{\\hbar}{2}',
+      'i\\hbar \\frac{\\partial}{\\partial t} \\psi(x,t) = \\hat{H} \\psi(x,t)',
+    ],
+    transcript: [
+      { time: '00:10', speaker: 'Prof. Sarah Jenkins', text: 'Today we explore how momentum uncertainty causes spatial spreading of wavepackets.' },
+    ],
+  },
+]
+
+export default function RecordingsPage() {
+  const [recordings] = useState<SessionRecord[]>(SAMPLE_RECORDINGS)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeSubject, setActiveSubject] = useState('All')
+  const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false)
+
+  const filteredRecordings = recordings.filter((r) => {
+    const matchesSubject = activeSubject === 'All' || r.subject === activeSubject
+    const matchesSearch =
+      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.tutorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.aiSummary.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+    return matchesSubject && matchesSearch
+  })
+
+  const handleDownloadPDF = (title: string) => {
+    toast.success(`Exporting AI Notes PDF for "${title}"... Download started!`)
+  }
+
+  return (
+    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10">
+      <Navbar />
+
+      {/* Header Banner */}
+      <section className="bg-white border-b border-[#e5e5e7] py-8 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0066cc]/8 border border-[#0066cc]/15 text-[#0066cc] text-xs font-semibold">
+              <Video size={14} />
+              <span>SOCRATES AI Session Archive</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
+              Session Recordings & AI Notes Library
+            </h1>
+            <p className="text-sm text-[#6e6e73] max-w-xl">
+              Access your past Study Room video recordings, automated Socratic AI lesson summaries, whiteboard snapshots, and PDF exports.
+            </p>
+          </div>
+
+          <Link
+            to="/study-room/demo-101"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all shadow-md shadow-[#0066cc]/25 cursor-pointer shrink-0"
+          >
+            <Video size={16} />
+            <span>Join Active Study Room</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Main Body */}
+      <main className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+        {/* Search & Subject Filter Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-lg">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search recordings by topic, tutor name, or keyword..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-[#e0e0e2] text-xs outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition-all shadow-2xs"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {['All', 'Mathematics', 'Computer Science', 'Physics'].map((subj) => (
+              <button
+                key={subj}
+                onClick={() => setActiveSubject(subj)}
+                className={`px-4 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSubject === subj
+                    ? 'bg-[#0066cc] text-white shadow-xs'
+                    : 'bg-white border border-[#e0e0e2] text-[#6e6e73] hover:border-[#0066cc]/30 hover:text-[#1d1d1f]'
+                }`}
+              >
+                {subj}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Recordings Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredRecordings.map((rec) => (
+            <div
+              key={rec.id}
+              onClick={() => {
+                setSelectedRecord(rec)
+                setIsPlayingVideo(false)
+              }}
+              className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-2xs hover:shadow-xl hover:border-[#0066cc]/40 transition-all cursor-pointer flex flex-col group"
+            >
+              {/* Thumbnail Container */}
+              <div className="relative aspect-video bg-[#1d1d1f] overflow-hidden">
+                <img
+                  src={rec.thumbnailUrl}
+                  alt={rec.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white/90 text-[#0066cc] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Play size={20} className="fill-[#0066cc] ml-1" />
+                  </div>
+                </div>
+
+                {/* Duration Badge */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-sm text-white text-[10px] font-mono font-semibold">
+                  <Clock size={12} />
+                  <span>{rec.duration}</span>
+                </div>
+
+                {/* Subject Badge */}
+                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#1d1d1f] text-[10px] font-bold">
+                  {rec.subject}
+                </div>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug line-clamp-2">
+                    {rec.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-[#6e6e73]">
+                    <User size={13} className="text-[#0066cc]" />
+                    <span className="font-semibold text-[#1d1d1f]">{rec.tutorName}</span>
+                    <span>• {rec.date}</span>
+                  </div>
+                </div>
+
+                {/* AI Summary Snippet */}
+                <div className="bg-[#f5f5f7] border border-[#e5e5e7] rounded-2xl p-3 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#0066cc] uppercase tracking-wider">
+                    <Sparkles size={12} />
+                    <span>Socrates AI Summary</span>
+                  </div>
+                  <p className="text-[11px] text-[#6e6e73] line-clamp-2 leading-relaxed">
+                    {rec.aiSummary[0]}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
+                  <span className="text-[#86868b] text-[11px]">{rec.fileSize} HD</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDownloadPDF(rec.title)
+                    }}
+                    className="flex items-center gap-1 text-[#0066cc] font-bold hover:underline cursor-pointer"
+                  >
+                    <Download size={13} />
+                    <span>AI Notes PDF</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* FULL RECORDING & AI NOTES MODAL */}
+      {selectedRecord && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-[#fafafa]">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold shrink-0">
+                  {selectedRecord.subject}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-[#1d1d1f] truncate">{selectedRecord.title}</h3>
+                  <span className="text-xs text-[#86868b]">{selectedRecord.tutorName} • {selectedRecord.date} • {selectedRecord.duration}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedRecord(null)}
+                className="p-2 rounded-2xl hover:bg-[#e0e0e2] text-[#7a7a7a] transition-all cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body: Split Video + AI Notes & Transcript */}
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-[#fafafc]">
+              {/* Left Column: Video Player & Equations */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Video Player Box */}
+                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-xl relative border border-[#2a2a2e]">
+                  {isPlayingVideo ? (
+                    <video
+                      src={selectedRecord.videoUrl}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="relative w-full h-full">
+                      <img src={selectedRecord.thumbnailUrl} alt={selectedRecord.title} className="w-full h-full object-cover opacity-80" />
+                      <button
+                        onClick={() => setIsPlayingVideo(true)}
+                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform cursor-pointer"
+                      >
+                        <Play size={28} className="fill-white ml-1" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Key Equations Section */}
+                <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                    <FileCode size={15} className="text-[#0066cc]" />
+                    <span>Key Equations & Derivations Covered</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedRecord.keyEquations.map((eq, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] font-mono text-xs text-[#1d1d1f] font-bold">
+                        {eq}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: AI Summary & Interactive Transcript */}
+              <div className="space-y-6">
+                {/* AI Summary Box */}
+                <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#0066cc]">
+                    <Sparkles size={16} />
+                    <span>Socrates AI Summary</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#525252] list-disc pl-4 leading-relaxed">
+                    {selectedRecord.aiSummary.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Interactive Transcript */}
+                <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                    <Clock size={15} className="text-[#0066cc]" />
+                    <span>Interactive Transcript</span>
+                  </h4>
+                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    {selectedRecord.transcript.map((t, i) => (
+                      <div key={i} className="text-xs space-y-0.5 border-b border-[#f0f0f2] pb-2 last:border-0">
+                        <div className="flex items-center justify-between text-[10px] text-[#86868b]">
+                          <span className="font-bold text-[#1d1d1f]">{t.speaker}</span>
+                          <span className="font-mono text-[#0066cc] cursor-pointer hover:underline">{t.time}</span>
+                        </div>
+                        <p className="text-[#525252]">{t.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* PDF Export Action */}
+                <button
+                  onClick={() => handleDownloadPDF(selectedRecord.title)}
+                  className="w-full py-3 rounded-2xl bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#0066cc]/20 cursor-pointer"
+                >
+                  <Download size={15} />
+                  <span>Download Full AI Notes PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
