@@ -1759,6 +1759,10 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, rate20Min: e.target.value === '' ? '' : Math.min(100, Number(e.target.value)) })
                           }
+                          onBlur={() => {
+                            const val = Number(formData.rate20Min)
+                            if (!formData.rate20Min || val < 15) setFormData({ ...formData, rate20Min: 15 })
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
                         <span className="text-[9px] text-[#7a7a7a] font-medium block">Min $15 – Max $100</span>
@@ -1776,6 +1780,10 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, rate30Min: e.target.value === '' ? '' : Math.min(150, Number(e.target.value)) })
                           }
+                          onBlur={() => {
+                            const val = Number(formData.rate30Min)
+                            if (!formData.rate30Min || val < 25) setFormData({ ...formData, rate30Min: 25 })
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
                         <span className="text-[9px] text-[#7a7a7a] font-medium block">Min $25 – Max $150</span>
@@ -1793,6 +1801,10 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, hourlyRate: e.target.value === '' ? '' : Math.min(300, Number(e.target.value)) })
                           }
+                          onBlur={() => {
+                            const val = Number(formData.hourlyRate)
+                            if (!formData.hourlyRate || val < 45) setFormData({ ...formData, hourlyRate: 45 })
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
                         <span className="text-[9px] text-[#7a7a7a] font-medium block">Min $45 – Max $300</span>
@@ -1857,6 +1869,10 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, rate20Min: e.target.value === '' ? '' : Math.min(100, Number(e.target.value)) })
                           }
+                          onBlur={() => {
+                            const val = Number(formData.rate20Min)
+                            if (!formData.rate20Min || val < 15) setFormData({ ...formData, rate20Min: 15 })
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
                         <span className="text-[9px] text-[#7a7a7a] font-medium block">Min $15 – Max $100</span>
@@ -1874,6 +1890,10 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, rate30Min: e.target.value === '' ? '' : Math.min(150, Number(e.target.value)) })
                           }
+                          onBlur={() => {
+                            const val = Number(formData.rate30Min)
+                            if (!formData.rate30Min || val < 25) setFormData({ ...formData, rate30Min: 25 })
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
                         <span className="text-[9px] text-[#7a7a7a] font-medium block">Min $25 – Max $150</span>
@@ -1891,6 +1911,10 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, hourlyRate: e.target.value === '' ? '' : Math.min(300, Number(e.target.value)) })
                           }
+                          onBlur={() => {
+                            const val = Number(formData.hourlyRate)
+                            if (!formData.hourlyRate || val < 45) setFormData({ ...formData, hourlyRate: 45 })
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
                         <span className="text-[9px] text-[#7a7a7a] font-medium block">Min $45 – Max $300</span>
