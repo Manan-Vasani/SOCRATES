@@ -118,7 +118,16 @@ const googleAuthCallback = async (req, res) => {
               }, '*');
               window.close();
             } else {
-              window.location.href = '${process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173')}/dashboard?token=${token}';
+              const isProd = ${process.env.NODE_ENV === 'production' || 
+                               (req.get('host') && req.get('host').includes('onrender.com')) ||
+                               (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.includes('onrender.com'))};
+              let frontendUrl = '${process.env.FRONTEND_URL || ''}';
+              if (isProd && (!frontendUrl || frontendUrl.indexOf('localhost') !== -1)) {
+                frontendUrl = 'https://socrates-steel.vercel.app';
+              } else if (!frontendUrl) {
+                frontendUrl = 'http://localhost:5173';
+              }
+              window.location.href = frontendUrl + '/dashboard?token=${token}';
             }
           </script>
           <p>Authentication successful. Redirecting to Dashboard...</p>
