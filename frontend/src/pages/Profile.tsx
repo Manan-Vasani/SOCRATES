@@ -606,9 +606,9 @@ export default function Profile() {
       phone: formData.phone,
       role: formData.role as 'student' | 'tutor' | 'both',
       bio: formData.bio,
-      hourlyRate: Number(formData.hourlyRate),
-      rate20Min: Number(formData.rate20Min),
-      rate30Min: Number(formData.rate30Min),
+      hourlyRate: Math.max(45, Number(formData.hourlyRate) || 45),
+      rate20Min: Math.max(15, Number(formData.rate20Min) || 15),
+      rate30Min: Math.max(25, Number(formData.rate30Min) || 25),
       avatar: formData.avatar,
       subjects: formData.role === 'student' ? (user?.subjects || []) : subjectsArr,
       learningSubjects: (user as any)?.learningSubjects || [],
@@ -1757,7 +1757,7 @@ export default function Profile() {
                           value={formData.rate20Min}
                           placeholder="15"
                           onChange={(e) =>
-                            setFormData({ ...formData, rate20Min: e.target.value === '' ? '' : Math.min(100, Math.max(15, Number(e.target.value))) })
+                            setFormData({ ...formData, rate20Min: e.target.value === '' ? '' : Math.min(100, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
@@ -1774,7 +1774,7 @@ export default function Profile() {
                           value={formData.rate30Min}
                           placeholder="25"
                           onChange={(e) =>
-                            setFormData({ ...formData, rate30Min: e.target.value === '' ? '' : Math.min(150, Math.max(25, Number(e.target.value))) })
+                            setFormData({ ...formData, rate30Min: e.target.value === '' ? '' : Math.min(150, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
@@ -1791,7 +1791,7 @@ export default function Profile() {
                           value={formData.hourlyRate}
                           placeholder="45"
                           onChange={(e) =>
-                            setFormData({ ...formData, hourlyRate: e.target.value === '' ? '' : Math.min(300, Math.max(45, Number(e.target.value))) })
+                            setFormData({ ...formData, hourlyRate: e.target.value === '' ? '' : Math.min(300, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
@@ -1855,7 +1855,7 @@ export default function Profile() {
                           value={formData.rate20Min}
                           placeholder="15"
                           onChange={(e) =>
-                            setFormData({ ...formData, rate20Min: e.target.value === '' ? '' : Math.min(100, Math.max(15, Number(e.target.value))) })
+                            setFormData({ ...formData, rate20Min: e.target.value === '' ? '' : Math.min(100, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
@@ -1872,7 +1872,7 @@ export default function Profile() {
                           value={formData.rate30Min}
                           placeholder="25"
                           onChange={(e) =>
-                            setFormData({ ...formData, rate30Min: e.target.value === '' ? '' : Math.min(150, Math.max(25, Number(e.target.value))) })
+                            setFormData({ ...formData, rate30Min: e.target.value === '' ? '' : Math.min(150, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
@@ -1889,7 +1889,7 @@ export default function Profile() {
                           value={formData.hourlyRate}
                           placeholder="45"
                           onChange={(e) =>
-                            setFormData({ ...formData, hourlyRate: e.target.value === '' ? '' : Math.min(300, Math.max(45, Number(e.target.value))) })
+                            setFormData({ ...formData, hourlyRate: e.target.value === '' ? '' : Math.min(300, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f] text-xs font-semibold focus:outline-none focus:border-[#0066cc]"
                         />
