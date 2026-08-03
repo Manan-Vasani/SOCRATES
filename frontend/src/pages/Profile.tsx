@@ -14,6 +14,7 @@ import {
   Edit3,
   GraduationCap,
   Link as LinkIcon,
+  Loader2,
   Lock,
   LogOut,
   Repeat,
@@ -26,8 +27,7 @@ import {
   Upload,
   UserCheck,
   Users,
-  X,
-  Loader2
+  X
 } from 'lucide-react'
 
 // React profile component for managing role-specific dashboards.
@@ -1116,10 +1116,10 @@ export default function Profile() {
             </div>
 
             {/* Enrolled Subjects & Bookmarked Tutors & Study History Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-              {/* Card 1: Enrolled Subjects */}
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs flex flex-col justify-between h-full">
-                <div className="space-y-4 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left Column: Enrolled Subjects & Study Rooms (7 cols) */}
+              <div className="md:col-span-7 space-y-6">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
                     <span>Enrolled Learning Subjects</span>
                     <span className="text-xs text-[#7a7a7a] font-normal">{getLearningSubjects().length} Active</span>
@@ -1162,15 +1162,12 @@ export default function Profile() {
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-[#86868b] italic">No learning subjects added yet.</span>
+                      <span className="px-3 py-1.5 border border-transparent text-xs text-[#86868b] italic">No learning subjects added yet.</span>
                     )}
                   </div>
                 </div>
-              </div>
 
-              {/* Card 2: Recent Study Room History */}
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs flex flex-col justify-between h-full">
-                <div className="space-y-4 flex-1">
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
                   <h3 className="text-base font-display font-bold text-[#1d1d1f]">Recent Study Room History</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
@@ -1192,14 +1189,14 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Card 3: Bookmarked Tutors */}
-              <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs min-h-[352px] flex flex-col justify-between h-full">
-                <div className="space-y-4 flex-1">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
+              {/* Right Column: Bookmarked Tutors (5 cols) */}
+              <div className="md:col-span-5 relative min-h-[300px] md:min-h-0">
+                <div className="md:absolute md:inset-0 p-6 rounded-2xl bg-white border border-[#e5e5e7] shadow-xs flex flex-col overflow-hidden">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between shrink-0 mb-4">
                     <span>Bookmarked Tutors</span>
                     <span className="text-xs text-[#7a7a7a] font-normal">{bookmarkedTutors.length} Saved</span>
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1.5 custom-scrollbar">
                     {bookmarkedTutors.length > 0 ? (
                       bookmarkedTutors.map((tutor) => (
                         <div key={tutor.id} className="flex items-center justify-between p-3 rounded-xl bg-[#fafafc] border border-[#e5e5e7] hover:border-[#0066cc]/30 transition-colors gap-3">

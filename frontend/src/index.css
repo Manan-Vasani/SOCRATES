@@ -67,21 +67,33 @@ button, a, [role="button"] {
 }
 
 /* Sleek Custom Scrollbar for Modals and Cards */
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: #c1c1c6 transparent !important;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+  width: 5px !important;
+  height: 5px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #d1d1d6;
-  border-radius: 10px;
+  background-color: #c1c1c6 !important;
+  border-radius: 9999px !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a6;
+  background-color: #0066cc !important;
 }
 
 /* Sonner Toast Close Button Vertically Centered Right */
@@ -105,27 +117,33 @@ button, a, [role="button"] {
 
 /* WebKit & Chromium Browsers (Chrome, Edge, Safari, Brave) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 9999px;
+  background: transparent !important;
+  border-radius: 9999px !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.25);
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-  transition: background-color 0.2s ease-in-out;
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  border-radius: 9999px !important;
+  border: 1px solid transparent !important;
+  background-clip: content-box !important;
+  transition: background-color 0.2s ease-in-out !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #0066cc;
+  background-color: #0066cc !important;
 }
 
 ::-webkit-scrollbar-corner {
-  background: transparent;
+  background: transparent !important;
 }
