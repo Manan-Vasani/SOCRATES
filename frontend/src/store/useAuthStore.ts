@@ -33,7 +33,19 @@ interface AuthState {
   logout: () => void
 }
 
-const getInitialToken = () => localStorage.getItem('socrates_token') || null
+const getInitialToken = () => {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search)
+    const urlToken = params.get('token')
+    if (urlToken) {
+      localStorage.setItem('socrates_token', urlToken)
+      const newUrl = window.location.pathname + window.location.hash
+      window.history.replaceState({}, document.title, newUrl)
+      return urlToken
+    }
+  }
+  return localStorage.getItem('socrates_token') || null
+}
 const getInitialUser = (): UserProfile | null => {
   const stored = localStorage.getItem('socrates_user')
   try {
