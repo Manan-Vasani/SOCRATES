@@ -321,54 +321,37 @@ function CommentItem({
   comment: Comment
   threadAuthor: string
   renderMediaGrid: (items?: MediaItem[]) => React.ReactNode
-  onAddReply: (parentId: string, text: string, media?: MediaItem[]) => void
+  onAddReply: (parentId: string, text: string, media?: MediaItem[], files?: File[]) => void
   onEditComment?: (commentId: string, newText: string) => void
   onDeleteComment?: (commentId: string) => void
 }) {
   const [isReplying, setIsReplying] = useState(false)
   const [replyText, setReplyText] = useState('')
-  const [replyMedia, setReplyMedia] = useState<MediaItem[]>([])
-
-  const [isEditing, setIsEditing] = useState(false)
-  const [editText, setEditText] = useState(comment.text)
-
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const [upvotes, setUpvotes] = useState(comment.upvotes)
-  const [userVote, setUserVote] = useState<'up' | 'down' | null>(null)
-
-  const isOP = comment.author === threadAuthor
-  const isOwnComment = comment.author === 'You'
-
-  const handleVote = (type: 'up' | 'down') => {
-    if (userVote === type) {
-      setUserVote(null)
-      setUpvotes((prev) => (type === 'up' ? prev - 1 : prev + 1))
-    } else {
-      const diff = type === 'up' ? (userVote === 'down' ? 2 : 1) : userVote === 'up' ? -2 : -1
-      setUserVote(type)
-      setUpvotes((prev) => prev + diff)
-    }
-  }
+  const [pendingReplyFiles, setPendingReplyFiles] = useState<File[]>([])
 
   const handleReplyMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    const newItems: MediaItem[] = Array.from(files).map((file) => ({
+    const fileArray = Array.from(files)
+    const newItems: MediaItem[] = fileArray.map((file) => ({
       url: URL.createObjectURL(file),
       type: file.type.startsWith('video/') ? 'video' : 'image',
     }))
     setReplyMedia((prev) => [...prev, ...newItems])
+    setPendingReplyFiles((prev) => [...prev, ...fileArray])
   }
 
   const removeReplyMedia = (index: number) => {
     setReplyMedia((prev) => prev.filter((_, i) => i !== index))
+    setPendingReplyFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleReplySubmit = () => {
     if (!replyText.trim() && replyMedia.length === 0) return
-    onAddReply(comment.id, replyText, replyMedia)
+    onAddReply(comment.id, replyText, replyMedia, pendingReplyFiles)
     setReplyText('')
     setReplyMedia([])
+    setPendingReplyFiles([])
     setIsReplying(false)
   }
 
@@ -1035,17 +1018,20 @@ export default function CommunityPage() {
     setPendingCommentFiles([])
   }
 
-  const handleNestedReply = async (parentId: string, text: string, media?: MediaItem[]) => {
+  const handleNestedReply = async (parentId: string, text: string, media?: MediaItem[], files?: File[]) => {
     if (!activeThread) return
     if (!user) { toast.error('Please log in to reply'); return }
 
     try {
       if (!isRealId(activeThread.id)) throw new Error('Demo thread')
 
+      // Upload pending files to Cloudinary
+      const uploadedMedia = await uploadPendingFiles(files || [], media || [])
+
       const res = await createCommunityComment(activeThread.id, {
         text,
         parentComment: isRealId(parentId) ? parentId : undefined,
-        media: media && media.length > 0 ? media : undefined,
+        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
       })
 
       if (res.success) {
