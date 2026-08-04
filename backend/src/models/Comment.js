@@ -27,7 +27,7 @@ const commentSchema = new mongoose.Schema(
 
     text: {
       type: String,
-      required: [true, 'Comment text is required'],
+      default: '',
       maxlength: [5000, 'Comment cannot exceed 5000 characters'],
     },
     media: [
