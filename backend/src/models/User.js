@@ -86,6 +86,25 @@ const userSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    karma: {
+      type: Number,
+      default: 0,
+    },
+    solvedCount: {
+      type: Number,
+      default: 0,
+    },
+    bookmarks: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'DoubtThread' },
+    ],
+    tutorBadge: {
+      type: String,
+      default: null,
+    },
+    isTutorVerified: {
+      type: Boolean,
+      default: false,
+    },
     isVerified: {
       type: Boolean,
       default: false,

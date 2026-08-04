@@ -12,6 +12,10 @@ const aiRoutes = require('./routes/aiRoutes');
 const authRoutes = require('./routes/authRoutes');
 const tutorRoutes = require('./routes/tutorRoutes');
 const compileRoutes = require('./routes/compileRoutes');
+const communityRoutes = require('./routes/communityRoutes');
+const studyRoomRoutes = require('./routes/studyRoomRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const { createSocketServer } = require('./socket/socketServer');
 
 const { passport } = require('./config/passport');
 
@@ -45,6 +49,9 @@ app.use('/api/v1/homepage', homepageRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/tutors', tutorRoutes);
 app.use('/api/v1/compile', compileRoutes);
+app.use('/api/v1/community', communityRoutes);
+app.use('/api/v1/study-rooms', studyRoomRoutes);
+app.use('/api/v1/upload', uploadRoutes);
 
 // Healthcheck Route
 app.get('/health', (req, res) => {
@@ -72,6 +79,10 @@ app.use((err, req, res, next) => {
 const server = app.listen(PORT, () => {
   console.log(`[SOCRATES Backend] Server running on http://localhost:${PORT}`);
 });
+
+// Initialize Socket.IO and store on Express app for controller access
+const io = createSocketServer(server);
+app.set('io', io);
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {

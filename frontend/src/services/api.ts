@@ -181,3 +181,185 @@ export const createTutorBookingApi = async (
     return { success: false, message: 'Could not connect to backend server for booking.' }
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  COMMUNITY / DOUBT BOARD API
+// ═══════════════════════════════════════════════════════════════
+
+export const fetchCommunityThreads = async (params?: {
+  page?: number
+  limit?: number
+  subject?: string
+  filter?: string
+  sort?: string
+  search?: string
+}) => {
+  try {
+    const response = await api.get('/community/threads', { params })
+    return response.data
+  } catch (error) {
+    console.warn('[API] Could not fetch community threads')
+    return { success: false, data: [], pagination: { page: 1, total: 0, pages: 0 } }
+  }
+}
+
+export const fetchCommunityThread = async (threadId: string) => {
+  try {
+    const response = await api.get(`/community/threads/${threadId}`)
+    return response.data
+  } catch (error) {
+    return null
+  }
+}
+
+export const createCommunityThread = async (data: {
+  title: string
+  content: string
+  subject: string
+  tags?: string[]
+  codeSnippet?: string
+  media?: { url: string; type: 'image' | 'video'; publicId?: string }[]
+}) => {
+  const response = await api.post('/community/threads', data)
+  return response.data
+}
+
+export const voteCommunityThread = async (threadId: string, vote: 'up' | 'down') => {
+  const response = await api.post(`/community/threads/${threadId}/vote`, { vote })
+  return response.data
+}
+
+export const bookmarkCommunityThread = async (threadId: string) => {
+  const response = await api.post(`/community/threads/${threadId}/bookmark`)
+  return response.data
+}
+
+export const solveCommunityThread = async (threadId: string, solvedByCommentAuthor?: string) => {
+  const response = await api.post(`/community/threads/${threadId}/solve`, { solvedByCommentAuthor })
+  return response.data
+}
+
+export const createCommunityComment = async (
+  threadId: string,
+  data: { text: string; parentComment?: string; media?: { url: string; type: 'image' | 'video' }[] }
+) => {
+  const response = await api.post(`/community/threads/${threadId}/comments`, data)
+  return response.data
+}
+
+export const voteCommunityComment = async (commentId: string, vote: 'up' | 'down') => {
+  const response = await api.post(`/community/comments/${commentId}/vote`, { vote })
+  return response.data
+}
+
+export const editCommunityComment = async (commentId: string, text: string) => {
+  const response = await api.put(`/community/comments/${commentId}`, { text })
+  return response.data
+}
+
+export const deleteCommunityComment = async (commentId: string) => {
+  const response = await api.delete(`/community/comments/${commentId}`)
+  return response.data
+}
+
+export const fetchCommunityLeaderboard = async (limit = 10) => {
+  try {
+    const response = await api.get('/community/leaderboard', { params: { limit } })
+    return response.data?.data || []
+  } catch (error) {
+    return []
+  }
+}
+
+export const fetchCommunityBookmarks = async () => {
+  try {
+    const response = await api.get('/community/bookmarks')
+    return response.data?.data || []
+  } catch (error) {
+    return []
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STUDY ROOM API
+// ═══════════════════════════════════════════════════════════════
+
+export const fetchStudyRooms = async (params?: {
+  page?: number
+  limit?: number
+  subject?: string
+  tag?: string
+  search?: string
+}) => {
+  try {
+    const response = await api.get('/study-rooms', { params })
+    return response.data
+  } catch (error) {
+    return { success: false, data: [], pagination: { page: 1, total: 0, pages: 0 } }
+  }
+}
+
+export const createStudyRoom = async (data: {
+  title: string
+  subject: string
+  description?: string
+  maxCapacity?: number
+  tag?: string
+  isPrivate?: boolean
+  accessCode?: string
+}) => {
+  const response = await api.post('/study-rooms', data)
+  return response.data
+}
+
+export const fetchStudyRoom = async (roomId: string) => {
+  try {
+    const response = await api.get(`/study-rooms/${roomId}`)
+    return response.data
+  } catch (error) {
+    return null
+  }
+}
+
+export const joinStudyRoom = async (roomId: string, accessCode?: string) => {
+  const response = await api.post(`/study-rooms/${roomId}/join`, { accessCode })
+  return response.data
+}
+
+export const leaveStudyRoom = async (roomId: string) => {
+  const response = await api.post(`/study-rooms/${roomId}/leave`)
+  return response.data
+}
+
+export const endStudyRoom = async (roomId: string) => {
+  const response = await api.post(`/study-rooms/${roomId}/end`)
+  return response.data
+}
+
+export const fetchStudyRoomMessages = async (roomId: string, page = 1) => {
+  try {
+    const response = await api.get(`/study-rooms/${roomId}/messages`, { params: { page } })
+    return response.data
+  } catch (error) {
+    return { success: false, data: [] }
+  }
+}
+
+export const createStudyRoomFromThread = async (threadId: string) => {
+  const response = await api.post(`/study-rooms/from-thread/${threadId}`)
+  return response.data
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MEDIA UPLOAD API
+// ═══════════════════════════════════════════════════════════════
+
+export const uploadMedia = async (files: File[]) => {
+  const formData = new FormData()
+  files.forEach((file) => formData.append('files', file))
+  const response = await api.post('/upload/media', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000,
+  })
+  return response.data
+}

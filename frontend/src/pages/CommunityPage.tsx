@@ -1,6 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useAuthStore } from '../store/useAuthStore'
+import {
+  fetchCommunityThreads,
+  fetchCommunityThread,
+  createCommunityThread,
+  voteCommunityThread,
+  createCommunityComment,
+  editCommunityComment,
+  deleteCommunityComment,
+  uploadMedia,
+} from '../services/api'
 import {
   MessageSquare,
   ThumbsUp,
@@ -74,7 +85,66 @@ interface DoubtThread {
   comments: Comment[]
 }
 
-const INITIAL_THREADS: DoubtThread[] = [
+// ─── API → Frontend Data Mapper ────────────────────────────────
+function mapApiThread(t: any, currentUserId?: string): DoubtThread {
+  const authorName = t.author?.fullName || t.author?.name || 'Anonymous'
+  const userVote = currentUserId
+    ? (t.voters?.find((v: any) => (v.user?._id || v.user) === currentUserId)?.vote || null)
+    : null
+
+  return {
+    id: t._id,
+    title: t.title,
+    subject: t.subject,
+    tags: t.tags || [],
+    author: authorName,
+    authorAvatar: t.author?.profileImage || undefined,
+    time: formatTimeAgo(t.createdAt),
+    upvotes: t.upvotes || 0,
+    userVote,
+    isSolved: t.isSolved || false,
+    hasAiAnswer: t.hasAiAnswer || false,
+    content: t.content,
+    codeSnippet: t.codeSnippet || undefined,
+    media: t.media || [],
+    commentsCount: t.commentsCount || 0,
+    comments: (t.comments || []).map((c: any) => mapApiComment(c)),
+  }
+}
+
+function mapApiComment(c: any): Comment {
+  return {
+    id: c._id,
+    author: c.role === 'ai' ? 'Socrates AI' : (c.author?.fullName || c.author?.name || 'Anonymous'),
+    role: c.role || 'student',
+    avatar: c.author?.profileImage || undefined,
+    text: c.text,
+    time: formatTimeAgo(c.createdAt),
+    upvotes: c.upvotes || 0,
+    isVerified: c.isVerified || false,
+    media: c.media || [],
+    replies: (c.replies || []).map((r: any) => mapApiComment(r)),
+  }
+}
+
+function formatTimeAgo(dateStr?: string): string {
+  if (!dateStr) return 'Just now'
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+/** Check if an ID is a real MongoDB ObjectId (24-char hex) — skip API for fake fallback IDs */
+function isRealId(id: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(id)
+}
+
+const FALLBACK_THREADS: DoubtThread[] = [
   {
     id: 'thread-1',
     title: 'How to apply King\'s Property to solve definite integrals with sin(x) & cos(x)?',
@@ -551,7 +621,7 @@ function CommentItem({
   )
 }
 
-const TOP_CONTRIBUTORS = [
+const FALLBACK_CONTRIBUTORS = [
   { rank: 1, name: 'Dr. Alex Vance', karma: 3450, solved: 142, badge: 'Verified Master' },
   { rank: 2, name: 'Prof. Sarah Jenkins', karma: 2890, solved: 118, badge: 'Physics Scholar' },
   { rank: 3, name: 'Manan Vasani', karma: 2150, solved: 86, badge: 'Top Contributor' },
@@ -559,10 +629,34 @@ const TOP_CONTRIBUTORS = [
 ]
 
 export default function CommunityPage() {
-  const [threads, setThreads] = useState<DoubtThread[]>(INITIAL_THREADS)
+  const { user } = useAuthStore()
+  const [threads, setThreads] = useState<DoubtThread[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeSubject, setActiveSubject] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [filterMode, setFilterMode] = useState<'all' | 'unsolved' | 'solved'>('all')
+
+  // ─── Fetch threads from backend on mount ─────────────────────
+  const loadThreads = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetchCommunityThreads()
+      if (res.success && res.data.length > 0) {
+        setThreads(res.data.map((t: any) => mapApiThread(t, user?._id)))
+      } else {
+        // Fallback to demo data if DB is empty
+        setThreads(FALLBACK_THREADS)
+      }
+    } catch {
+      setThreads(FALLBACK_THREADS)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user?._id])
+
+  useEffect(() => {
+    loadThreads()
+  }, [loadThreads])
 
   // Modal & Form states
   const [isPostModalOpen, setIsPostModalOpen] = useState(false)
@@ -634,20 +728,43 @@ export default function CommunityPage() {
   // New Comment state
   const [commentText, setCommentText] = useState('')
 
+  // Pending files to upload when submitting (stored alongside blob preview URLs)
+  const [pendingThreadFiles, setPendingThreadFiles] = useState<File[]>([])
+  const [pendingCommentFiles, setPendingCommentFiles] = useState<File[]>([])
+
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, isThread: boolean) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    const items: MediaItem[] = Array.from(files).map((f) => ({
+    const fileArray = Array.from(files)
+
+    // Create local blob previews immediately for instant UI feedback
+    const previewItems: MediaItem[] = fileArray.map((f) => ({
       url: URL.createObjectURL(f),
       type: f.type.startsWith('video/') ? 'video' : 'image',
     }))
 
     if (isThread) {
-      setThreadMedia((prev) => [...prev, ...items])
+      setThreadMedia((prev) => [...prev, ...previewItems])
+      setPendingThreadFiles((prev) => [...prev, ...fileArray])
     } else {
-      setCommentMedia((prev) => [...prev, ...items])
+      setCommentMedia((prev) => [...prev, ...previewItems])
+      setPendingCommentFiles((prev) => [...prev, ...fileArray])
     }
-    toast.success(`Attached ${items.length} media file(s)!`)
+    toast.success(`Attached ${fileArray.length} media file(s)!`)
+  }
+
+  /** Upload pending files to backend, returns Cloudinary URLs or falls back to blob URLs */
+  const uploadPendingFiles = async (files: File[], fallbackMedia: MediaItem[]): Promise<MediaItem[]> => {
+    if (files.length === 0) return fallbackMedia
+    try {
+      const res = await uploadMedia(files)
+      if (res.success && res.data) {
+        return res.data.map((m: any) => ({ url: m.url, type: m.type }))
+      }
+    } catch {
+      console.warn('[Upload] Cloudinary upload failed — using local blob URLs')
+    }
+    return fallbackMedia
   }
 
   const renderMediaGrid = (items?: MediaItem[]) => {
@@ -749,8 +866,10 @@ export default function CommunityPage() {
     )
   }
 
-  const handleUpvote = (id: string, e: React.MouseEvent) => {
+  const handleUpvote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!user) { toast.error('Please log in to vote'); return }
+    // Optimistic local update
     setThreads((prev) =>
       prev.map((t) => {
         if (t.id === id) {
@@ -761,10 +880,20 @@ export default function CommunityPage() {
         return t
       })
     )
+    if (activeThread && activeThread.id === id) {
+      setActiveThread((prev) => {
+        if (!prev) return prev
+        const newVote = prev.userVote === 'up' ? null : 'up'
+        const diff = newVote === 'up' ? (prev.userVote === 'down' ? 2 : 1) : -1
+        return { ...prev, userVote: newVote, upvotes: prev.upvotes + diff }
+      })
+    }
+    try { if (isRealId(id)) await voteCommunityThread(id, 'up') } catch { /* optimistic is fine */ }
   }
 
-  const handleDownvote = (id: string, e: React.MouseEvent) => {
+  const handleDownvote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!user) { toast.error('Please log in to vote'); return }
     setThreads((prev) =>
       prev.map((t) => {
         if (t.id === id) {
@@ -775,12 +904,25 @@ export default function CommunityPage() {
         return t
       })
     )
+    if (activeThread && activeThread.id === id) {
+      setActiveThread((prev) => {
+        if (!prev) return prev
+        const newVote = prev.userVote === 'down' ? null : 'down'
+        const diff = newVote === 'down' ? (prev.userVote === 'up' ? -2 : -1) : 1
+        return { ...prev, userVote: newVote, upvotes: prev.upvotes + diff }
+      })
+    }
+    try { if (isRealId(id)) await voteCommunityThread(id, 'down') } catch { /* optimistic is fine */ }
   }
 
-  const handleCreatePost = (e: React.FormEvent) => {
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTitle.trim() || !newContent.trim()) {
       toast.error('Please enter a thread title and description')
+      return
+    }
+    if (!user) {
+      toast.error('Please log in to post a doubt thread')
       return
     }
 
@@ -788,34 +930,49 @@ export default function CommunityPage() {
       ? newTags.split(',').map((t) => t.trim()).filter(Boolean)
       : [newSubject]
 
-    const newThread: DoubtThread = {
-      id: `thread-${Date.now()}`,
-      title: newTitle,
-      subject: newSubject,
-      tags: tagList,
-      author: 'You',
-      time: 'Just now',
-      upvotes: 1,
-      userVote: 'up',
-      isSolved: false,
-      hasAiAnswer: true,
-      content: newContent,
-      codeSnippet: newCode.trim() || undefined,
-      media: threadMedia.length > 0 ? threadMedia : undefined,
-      commentsCount: 1,
-      comments: [
-        {
-          id: `c-ai-${Date.now()}`,
-          author: 'Socrates AI',
-          role: 'student',
-          text: `Great question on ${newSubject}! Here is a guiding thought: Identify the principal boundary condition or variable constraints. What formula links your knowns to the unknowns?`,
-          time: 'Just now',
-          upvotes: 5,
-        },
-      ],
+    try {
+      // Upload pending media files to Cloudinary first
+      const uploadedMedia = await uploadPendingFiles(pendingThreadFiles, threadMedia)
+
+      const res = await createCommunityThread({
+        title: newTitle,
+        content: newContent,
+        subject: newSubject,
+        tags: tagList,
+        codeSnippet: newCode.trim() || undefined,
+        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+      })
+
+      if (res.success) {
+        const mapped = mapApiThread(res.data, user._id)
+        setThreads((prev) => [mapped, ...prev])
+        toast.success('Doubt Thread Posted! Socratic AI is thinking...')
+      } else {
+        toast.error('Failed to post thread')
+      }
+    } catch {
+      // Fallback: add locally so the UI isn't broken
+      const fallbackThread: DoubtThread = {
+        id: `thread-${Date.now()}`,
+        title: newTitle,
+        subject: newSubject,
+        tags: tagList,
+        author: user.fullName || user.name || 'You',
+        time: 'Just now',
+        upvotes: 1,
+        userVote: 'up',
+        isSolved: false,
+        hasAiAnswer: false,
+        content: newContent,
+        codeSnippet: newCode.trim() || undefined,
+        media: threadMedia.length > 0 ? threadMedia : undefined,
+        commentsCount: 0,
+        comments: [],
+      }
+      setThreads((prev) => [fallbackThread, ...prev])
+      toast.error('Could not reach server — thread saved locally')
     }
 
-    setThreads((prev) => [newThread, ...prev])
     setIsPostModalOpen(false)
     setIsCreateFormExpanded(false)
     setNewTitle('')
@@ -823,60 +980,112 @@ export default function CommunityPage() {
     setNewCode('')
     setNewTags('')
     setThreadMedia([])
-    toast.success('Doubt Thread Posted with media attachments!')
+    setPendingThreadFiles([])
   }
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if ((!commentText.trim() && commentMedia.length === 0) || !activeThread) return
-    const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      author: 'You',
-      role: 'student',
-      text: commentText,
-      time: 'Just now',
-      upvotes: 1,
-      media: commentMedia.length > 0 ? commentMedia : undefined,
+    if (!user) { toast.error('Please log in to comment'); return }
+
+    try {
+      if (!isRealId(activeThread.id)) throw new Error('Demo thread')
+
+      // Upload pending media files first
+      const uploadedMedia = await uploadPendingFiles(pendingCommentFiles, commentMedia)
+
+      const res = await createCommunityComment(activeThread.id, {
+        text: commentText,
+        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+      })
+
+      if (res.success) {
+        const mappedComment = mapApiComment(res.data)
+        const updated = {
+          ...activeThread,
+          commentsCount: activeThread.commentsCount + 1,
+          comments: [...activeThread.comments, mappedComment],
+        }
+        setActiveThread(updated)
+        setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updated : t)))
+        toast.success('+15 Karma! Comment posted successfully.')
+      }
+    } catch {
+      // Fallback: add locally
+      const newComment: Comment = {
+        id: `c-${Date.now()}`,
+        author: user.fullName || user.name || 'You',
+        role: 'student',
+        text: commentText,
+        time: 'Just now',
+        upvotes: 0,
+        media: commentMedia.length > 0 ? commentMedia : undefined,
+      }
+      const updated = {
+        ...activeThread,
+        commentsCount: activeThread.commentsCount + 1,
+        comments: [...activeThread.comments, newComment],
+      }
+      setActiveThread(updated)
+      setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updated : t)))
+      toast.error('Comment saved locally — server unreachable')
     }
 
-    const updated = {
-      ...activeThread,
-      commentsCount: activeThread.commentsCount + 1,
-      comments: [...activeThread.comments, newComment],
-    }
-
-    setActiveThread(updated)
-    setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updated : t)))
     setCommentText('')
     setCommentMedia([])
-    toast.success('+15 Karma! Comment posted successfully.')
+    setPendingCommentFiles([])
   }
 
-  const handleNestedReply = (parentId: string, text: string, media?: MediaItem[]) => {
+  const handleNestedReply = async (parentId: string, text: string, media?: MediaItem[]) => {
     if (!activeThread) return
-    const newReply: Comment = {
-      id: `c-${Date.now()}`,
-      author: 'You',
-      role: 'student',
-      text,
-      time: 'Just now',
-      upvotes: 1,
-      media: media && media.length > 0 ? media : undefined,
-    }
+    if (!user) { toast.error('Please log in to reply'); return }
 
-    const updatedComments = addNestedReply(activeThread.comments, parentId, newReply)
-    const updatedThread = {
-      ...activeThread,
-      commentsCount: activeThread.commentsCount + 1,
-      comments: updatedComments,
-    }
+    try {
+      if (!isRealId(activeThread.id)) throw new Error('Demo thread')
 
-    setActiveThread(updatedThread)
-    setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updatedThread : t)))
-    toast.success('+15 Karma! Reply posted to comment chain.')
+      const res = await createCommunityComment(activeThread.id, {
+        text,
+        parentComment: parentId,
+        media: media && media.length > 0 ? media : undefined,
+      })
+
+      if (res.success) {
+        const mappedReply = mapApiComment(res.data)
+        const updatedComments = addNestedReply(activeThread.comments, parentId, mappedReply)
+        const updatedThread = {
+          ...activeThread,
+          commentsCount: activeThread.commentsCount + 1,
+          comments: updatedComments,
+        }
+        setActiveThread(updatedThread)
+        setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updatedThread : t)))
+        toast.success('+15 Karma! Reply posted to comment chain.')
+      }
+    } catch {
+      // Fallback local
+      const newReply: Comment = {
+        id: `c-${Date.now()}`,
+        author: user.fullName || user.name || 'You',
+        role: 'student',
+        text,
+        time: 'Just now',
+        upvotes: 0,
+        media: media && media.length > 0 ? media : undefined,
+      }
+      const updatedComments = addNestedReply(activeThread.comments, parentId, newReply)
+      const updatedThread = {
+        ...activeThread,
+        commentsCount: activeThread.commentsCount + 1,
+        comments: updatedComments,
+      }
+      setActiveThread(updatedThread)
+      setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updatedThread : t)))
+      toast.error('Reply saved locally — server unreachable')
+    }
   }
 
-  const handleEditComment = (commentId: string, newText: string) => {
+  const handleEditComment = async (commentId: string, newText: string) => {
     if (!activeThread) return
+    // Optimistic update
     const updatedComments = editNestedComment(activeThread.comments, commentId, newText)
     const updatedThread = {
       ...activeThread,
@@ -884,10 +1093,12 @@ export default function CommunityPage() {
     }
     setActiveThread(updatedThread)
     setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updatedThread : t)))
+    try { if (isRealId(commentId)) await editCommunityComment(commentId, newText) } catch { /* optimistic is fine */ }
   }
 
-  const handleDeleteComment = (commentId: string) => {
+  const handleDeleteComment = async (commentId: string) => {
     if (!activeThread) return
+    // Optimistic update
     const updatedComments = deleteNestedComment(activeThread.comments, commentId)
     const updatedThread = {
       ...activeThread,
@@ -896,6 +1107,7 @@ export default function CommunityPage() {
     }
     setActiveThread(updatedThread)
     setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updatedThread : t)))
+    try { if (isRealId(commentId)) await deleteCommunityComment(commentId) } catch { /* optimistic is fine */ }
   }
 
   const filteredThreads = threads.filter((t) => {
@@ -1327,7 +1539,19 @@ export default function CommunityPage() {
               filteredThreads.map((thread) => (
                 <div
                   key={thread.id}
-                  onClick={() => setActiveThread(thread)}
+                  onClick={async () => {
+                    // Fetch full thread with comments from API
+                    try {
+                      const res = await fetchCommunityThread(thread.id)
+                      if (res?.success) {
+                        setActiveThread(mapApiThread(res.data, user?._id))
+                      } else {
+                        setActiveThread(thread)
+                      }
+                    } catch {
+                      setActiveThread(thread)
+                    }
+                  }}
                   className="bg-white rounded-3xl border border-[#e5e5e7] p-6 shadow-2xs hover:shadow-md hover:border-[#0066cc]/30 transition-all cursor-pointer space-y-4 group relative"
                 >
                   {/* Thread Header */}
