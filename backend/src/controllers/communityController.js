@@ -520,11 +520,12 @@ exports.createComment = async (req, res) => {
     return res.status(404).json({ success: false, message: 'Thread not found' });
   }
 
-  // If replying, validate parent exists
-  if (parentComment) {
+  // If replying, validate parent exists safely
+  let validParent = null;
+  if (parentComment && mongoose.Types.ObjectId.isValid(parentComment)) {
     const parent = await Comment.findById(parentComment);
-    if (!parent || parent.thread.toString() !== req.params.id) {
-      return res.status(400).json({ success: false, message: 'Invalid parent comment' });
+    if (parent && parent.thread.toString() === req.params.id) {
+      validParent = parent._id;
     }
   }
 
@@ -534,7 +535,7 @@ exports.createComment = async (req, res) => {
 
   const comment = await Comment.create({
     thread: req.params.id,
-    parentComment: parentComment || null,
+    parentComment: validParent,
     author: req.user._id,
     role: userRole,
     isVerified: req.user.isTutorVerified || false,
