@@ -327,8 +327,9 @@ export default function RecordingsPage() {
                         const shortMonth = monthNames[calendarMonth].substring(0, 3)
                         const fullDateStr = `${shortMonth} ${dayNum}, ${calendarYear}`
 
-                        // Check if session recording exists on this date
+                        // Check session status
                         const hasRecording = recordings.some((r) => r.date === fullDateStr)
+                        const isCancelled = ['Jul 15, 2026', 'Jul 22, 2026'].includes(fullDateStr)
                         const isSelected = selectedDateFilter === fullDateStr
 
                         return (
@@ -339,60 +340,37 @@ export default function RecordingsPage() {
                               setSelectedDateFilter(isSelected ? 'All' : fullDateStr)
                               setIsCalendarOpen(false)
                             }}
-                            className={`h-8 rounded-xl flex flex-col items-center justify-center font-bold text-xs relative transition-colors cursor-pointer ${
+                            className={`h-8 rounded-xl flex flex-col items-center justify-center font-bold text-xs relative transition-colors cursor-pointer select-none ${
                               isSelected
-                                ? 'bg-[#0066cc] text-white shadow-xs'
-                                : hasRecording
-                                ? 'bg-[#0066cc]/10 text-[#0066cc] hover:bg-[#0066cc]/20 border border-[#0066cc]/30'
-                                : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                                ? 'bg-[#0066cc] text-white border border-[#0066cc] shadow-2xs'
+                                : 'text-[#1d1d1f] hover:bg-[#f5f5f7] border-none'
                             }`}
                           >
                             <span>{dayNum}</span>
-                            {hasRecording && !isSelected && (
-                              <span className="w-1 h-1 rounded-full bg-[#0066cc] absolute bottom-1" />
+                            {!isSelected && hasRecording && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute bottom-1" title="Past Recorded Session" />
+                            )}
+                            {!isSelected && isCancelled && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 absolute bottom-1" title="Cancelled Session" />
                             )}
                           </button>
                         )
                       })}
                     </div>
 
-                    {/* Past Recorded Session Quick Shortcuts */}
-                    <div className="pt-3 border-t border-[#f0f0f2] space-y-2">
-                      <span className="font-display text-[10px] font-bold text-[#86868b] uppercase tracking-wider block">
-                        Available Past Sessions:
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDateFilter('All')
-                            setIsCalendarOpen(false)
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
-                            selectedDateFilter === 'All'
-                              ? 'bg-[#0066cc] text-white'
-                              : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252]'
-                          }`}
-                        >
-                          All Sessions
-                        </button>
-                        {recordings.map((r) => (
-                          <button
-                            key={r.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedDateFilter(r.date)
-                              setIsCalendarOpen(false)
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
-                              selectedDateFilter === r.date
-                                ? 'bg-[#0066cc] text-white'
-                                : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#0066cc]/20'
-                            }`}
-                          >
-                            {r.date}
-                          </button>
-                        ))}
+                    {/* Calendar Status Legend */}
+                    <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold text-[#6e6e73]">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        <span>Past Session</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                        <span>Cancelled</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-[#0066cc] inline-block" />
+                        <span>Selected</span>
                       </div>
                     </div>
                   </div>
