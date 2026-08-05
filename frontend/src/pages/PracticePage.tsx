@@ -177,10 +177,6 @@ export default function PracticePage() {
       <section className="bg-white border-b border-[#e5e5e7] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0066cc]/8 border border-[#0066cc]/15 text-[#0066cc] text-xs font-semibold">
-              <BrainCircuit size={14} />
-              <span>SOCRATES AI Practice Engine</span>
-            </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
               Interactive Practice & Knowledge Hub
             </h1>

@@ -468,24 +468,27 @@ export default function Tutors() {
                   className="shrink-0"
                 />
 
-                <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-                  {allSubjects.slice(1, 6).map((sub) => (
-                    <button
-                      key={sub}
-                      onClick={() => setSelectedSubject(sub)}
-                      className={`px-2.5 py-1.5 rounded-xl font-medium text-xs transition-colors duration-150 shrink-0 cursor-pointer select-none transform-gpu border inline-flex items-center gap-1.5 ${
-                        selectedSubject === sub
-                          ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
-                          : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#525252] hover:bg-[#e0e0e0]/60'
-                      }`}
-                    >
-                      {React.cloneElement(getSubjectIcon(sub) as React.ReactElement<any>, {
-                        size: 12,
-                        className: selectedSubject === sub ? 'text-white shrink-0' : 'text-[#0066cc] shrink-0'
-                      })}
-                      <span>{sub}</span>
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full shrink-0">
+                  {allSubjects.map((sub) => {
+                    const isActive = selectedSubject === sub
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => setSelectedSubject(sub)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors duration-150 shrink-0 cursor-pointer whitespace-nowrap select-none border inline-flex items-center gap-2 transform-gpu ${
+                          isActive
+                            ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
+                            : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
+                        }`}
+                      >
+                        {React.cloneElement(getSubjectIcon(sub) as React.ReactElement<any>, {
+                          size: 13,
+                          className: isActive ? 'text-white shrink-0' : 'text-[#0066cc] shrink-0'
+                        })}
+                        <span>{sub}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
