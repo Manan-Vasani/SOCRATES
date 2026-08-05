@@ -1308,21 +1308,21 @@ export default function CommunityPage() {
           </div>
         </div>
 
-        {/* Subject Filter Pills (Icon-supported & 100% Immovable on selection - Matches Image 3) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {/* Subject Filter Pills (Clean Capsule Pills, 100% Immovable on Selection) */}
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
           {['All', 'Mathematics', 'Computer Science', 'Physics', 'Chemistry', 'Engineering'].map((subj) => {
             const isActive = activeSubject === subj
             return (
               <button
                 key={subj}
+                type="button"
                 onClick={() => setActiveSubject(subj)}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap select-none border flex items-center gap-2 ${
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer whitespace-nowrap select-none border transform-gpu ${
                   isActive
-                    ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-2xs'
+                    ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
                     : 'bg-white border-[#e0e0e2] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
                 }`}
               >
-                {getSubjectFilterIcon(subj, isActive)}
                 <span>{subj}</span>
               </button>
             )
