@@ -1323,31 +1323,82 @@ export default function CommunityPage() {
                   {/* Accordion Body Panel (Opens below header) */}
                   {isCreateFormExpanded && (
                     <div className="p-5 md:p-6 border-t border-[#f0f0f2] bg-white space-y-4 animate-in slide-in-from-top-2 duration-200">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#6e6e73] mb-1">Subject</label>
-                          <select
-                            value={newSubject}
-                            onChange={(e) => setNewSubject(e.target.value)}
-                            className="w-full px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e2] text-xs font-medium outline-none focus:border-[#0066cc]"
-                          >
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Physics">Physics</option>
-                            <option value="Chemistry">Chemistry</option>
-                            <option value="Engineering">Engineering</option>
-                          </select>
+                      {/* Subject List Selection */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#6e6e73] uppercase tracking-wider mb-2">
+                          Subject
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Mathematics', 'Computer Science', 'Physics', 'Chemistry', 'Engineering'].map((sub) => (
+                            <button
+                              key={sub}
+                              type="button"
+                              onClick={() => setNewSubject(sub)}
+                              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
+                                newSubject === sub
+                                  ? 'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/25'
+                                  : 'bg-[#f5f5f7] border border-[#e5e5e7] text-[#525252] hover:bg-[#e8e8ea] hover:text-[#1d1d1f]'
+                              }`}
+                            >
+                              {sub}
+                            </button>
+                          ))}
                         </div>
+                      </div>
 
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#6e6e73] mb-1">Tags (Comma Separated)</label>
+                      {/* Hashtag List Selection */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#6e6e73] uppercase tracking-wider mb-2">
+                          Hashtags / Topic Tags
+                        </label>
+                        
+                        <div className="space-y-2">
+                          {/* Input Field for Custom Tags */}
                           <input
                             type="text"
                             value={newTags}
                             onChange={(e) => setNewTags(e.target.value)}
-                            placeholder="Calculus, Integrals, Limits"
+                            placeholder="Type hashtags (e.g. Calculus, Integrals, Limits)"
                             className="w-full px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e2] text-xs outline-none focus:border-[#0066cc]"
                           />
+
+                          {/* Preset Hashtag Pills List */}
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span className="text-[10px] font-bold text-[#86868b] mr-1 select-none">Quick Add:</span>
+                            {(newSubject === 'Mathematics'
+                              ? ['Calculus', 'Integrals', 'Algebra', 'Olympiad', 'Geometry']
+                              : newSubject === 'Computer Science'
+                              ? ['Algorithms', 'DataStructures', 'React', 'Python', 'WebDev']
+                              : newSubject === 'Physics'
+                              ? ['Mechanics', 'Quantum', 'Thermodynamics', 'Electromagnetism']
+                              : newSubject === 'Chemistry'
+                              ? ['Organic', 'Inorganic', 'Thermodynamics', 'Reactions']
+                              : ['Circuits', 'Thermodynamics', 'Statics', 'ControlSystems']
+                            ).map((tag) => {
+                              const activeList = newTags ? newTags.split(',').map((t) => t.trim()).filter(Boolean) : []
+                              const isSelected = activeList.includes(tag)
+                              return (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setNewTags(activeList.filter((t) => t !== tag).join(', '))
+                                    } else {
+                                      setNewTags([...activeList, tag].join(', '))
+                                    }
+                                  }}
+                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer select-none border ${
+                                    isSelected
+                                      ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
+                                      : 'bg-white border-[#e0e0e4] text-[#6e6e73] hover:border-[#0066cc]/50 hover:text-[#0066cc]'
+                                  }`}
+                                >
+                                  #{tag} {isSelected ? '✓' : '+'}
+                                </button>
+                              )
+                            })}
+                          </div>
                         </div>
                       </div>
 
