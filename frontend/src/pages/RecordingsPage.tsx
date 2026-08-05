@@ -7,6 +7,8 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Code2,
   Cpu,
@@ -142,10 +144,38 @@ export default function RecordingsPage() {
   const [activeSubject, setActiveSubject] = useState('All')
   const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
   const [isPlayingVideo, setIsPlayingVideo] = useState(false)
-  const [selectedDateFilter, setSelectedDateFilter] = useState('All')
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [calendarYear, setCalendarYear] = useState(2026)
+  const [calendarMonth, setCalendarMonth] = useState(6) // 0-indexed: 6 = July 2026
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
 
   const dateOptions = ['All', ...Array.from(new Set(recordings.map((r) => r.date)))]
+
+  // Days in month calculator
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate()
+  const getFirstDayOfWeek = (year: number, month: number) => new Date(year, month, 1).getDay()
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11)
+      setCalendarYear((prev) => prev - 1)
+    } else {
+      setCalendarMonth((prev) => prev - 1)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0)
+      setCalendarYear((prev) => prev + 1)
+    } else {
+      setCalendarMonth((prev) => prev + 1)
+    }
+  }
 
   const filteredRecordings = recordings
     .filter((r) => {
@@ -221,26 +251,144 @@ export default function RecordingsPage() {
               )}
             </div>
 
-            {/* Side Filters: Date & Sort Order */}
-            <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
-              {/* Date Filter Dropdown */}
-              <div className="relative flex items-center flex-1 sm:flex-none">
-                <Calendar size={14} className="absolute left-3.5 text-[#0066cc] pointer-events-none" />
-                <select
-                  value={selectedDateFilter}
-                  onChange={(e) => setSelectedDateFilter(e.target.value)}
-                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none shadow-2xs"
+            {/* Side Filters: Custom Interactive Calendar Popover + Sort Order */}
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap relative">
+              {/* Custom Apple-Grade Session Archive Calendar Trigger */}
+              <div className="relative flex-1 sm:flex-none">
+                <button
+                  type="button"
+                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                  className={`w-full sm:w-auto px-4 py-2.5 rounded-2xl border text-xs font-bold font-display flex items-center gap-2 transition-colors cursor-pointer select-none shadow-2xs ${
+                    selectedDateFilter !== 'All'
+                      ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
+                      : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] border-[#e0e0e4] hover:border-[#0066cc]/40 text-[#1d1d1f]'
+                  }`}
                 >
-                  <option value="All">All Dates</option>
-                  {dateOptions
-                    .filter((d) => d !== 'All')
-                    .map((dateStr) => (
-                      <option key={dateStr} value={dateStr}>
-                        {dateStr}
-                      </option>
-                    ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-3 text-[#6e6e73] pointer-events-none" />
+                  <Calendar size={15} className={selectedDateFilter !== 'All' ? 'text-[#0066cc]' : 'text-[#0066cc]'} />
+                  <span>{selectedDateFilter === 'All' ? 'Filter by Session Date' : selectedDateFilter}</span>
+                  <ChevronDown size={14} className="text-[#6e6e73]" />
+                </button>
+
+                {/* Custom Interactive Calendar Popover Box */}
+                {isCalendarOpen && (
+                  <div className="absolute right-0 top-12 z-50 w-80 bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
+                    {/* Calendar Month & Year Navigation Header */}
+                    <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-sm font-extrabold text-[#1d1d1f]">
+                          {monthNames[calendarMonth]} {calendarYear}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={handlePrevMonth}
+                          className="p-1.5 rounded-xl hover:bg-[#f5f5f7] text-[#525252] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                          title="Previous Month"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextMonth}
+                          className="p-1.5 rounded-xl hover:bg-[#f5f5f7] text-[#525252] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                          title="Next Month"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Day of Week Labels */}
+                    <div className="grid grid-cols-7 text-center font-display text-[11px] font-bold text-[#86868b]">
+                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                        <div key={d}>{d}</div>
+                      ))}
+                    </div>
+
+                    {/* Date Grid */}
+                    <div className="grid grid-cols-7 gap-1 text-center font-display text-xs">
+                      {/* Empty filler cells for start of month */}
+                      {Array.from({ length: getFirstDayOfWeek(calendarYear, calendarMonth) }).map((_, i) => (
+                        <div key={`empty-${i}`} className="h-8" />
+                      ))}
+
+                      {/* Day cells */}
+                      {Array.from({ length: getDaysInMonth(calendarYear, calendarMonth) }).map((_, i) => {
+                        const dayNum = i + 1
+                        const shortMonth = monthNames[calendarMonth].substring(0, 3)
+                        const fullDateStr = `${shortMonth} ${dayNum}, ${calendarYear}`
+
+                        // Check if session recording exists on this date
+                        const hasRecording = recordings.some((r) => r.date === fullDateStr)
+                        const isSelected = selectedDateFilter === fullDateStr
+
+                        return (
+                          <button
+                            key={dayNum}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDateFilter(isSelected ? 'All' : fullDateStr)
+                              setIsCalendarOpen(false)
+                            }}
+                            className={`h-8 rounded-xl flex flex-col items-center justify-center font-bold text-xs relative transition-colors cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0066cc] text-white shadow-xs'
+                                : hasRecording
+                                ? 'bg-[#0066cc]/10 text-[#0066cc] hover:bg-[#0066cc]/20 border border-[#0066cc]/30'
+                                : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                            }`}
+                          >
+                            <span>{dayNum}</span>
+                            {hasRecording && !isSelected && (
+                              <span className="w-1 h-1 rounded-full bg-[#0066cc] absolute bottom-1" />
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Past Recorded Session Quick Shortcuts */}
+                    <div className="pt-3 border-t border-[#f0f0f2] space-y-2">
+                      <span className="font-display text-[10px] font-bold text-[#86868b] uppercase tracking-wider block">
+                        Available Past Sessions:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDateFilter('All')
+                            setIsCalendarOpen(false)
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                            selectedDateFilter === 'All'
+                              ? 'bg-[#0066cc] text-white'
+                              : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252]'
+                          }`}
+                        >
+                          All Sessions
+                        </button>
+                        {recordings.map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDateFilter(r.date)
+                              setIsCalendarOpen(false)
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                              selectedDateFilter === r.date
+                                ? 'bg-[#0066cc] text-white'
+                                : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#0066cc]/20'
+                            }`}
+                          >
+                            {r.date}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Sort Order Dropdown */}
