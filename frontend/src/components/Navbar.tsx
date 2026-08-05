@@ -38,14 +38,6 @@ export default function Navbar() {
           {user ? (
             <div className="flex items-center gap-3">
               <Link
-                to="/study-room/demo-101"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] hover:bg-[#0066cc]/20 transition-all text-xs font-semibold cursor-pointer select-none"
-                title="Join Study Room"
-              >
-                <Video size={14} />
-                Study Room
-              </Link>
-              <Link
                 to="/profile"
                 className="flex items-center gap-2.5 px-1 py-1 rounded-full text-[#1d1d1f] hover:opacity-80 transition-all group cursor-pointer select-none"
                 title="My Profile"
