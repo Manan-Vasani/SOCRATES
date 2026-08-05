@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useLayoutEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import Home from './pages/Home'
@@ -40,7 +40,7 @@ function AuthSync() {
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Prevent dragging images globally across the entire app
     const handleDragStart = (e: DragEvent) => {
       if (e.target && (e.target as HTMLElement).tagName === 'IMG') {
