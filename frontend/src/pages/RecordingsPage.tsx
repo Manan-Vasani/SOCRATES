@@ -277,7 +277,7 @@ export default function RecordingsPage() {
 
                 {/* Custom Interactive Calendar Popover Box */}
                 {isCalendarOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-80 bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-12 z-50 w-80 bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
                     {/* Calendar Month & Year Navigation Header */}
                     <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
                       <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ export default function RecordingsPage() {
 
                 {/* Custom Sort Options Popover Menu */}
                 {isSortOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-52 bg-white rounded-2xl border border-[#e5e5e7] shadow-xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-12 z-50 w-52 bg-white rounded-2xl border border-[#e5e5e7] shadow-xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
                     <button
                       type="button"
                       onClick={() => {
