@@ -1,9 +1,13 @@
 import {
   ArrowLeft,
   ArrowRight,
+  Atom,
   CheckCircle2,
   ChevronDown,
   Code,
+  Code2,
+  Cpu,
+  FlaskConical,
   Image as ImageIcon,
   Loader2,
   MessageCircle,
@@ -14,6 +18,7 @@ import {
   PlusCircle,
   Search,
   Share2,
+  Sigma,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -21,6 +26,7 @@ import {
 } from 'lucide-react'
 import React, { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
 import {
   createCommunityComment,
@@ -514,6 +520,14 @@ function CommentItem({
     </div>
   )
 }
+
+const SUBJECT_DROPDOWN_OPTIONS: DropdownOption<string>[] = [
+  { value: 'Mathematics', label: 'Mathematics', icon: <Sigma size={15} className="text-[#0066cc]" /> },
+  { value: 'Computer Science', label: 'Computer Science', icon: <Code2 size={15} className="text-[#0066cc]" /> },
+  { value: 'Physics', label: 'Physics', icon: <Atom size={15} className="text-[#0066cc]" /> },
+  { value: 'Chemistry', label: 'Chemistry', icon: <FlaskConical size={15} className="text-[#0066cc]" /> },
+  { value: 'Engineering', label: 'Engineering', icon: <Cpu size={15} className="text-[#0066cc]" /> },
+]
 
 const FALLBACK_CONTRIBUTORS = [
   { rank: 1, name: 'Dr. Alex Vance', karma: 3450, solved: 142, badge: 'Verified Master' },
@@ -1323,27 +1337,18 @@ export default function CommunityPage() {
                   {/* Accordion Body Panel (Opens below header) */}
                   {isCreateFormExpanded && (
                     <div className="p-5 md:p-6 border-t border-[#f0f0f2] bg-white space-y-4 animate-in slide-in-from-top-2 duration-200">
-                      {/* Subject List Selection */}
+                      {/* Subject Custom Dropdown Menu (Matches Tutors & Domains Dropdown) */}
                       <div>
                         <label className="block text-[11px] font-extrabold text-[#6e6e73] uppercase tracking-wider mb-2">
-                          Subject
+                          Subject Domain
                         </label>
-                        <div className="flex flex-wrap gap-2">
-                          {['Mathematics', 'Computer Science', 'Physics', 'Chemistry', 'Engineering'].map((sub) => (
-                            <button
-                              key={sub}
-                              type="button"
-                              onClick={() => setNewSubject(sub)}
-                              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer select-none ${
-                                newSubject === sub
-                                  ? 'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/25'
-                                  : 'bg-[#f5f5f7] border border-[#e5e5e7] text-[#525252] hover:bg-[#e8e8ea] hover:text-[#1d1d1f]'
-                              }`}
-                            >
-                              {sub}
-                            </button>
-                          ))}
-                        </div>
+                        <CustomDropdown
+                          options={SUBJECT_DROPDOWN_OPTIONS}
+                          value={newSubject}
+                          onChange={(val) => setNewSubject(val)}
+                          placeholder="Select Academic Subject..."
+                          buttonClassName="w-full sm:w-80 border border-[#e0e0e4] bg-[#f5f5f7] hover:bg-[#e8e8ea] text-[#1d1d1f] text-xs font-extrabold rounded-2xl py-2.5 px-4 shadow-2xs transition-all"
+                        />
                       </div>
 
                       {/* Hashtag List Selection */}
