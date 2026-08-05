@@ -2,7 +2,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Atom,
+  Award,
   BarChart2,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   Code,
@@ -525,7 +527,7 @@ function CommentItem({
   )
 }
 
-const SUBJECT_DROPDOWN_OPTIONS: DropdownOption<string>[] = [
+const BASE_SUBJECT_OPTIONS: DropdownOption<string>[] = [
   { value: 'Mathematics', label: 'Mathematics', icon: <Sigma size={15} className="text-[#0066cc]" /> },
   { value: 'Computer Science', label: 'Computer Science', icon: <Code2 size={15} className="text-[#0066cc]" /> },
   { value: 'Algorithms & Data Structures', label: 'Algorithms & Data Structures', icon: <Network size={15} className="text-[#0066cc]" /> },
@@ -546,6 +548,40 @@ const FALLBACK_CONTRIBUTORS = [
 
 export default function CommunityPage() {
   const { user } = useAuthStore()
+
+  // Dynamically merge Base Subjects + Student Enrolled Learning Subjects + Tutor Subjects from profile
+  const subjectDropdownOptions = useCallback(() => {
+    const optionsMap = new Map<string, DropdownOption<string>>()
+
+    BASE_SUBJECT_OPTIONS.forEach((opt) => optionsMap.set(opt.value, opt))
+
+    const studentSubjects = (user as any)?.learningSubjects || []
+    studentSubjects.forEach((sub: string) => {
+      const clean = sub.trim()
+      if (clean && !optionsMap.has(clean)) {
+        optionsMap.set(clean, {
+          value: clean,
+          label: clean,
+          icon: <BookOpen size={15} className="text-[#0066cc]" />,
+        })
+      }
+    })
+
+    const tutorSubjects = user?.subjects || []
+    tutorSubjects.forEach((sub: string) => {
+      const clean = sub.trim()
+      if (clean && !optionsMap.has(clean)) {
+        optionsMap.set(clean, {
+          value: clean,
+          label: clean,
+          icon: <Award size={15} className="text-[#0066cc]" />,
+        })
+      }
+    })
+
+    return Array.from(optionsMap.values())
+  }, [user])()
+
   const [threads, setThreads] = useState<DoubtThread[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeSubject, setActiveSubject] = useState<string>('All')
@@ -1351,7 +1387,7 @@ export default function CommunityPage() {
                           Subject Domain
                         </label>
                         <CustomDropdown
-                          options={SUBJECT_DROPDOWN_OPTIONS}
+                          options={subjectDropdownOptions}
                           value={newSubject}
                           onChange={(val) => setNewSubject(val)}
                           placeholder="Select Academic Subject..."
