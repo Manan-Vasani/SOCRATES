@@ -34,6 +34,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import {
   createCommunityComment,
   createCommunityThread,
@@ -1776,9 +1777,10 @@ export default function CommunityPage() {
       </div>
     </main>
 
+    {/* Homepage Matching Footer */}
+    <Footer />
 
-
-      {/* Lightbox / Fullscreen Media Viewer Modal */}
+    {/* Lightbox / Fullscreen Media Viewer Modal */}
       {lightbox && (
         <div
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"

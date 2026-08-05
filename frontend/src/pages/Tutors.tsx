@@ -31,6 +31,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import { fetchAllTutors, TutorItem } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
 
@@ -684,7 +685,10 @@ export default function Tutors() {
           </div>
         )}
       </section>
-      </motion.div>
+      </main>
+
+      {/* Homepage Matching Footer */}
+      <Footer />
 
       {/* BOOKING MODAL */}
       {selectedTutorForBooking && (
