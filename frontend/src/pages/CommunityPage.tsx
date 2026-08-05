@@ -6,6 +6,7 @@ import {
   BarChart2,
   BookOpen,
   CheckCircle2,
+  Clock,
   Code,
   Code2,
   Cpu,
@@ -23,11 +24,14 @@ import {
   PlusCircle,
   Search,
   Share2,
+  ShieldCheck,
   Sigma,
+  Sparkles,
   Terminal,
   ThumbsDown,
   ThumbsUp,
   Trash2,
+  Users,
   X
 } from 'lucide-react'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -1165,22 +1169,96 @@ export default function CommunityPage() {
     <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10">
       <Navbar />
 
-      {/* Header Banner */}
-      <section className="bg-white border-b border-[#e5e5e7] py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0066cc]/8 border border-[#0066cc]/15 text-[#0066cc] text-xs font-semibold">
-              <MessageSquare size={14} />
-              <span>SOCRATES Academic Doubt Forum</span>
+      {/* Header Banner - Big, Informative & Apple-Grade */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#f4f8fc] to-white border-b border-[#e5e5e7] py-12 md:py-16 px-6 select-none">
+        {/* Radial Background Accent */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(0,102,204,0.08)_0%,_transparent_70%)] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto relative z-10 space-y-8">
+          {/* Top Badge & Main Headline Container */}
+          <div className="max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] text-xs font-bold shadow-2xs">
+              <Sparkles size={14} className="text-[#0066cc]" />
+              <span>SOCRATES Global Knowledge Exchange</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
-              Community Doubt Board & Knowledge Exchange
+
+            <h1 className="text-3xl sm:text-5xl md:text-5xl font-extrabold tracking-tight text-[#1d1d1f] leading-[1.12]">
+              Where Curiosity Meets Instant Socratic Clarity.{' '}
+              <span className="block mt-1 bg-gradient-to-r from-[#0066cc] via-[#0077ed] to-[#004499] bg-clip-text text-transparent">
+                Ask, Solve & Master Together.
+              </span>
             </h1>
-            <p className="text-sm text-[#6e6e73] max-w-xl">
-              Post academic doubts, discuss complex problem sets with peers & verified tutors, and get instant Socratic AI hints.
+
+            <p className="text-sm md:text-base text-[#525252] font-normal leading-relaxed max-w-2xl">
+              Connect with 25,000+ students, researchers, and verified tutors. Share code snippets, math formulas, or conceptual doubts, receive step-by-step Socratic AI guidance, and build your academic karma.
             </p>
           </div>
 
+          {/* 3 Informative Feature Pill Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div className="p-4 rounded-2xl bg-white/90 backdrop-blur-xs border border-[#0066cc]/15 shadow-xs flex items-start gap-3.5 transform-gpu transition-all hover:border-[#0066cc]/30 hover:shadow-md">
+              <div className="p-2.5 rounded-xl bg-[#0066cc]/10 text-[#0066cc] shrink-0">
+                <Sparkles size={18} />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-bold text-[#1d1d1f]">Instant Socratic AI Hints</h4>
+                <p className="text-[11px] text-[#6e6e73] font-medium leading-normal">
+                  Receive real-time Socratic breakdown hints on math equations, physics, and code syntax.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/90 backdrop-blur-xs border border-[#0066cc]/15 shadow-xs flex items-start gap-3.5 transform-gpu transition-all hover:border-[#0066cc]/30 hover:shadow-md">
+              <div className="p-2.5 rounded-xl bg-[#0066cc]/10 text-[#0066cc] shrink-0">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-bold text-[#1d1d1f]">Verified Educator Responses</h4>
+                <p className="text-[11px] text-[#6e6e73] font-medium leading-normal">
+                  Get audited answers and detailed video/code walkthroughs from top 5% peer instructors.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/90 backdrop-blur-xs border border-[#0066cc]/15 shadow-xs flex items-start gap-3.5 transform-gpu transition-all hover:border-[#0066cc]/30 hover:shadow-md">
+              <div className="p-2.5 rounded-xl bg-[#0066cc]/10 text-[#0066cc] shrink-0">
+                <Award size={18} />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-bold text-[#1d1d1f]">Karma & Scholar Badges</h4>
+                <p className="text-[11px] text-[#6e6e73] font-medium leading-normal">
+                  Earn +15 Karma per accepted solution, unlock expert badges, and level up your subject rank.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Metrics Row */}
+          <div className="pt-3 border-t border-[#e0e0e5]/70 flex flex-wrap items-center justify-between gap-6 text-xs text-[#525252]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-bold text-[#1d1d1f]">14,280+</span>
+              <span className="text-[#7a7a7a]">Resolved Doubts</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={14} className="text-[#0066cc]" />
+              <span className="font-bold text-[#1d1d1f]">98.6%</span>
+              <span className="text-[#7a7a7a]">Resolution Rate</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="text-[#0066cc]" />
+              <span className="font-bold text-[#1d1d1f]">&lt; 3.5 Mins</span>
+              <span className="text-[#7a7a7a]">Avg Solution Time</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Users size={14} className="text-[#0066cc]" />
+              <span className="font-bold text-[#1d1d1f]">25,000+</span>
+              <span className="text-[#7a7a7a]">Active Scholars</span>
+            </div>
+          </div>
         </div>
       </section>
 
