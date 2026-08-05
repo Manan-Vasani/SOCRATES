@@ -1550,7 +1550,7 @@ export default function Profile() {
         )}
 
         {/* Sign Out Action Section at the bottom of the page */}
-        <section className="pt-8 border-t border-[#e5e5e7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <section className="pt-8 mb-12 border-t border-[#e5e5e7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h4 className="text-sm font-display font-semibold text-[#1d1d1f]">Account Session</h4>
             <p className="text-xs text-[#7a7a7a]">Sign out of your active SOCRATES session on this browser.</p>

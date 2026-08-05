@@ -3,7 +3,7 @@ import Logo from './Logo'
 
 export default function Footer() {
   return (
-    <footer className="bg-white text-[#7a7a7a] text-xs pt-16 pb-12 border-t border-[#e0e0e0]">
+    <footer className="bg-white text-[#7a7a7a] text-xs pt-16 pb-12 border-t border-[#e0e0e0] mt-20 relative z-10 w-full">
       <div className="max-w-6xl mx-auto px-6 space-y-12">
         {/* Brand Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#e0e0e0]">
