@@ -363,17 +363,17 @@ export default function RecordingsPage() {
                     </div>
 
                     {/* Calendar Status Legend */}
-                    <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold text-[#6e6e73]">
+                    <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold font-display text-[#6e6e73]">
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-md bg-emerald-50 border border-emerald-300 inline-block" />
+                        <span className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-400 inline-block shrink-0 shadow-2xs" />
                         <span>Past Session</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-md bg-red-50 border border-red-300 inline-block" />
+                        <span className="w-3.5 h-3.5 rounded-full bg-red-50 border border-red-400 inline-block shrink-0 shadow-2xs" />
                         <span>Cancelled</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-md bg-[#0066cc] inline-block" />
+                        <span className="w-3.5 h-3.5 rounded-full bg-[#0066cc] border border-[#0066cc] inline-block shrink-0 shadow-2xs" />
                         <span>Selected</span>
                       </div>
                     </div>
