@@ -617,8 +617,34 @@ export default function CommunityPage() {
   const [newTitle, setNewTitle] = useState('')
   const [newSubject, setNewSubject] = useState('Mathematics')
   const [newTags, setNewTags] = useState('')
+  const [tagInput, setTagInput] = useState('')
   const [newContent, setNewContent] = useState('')
   const [newCode, setNewCode] = useState('')
+
+  const handleAddTag = (tagToAdd?: string) => {
+    const raw = (typeof tagToAdd === 'string' ? tagToAdd : tagInput).trim()
+    if (!raw) return
+    const clean = raw.replace(/^#+/, '').trim()
+    if (!clean) return
+    const formatted = `#${clean}`
+
+    const currentList = newTags ? newTags.split(',').map((t) => t.trim()).filter(Boolean) : []
+    const normalizedList = currentList.map((t) => (t.startsWith('#') ? t : `#${t}`))
+
+    if (!normalizedList.includes(formatted)) {
+      const updated = [...normalizedList, formatted]
+      setNewTags(updated.join(', '))
+    }
+    setTagInput('')
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const currentList = newTags ? newTags.split(',').map((t) => t.trim()).filter(Boolean) : []
+    const normalizedList = currentList.map((t) => (t.startsWith('#') ? t : `#${t}`))
+    const target = tagToRemove.startsWith('#') ? tagToRemove : `#${tagToRemove}`
+    const updated = normalizedList.filter((t) => t !== target)
+    setNewTags(updated.join(', '))
+  }
 
   // Unlimited Media Attachment States
   const [threadMedia, setThreadMedia] = useState<MediaItem[]>([])
@@ -1401,19 +1427,60 @@ export default function CommunityPage() {
                           Hashtags / Topic Tags
                         </label>
                         
-                        <div className="space-y-2">
-                          {/* Input Field for Custom Tags */}
-                          <input
-                            type="text"
-                            value={newTags}
-                            onChange={(e) => setNewTags(e.target.value)}
-                            placeholder="Type hashtags (e.g. Calculus, Integrals, Limits)"
-                            className="w-full px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e2] text-xs outline-none focus:border-[#0066cc]"
-                          />
+                        <div className="space-y-3">
+                          {/* Input Field with Add Button */}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={tagInput}
+                              onChange={(e) => setTagInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ',') {
+                                  e.preventDefault()
+                                  handleAddTag()
+                                }
+                              }}
+                              placeholder="Add a hashtag (e.g. Calculus or #Algorithms)"
+                              className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddTag()}
+                              className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-extrabold transition-colors cursor-pointer select-none"
+                            >
+                              Add
+                            </button>
+                          </div>
 
-                          {/* Preset Hashtag Pills List */}
+                          {/* Active Added Hashtag Pill Badges (Matches Enrolled Learning Subjects!) */}
+                          {newTags && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {newTags.split(',').map((t) => t.trim()).filter(Boolean).map((tag, idx) => {
+                                const formattedTag = tag.startsWith('#') ? tag : `#${tag}`
+                                return (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5 select-none animate-in fade-in duration-150"
+                                  >
+                                    <CheckCircle2 size={12} className="text-[#0066cc]" />
+                                    <span>{formattedTag}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveTag(tag)}
+                                      className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
+                                      title="Remove Hashtag"
+                                    >
+                                      <X size={11} />
+                                    </button>
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          )}
+
+                          {/* Preset Hashtag Suggestions */}
                           <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[10px] font-bold text-[#86868b] mr-1 select-none">Quick Add:</span>
+                            <span className="text-[10px] font-bold text-[#86868b] mr-1 select-none">Quick Suggestions:</span>
                             {(newSubject === 'Mathematics'
                               ? ['Calculus', 'Integrals', 'Algebra', 'Olympiad', 'Geometry']
                               : newSubject === 'Computer Science'
@@ -1425,16 +1492,17 @@ export default function CommunityPage() {
                               : ['Circuits', 'Thermodynamics', 'Statics', 'ControlSystems']
                             ).map((tag) => {
                               const activeList = newTags ? newTags.split(',').map((t) => t.trim()).filter(Boolean) : []
-                              const isSelected = activeList.includes(tag)
+                              const formattedTag = `#${tag}`
+                              const isSelected = activeList.includes(formattedTag) || activeList.includes(tag)
                               return (
                                 <button
                                   key={tag}
                                   type="button"
                                   onClick={() => {
                                     if (isSelected) {
-                                      setNewTags(activeList.filter((t) => t !== tag).join(', '))
+                                      handleRemoveTag(tag)
                                     } else {
-                                      setNewTags([...activeList, tag].join(', '))
+                                      handleAddTag(tag)
                                     }
                                   }}
                                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer select-none border ${
