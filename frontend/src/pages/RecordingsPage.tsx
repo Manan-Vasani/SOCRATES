@@ -8,6 +8,7 @@ import {
   Bookmark,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
   Code2,
