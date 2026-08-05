@@ -1307,30 +1307,11 @@ export default function CommunityPage() {
                   {/* Accordion Header Bar */}
                   <div
                     onClick={() => setIsCreateFormExpanded(!isCreateFormExpanded)}
-                    className="p-4 md:p-5 flex items-center justify-between gap-4 cursor-pointer select-none group bg-white hover:bg-[#fafafa] transition-colors"
+                    className="p-4 md:p-5 flex items-center justify-center cursor-pointer select-none group bg-white hover:bg-[#fafafa] transition-colors text-center"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-bold text-sm shrink-0 group-hover:bg-[#0066cc] group-hover:text-white transition-all">
-                        <Plus size={16} />
-                      </div>
-                      <span className="text-xs font-bold text-[#1d1d1f] truncate">
-                        Ask an Academic Doubt / Post Thread
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-semibold text-[#86868b] group-hover:text-[#1d1d1f] transition-colors hidden sm:inline">
-                        {isCreateFormExpanded ? 'Click to collapse' : 'Click to expand'}
-                      </span>
-                      <div className="w-7 h-7 rounded-full bg-[#f5f5f7] group-hover:bg-[#e4e4e7] text-[#6e6e73] flex items-center justify-center transition-all">
-                        <ChevronDown
-                          size={16}
-                          className={`transition-transform duration-300 ${
-                            isCreateFormExpanded ? 'rotate-180 text-[#0066cc]' : ''
-                          }`}
-                        />
-                      </div>
-                    </div>
+                    <span className="text-xs font-bold text-[#1d1d1f] transition-colors group-hover:text-[#0066cc]">
+                      Ask an Academic Doubt / Post Thread
+                    </span>
                   </div>
 
                   {/* Accordion Body Panel (Opens below header) */}
