@@ -1175,13 +1175,8 @@ export default function CommunityPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(0,102,204,0.08)_0%,_transparent_70%)] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto relative z-10 space-y-8">
-          {/* Top Badge & Main Headline Container */}
+          {/* Main Headline Container */}
           <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] text-xs font-bold shadow-2xs">
-              <Sparkles size={14} className="text-[#0066cc]" />
-              <span>SOCRATES Global Knowledge Exchange</span>
-            </div>
-
             <h1 className="text-3xl sm:text-5xl md:text-5xl font-extrabold tracking-tight text-[#1d1d1f] leading-[1.12]">
               Where Curiosity Meets Instant Socratic Clarity.{' '}
               <span className="block mt-1 bg-gradient-to-r from-[#0066cc] via-[#0077ed] to-[#004499] bg-clip-text text-transparent">
@@ -1749,12 +1744,46 @@ export default function CommunityPage() {
                   )}
                 </div>
 
-                {/* Doubts Feed */}
+                {/* Doubts Feed - Expanded & Spacious Empty State */}
                 {filteredThreads.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-[#e5e5e7] p-12 text-center space-y-3">
-                    <MessageSquare size={36} className="text-[#a1a1a6] mx-auto" />
-                    <h4 className="text-base font-bold text-[#1d1d1f]">No Doubt Threads Found</h4>
-                    <p className="text-xs text-[#6e6e73]">Be the first to ask a question in this category!</p>
+                  <div className="bg-gradient-to-b from-white via-[#fafafc] to-white rounded-3xl border border-[#e5e5e7] p-12 sm:p-16 md:p-20 text-center space-y-6 shadow-xs select-none">
+                    <div className="w-20 h-20 rounded-3xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto ring-8 ring-[#0066cc]/5 shadow-xs transform-gpu">
+                      <MessageSquare size={38} className="text-[#0066cc]" />
+                    </div>
+
+                    <div className="space-y-2 max-w-md mx-auto">
+                      <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
+                        No Doubt Threads Found
+                      </h3>
+                      <p className="text-sm sm:text-base text-[#6e6e73] leading-relaxed">
+                        We couldn't find any academic threads matching your selected criteria. Be the first scholar to start a discussion!
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsPostModalOpen(true)}
+                        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs sm:text-sm font-extrabold transition-all shadow-md shadow-[#0066cc]/25 cursor-pointer transform-gpu select-none"
+                      >
+                        <Plus size={18} />
+                        <span>Ask an Academic Doubt / Post Thread</span>
+                      </button>
+
+                      {(activeSubject !== 'All' || searchQuery || filterMode !== 'all') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSubject('All')
+                            setSearchQuery('')
+                            setFilterMode('all')
+                          }}
+                          className="px-4 py-3 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] text-xs font-bold transition-colors cursor-pointer select-none border border-[#e0e0e4]"
+                        >
+                          Reset Filters
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : (
               filteredThreads.map((thread) => (
