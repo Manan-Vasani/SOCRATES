@@ -149,7 +149,6 @@ export default function RecordingsPage() {
   const [activeSubject, setActiveSubject] = useState('All')
   const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
   const [isPlayingVideo, setIsPlayingVideo] = useState(false)
-
   const [selectedDateFilter, setSelectedDateFilter] = useState('All')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
 
