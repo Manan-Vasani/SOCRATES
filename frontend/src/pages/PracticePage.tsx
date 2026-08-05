@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import {
   Sparkles,
   Flame,
@@ -546,6 +547,7 @@ export default function PracticePage() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   )
 }

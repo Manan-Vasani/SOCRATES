@@ -37,6 +37,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import { updateUserProfileApi } from '../services/api'
 import { logoutAuthUser } from '../services/authService'
 import { ProfilePerspective, useAuthStore } from '../store/useAuthStore'
@@ -2009,6 +2010,10 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* Homepage Matching Footer */}
+      <Footer />
+
       {/* CANCEL SESSION CONFIRMATION MODAL */}
       <AnimatePresence>
         {cancellingSession && (

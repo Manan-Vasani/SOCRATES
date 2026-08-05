@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import {
   Video,
   FileText,
@@ -275,7 +276,10 @@ export default function RecordingsPage() {
         </div>
       </main>
 
-      {/* FULL RECORDING & AI NOTES MODAL */}
+      {/* Homepage Matching Footer */}
+      <Footer />
+
+      {/* RECAP DETAIL MODAL */}
       {selectedRecord && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">

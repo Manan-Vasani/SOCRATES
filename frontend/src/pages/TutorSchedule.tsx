@@ -30,6 +30,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import CustomDropdown from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
 import { getStoredProfileSessions, ProfileSessionItem, saveStoredProfileSessions } from './Profile'
@@ -1039,7 +1040,10 @@ export default function TutorSchedule() {
       </motion.main>
       )}
 
-      {/* SLOT BOOKING MODAL */}
+      {/* Homepage Matching Footer */}
+      <Footer />
+
+      {/* BOOKING CONFIRMATION MODAL */}
       <AnimatePresence>
         {selectedDay && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
