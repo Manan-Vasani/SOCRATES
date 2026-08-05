@@ -1450,34 +1450,8 @@ export default function CommunityPage() {
                             </button>
                           </div>
 
-                          {/* Active Added Hashtag Pill Badges (Matches Enrolled Learning Subjects!) */}
-                          {newTags && (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              {newTags.split(',').map((t) => t.trim()).filter(Boolean).map((tag, idx) => {
-                                const formattedTag = tag.startsWith('#') ? tag : `#${tag}`
-                                return (
-                                  <span
-                                    key={idx}
-                                    className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5 select-none animate-in fade-in duration-150"
-                                  >
-                                    <CheckCircle2 size={12} className="text-[#0066cc]" />
-                                    <span>{formattedTag}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveTag(tag)}
-                                      className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
-                                      title="Remove Hashtag"
-                                    >
-                                      <X size={11} />
-                                    </button>
-                                  </span>
-                                )
-                              })}
-                            </div>
-                          )}
-
-                          {/* Preset Hashtag Suggestions */}
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          {/* Immovable Quick Suggestions (Fixed position under input, zero layout shift) */}
+                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                             <span className="text-[10px] font-bold text-[#86868b] mr-1 select-none">Quick Suggestions:</span>
                             {(newSubject === 'Mathematics'
                               ? ['Calculus', 'Integrals', 'Algebra', 'Olympiad', 'Geometry']
@@ -1503,17 +1477,44 @@ export default function CommunityPage() {
                                       handleAddTag(tag)
                                     }
                                   }}
-                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer select-none border ${
+                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer select-none border flex items-center gap-1 ${
                                     isSelected
                                       ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
                                       : 'bg-white border-[#e0e0e4] text-[#6e6e73] hover:border-[#0066cc]/50 hover:text-[#0066cc]'
                                   }`}
                                 >
-                                  #{tag} {isSelected ? '✓' : '+'}
+                                  <span>#{tag}</span>
+                                  <span className="w-3 text-center inline-block font-extrabold">{isSelected ? '✓' : '+'}</span>
                                 </button>
                               )
                             })}
                           </div>
+
+                          {/* Active Added Hashtag Pill Badges (Appears below Quick Suggestions, zero vertical push) */}
+                          {newTags && (
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-[#f0f0f2]">
+                              {newTags.split(',').map((t) => t.trim()).filter(Boolean).map((tag, idx) => {
+                                const formattedTag = tag.startsWith('#') ? tag : `#${tag}`
+                                return (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5 select-none animate-in fade-in duration-150"
+                                  >
+                                    <CheckCircle2 size={12} className="text-[#0066cc]" />
+                                    <span>{formattedTag}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveTag(tag)}
+                                      className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
+                                      title="Remove Hashtag"
+                                    >
+                                      <X size={11} />
+                                    </button>
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
 
