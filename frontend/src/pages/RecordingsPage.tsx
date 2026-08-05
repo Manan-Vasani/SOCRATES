@@ -264,15 +264,17 @@ export default function RecordingsPage() {
                 <button
                   type="button"
                   onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                  className={`w-full sm:w-auto px-4 py-2.5 rounded-2xl border text-xs font-bold font-display flex items-center gap-2 transition-colors cursor-pointer select-none shadow-2xs ${
+                  className={`w-full sm:w-[210px] min-w-[210px] px-4 py-2.5 rounded-2xl border text-xs font-bold font-display flex items-center justify-between transition-colors cursor-pointer select-none shadow-2xs shrink-0 whitespace-nowrap ${
                     selectedDateFilter !== 'All'
                       ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
                       : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] border-[#e0e0e4] hover:border-[#0066cc]/40 text-[#1d1d1f]'
                   }`}
                 >
-                  <Calendar size={15} className={selectedDateFilter !== 'All' ? 'text-[#0066cc]' : 'text-[#0066cc]'} />
-                  <span>{selectedDateFilter === 'All' ? 'Filter by Session Date' : selectedDateFilter}</span>
-                  <ChevronDown size={14} className="text-[#6e6e73]" />
+                  <div className="flex items-center gap-2 truncate">
+                    <Calendar size={15} className="text-[#0066cc] shrink-0" />
+                    <span className="truncate">{selectedDateFilter === 'All' ? 'Filter by Session Date' : selectedDateFilter}</span>
+                  </div>
+                  <ChevronDown size={14} className="text-[#6e6e73] shrink-0 ml-1" />
                 </button>
 
                 {/* Custom Interactive Calendar Popover Box */}
@@ -402,11 +404,13 @@ export default function RecordingsPage() {
                 <button
                   type="button"
                   onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] flex items-center gap-2 transition-colors cursor-pointer select-none shadow-2xs"
+                  className="w-full sm:w-[185px] min-w-[185px] px-4 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] flex items-center justify-between transition-colors cursor-pointer select-none shadow-2xs shrink-0 whitespace-nowrap"
                 >
-                  <Filter size={14} className="text-[#0066cc]" />
-                  <span>{sortOrder === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}</span>
-                  <ChevronDown size={14} className="text-[#6e6e73]" />
+                  <div className="flex items-center gap-2 truncate">
+                    <Filter size={14} className="text-[#0066cc] shrink-0" />
+                    <span className="truncate">{sortOrder === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}</span>
+                  </div>
+                  <ChevronDown size={14} className="text-[#6e6e73] shrink-0 ml-1" />
                 </button>
 
                 {/* Custom Sort Options Popover Menu */}
