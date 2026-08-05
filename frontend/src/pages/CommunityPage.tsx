@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Code,
   Image as ImageIcon,
+  Loader2,
   MessageCircle,
   MessageSquare,
   MinusCircle,
@@ -12,6 +13,7 @@ import {
   Plus,
   PlusCircle,
   Search,
+  Share2,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -320,8 +322,11 @@ function CommentItem({
   const [upvotes, setUpvotes] = useState(comment.upvotes)
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null)
 
+  const { user } = useAuthStore()
   const isOP = comment.author === threadAuthor
-  const isOwnComment = comment.author === 'You'
+  const isOwnComment =
+    comment.author === 'You' ||
+    Boolean(user && (comment.author === user.fullName || comment.author === user.name))
 
   const handleVote = (type: 'up' | 'down') => {
     if (userVote === type) {
@@ -348,12 +353,19 @@ function CommentItem({
     setReplyMedia((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleReplySubmit = () => {
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+
+  const handleReplySubmit = async () => {
     if (!replyText.trim() && replyMedia.length === 0) return
-    onAddReply(comment.id, replyText, replyMedia)
-    setReplyText('')
-    setReplyMedia([])
-    setIsReplying(false)
+    setIsSubmittingReply(true)
+    try {
+      await onAddReply(comment.id, replyText, replyMedia)
+      setReplyText('')
+      setReplyMedia([])
+      setIsReplying(false)
+    } finally {
+      setIsSubmittingReply(false)
+    }
   }
 
   const handleEditSubmit = () => {
@@ -508,7 +520,17 @@ function CommentItem({
               </>
             )}
 
-            <button className="hover:text-[#0066cc] transition-colors cursor-pointer">Share</button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href)
+                toast.success('Thread link copied to clipboard!')
+              }}
+              className="hover:text-[#0066cc] transition-colors cursor-pointer flex items-center gap-1 text-[#6e6e73]"
+              title="Share comment link"
+            >
+              <Share2 size={12} />
+              <span>Share</span>
+            </button>
           </div>
 
           {/* Inline Reply Form with Image & Video Attachments */}
@@ -573,10 +595,17 @@ function CommentItem({
                   </button>
                   <button
                     onClick={handleReplySubmit}
-                    disabled={!replyText.trim() && replyMedia.length === 0}
-                    className="px-4 py-1 rounded-full bg-[#0066cc] text-white text-xs font-bold hover:bg-[#0077ed] disabled:opacity-30 cursor-pointer"
+                    disabled={isSubmittingReply || (!replyText.trim() && replyMedia.length === 0)}
+                    className="px-4 py-1 rounded-full bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-1.5 select-none"
                   >
-                    Reply
+                    {isSubmittingReply ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin text-white shrink-0" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <span>Reply</span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -899,6 +928,10 @@ export default function CommunityPage() {
     try { if (isRealId(id)) await voteCommunityThread(id, 'down') } catch { /* optimistic is fine */ }
   }
 
+  // Loading / Submitting States
+  const [isSubmittingPost, setIsSubmittingPost] = useState(false)
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTitle.trim() || !newContent.trim()) {
@@ -910,14 +943,15 @@ export default function CommunityPage() {
       return
     }
 
+    setIsSubmittingPost(true)
     const tagList = newTags
       ? newTags.split(',').map((t) => t.trim()).filter(Boolean)
       : [newSubject]
 
-    // 1. Always upload pending files to Cloudinary first!
-    const finalMedia = await uploadPendingFiles(pendingThreadFiles, threadMedia)
-
     try {
+      // 1. Always upload pending files to Cloudinary first!
+      const finalMedia = await uploadPendingFiles(pendingThreadFiles, threadMedia)
+
       const res = await createCommunityThread({
         title: newTitle,
         content: newContent,
@@ -949,12 +983,14 @@ export default function CommunityPage() {
         hasAiAnswer: false,
         content: newContent,
         codeSnippet: newCode.trim() || undefined,
-        media: finalMedia.length > 0 ? finalMedia : undefined,
+        media: threadMedia.length > 0 ? threadMedia : undefined,
         commentsCount: 0,
         comments: [],
       }
       setThreads((prev) => [fallbackThread, ...prev])
       toast.success('Doubt Thread Posted!')
+    } finally {
+      setIsSubmittingPost(false)
     }
 
     setIsPostModalOpen(false)
@@ -971,10 +1007,11 @@ export default function CommunityPage() {
     if ((!commentText.trim() && commentMedia.length === 0) || !activeThread) return
     if (!user) { toast.error('Please log in to comment'); return }
 
-    // 1. Always upload pending files to Cloudinary first!
-    const finalMedia = await uploadPendingFiles(pendingCommentFiles, commentMedia)
-
+    setIsSubmittingComment(true)
     try {
+      // 1. Always upload pending files to Cloudinary first!
+      const finalMedia = await uploadPendingFiles(pendingCommentFiles, commentMedia)
+
       if (!isRealId(activeThread.id)) throw new Error('Demo thread')
 
       const res = await createCommunityComment(activeThread.id, {
@@ -1002,7 +1039,7 @@ export default function CommunityPage() {
         text: commentText,
         time: 'Just now',
         upvotes: 0,
-        media: finalMedia.length > 0 ? finalMedia : undefined,
+        media: commentMedia.length > 0 ? commentMedia : undefined,
       }
       const updated = {
         ...activeThread,
@@ -1012,6 +1049,8 @@ export default function CommunityPage() {
       setActiveThread(updated)
       setThreads((prev) => prev.map((t) => (t.id === activeThread.id ? updated : t)))
       toast.success('+15 Karma! Comment posted successfully.')
+    } finally {
+      setIsSubmittingComment(false)
     }
 
     setCommentText('')
@@ -1343,10 +1382,17 @@ export default function CommunityPage() {
 
                     <button
                       onClick={handleAddComment}
-                      disabled={!commentText.trim() && commentMedia.length === 0}
-                      className="px-6 py-2.5 rounded-full bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all disabled:opacity-30 cursor-pointer shadow-md shadow-[#0066cc]/20"
+                      disabled={isSubmittingComment || (!commentText.trim() && commentMedia.length === 0)}
+                      className="px-6 py-2.5 rounded-full bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md shadow-[#0066cc]/20 flex items-center justify-center gap-2 select-none"
                     >
-                      Comment
+                      {isSubmittingComment ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin text-white shrink-0" />
+                          <span>Posting...</span>
+                        </>
+                      ) : (
+                        <span>Comment</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1504,10 +1550,17 @@ export default function CommunityPage() {
                           <button
                             type="button"
                             onClick={handleCreatePost}
-                            disabled={!newTitle.trim() || !newContent.trim()}
-                            className="px-6 py-2 rounded-full bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all disabled:opacity-30 cursor-pointer shadow-md shadow-[#0066cc]/20"
+                            disabled={isSubmittingPost || !newTitle.trim() || !newContent.trim()}
+                            className="px-6 py-2 rounded-full bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md shadow-[#0066cc]/20 flex items-center justify-center gap-2 select-none"
                           >
-                            Post Thread
+                            {isSubmittingPost ? (
+                              <>
+                                <Loader2 size={14} className="animate-spin text-white shrink-0" />
+                                <span>Posting...</span>
+                              </>
+                            ) : (
+                              <span>Post Thread</span>
+                            )}
                           </button>
                         </div>
                       </div>

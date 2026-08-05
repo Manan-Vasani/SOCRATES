@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const DoubtThread = require('../models/DoubtThread');
 const Comment = require('../models/Comment');
 const Karma = require('../models/Karma');
@@ -515,6 +516,11 @@ exports.getComments = async (req, res) => {
 exports.createComment = async (req, res) => {
   const { text, parentComment, media } = req.body;
 
+  const commentText = text || '';
+  if (!commentText.trim() && (!media || media.length === 0)) {
+    return res.status(400).json({ success: false, message: 'Comment must contain text or media' });
+  }
+
   const thread = await DoubtThread.findById(req.params.id);
   if (!thread) {
     return res.status(404).json({ success: false, message: 'Thread not found' });
@@ -539,7 +545,7 @@ exports.createComment = async (req, res) => {
     author: req.user._id,
     role: userRole,
     isVerified: req.user.isTutorVerified || false,
-    text,
+    text: commentText,
     media: media || [],
   });
 
