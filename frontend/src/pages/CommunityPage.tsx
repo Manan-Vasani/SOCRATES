@@ -534,6 +534,26 @@ const BASE_SUBJECT_OPTIONS: DropdownOption<string>[] = [
   { value: 'Engineering & Statics', label: 'Engineering & Statics', icon: <Cpu size={15} className="text-[#0066cc]" /> },
 ]
 
+const getTagIcon = (tag: string) => {
+  const t = tag.toLowerCase()
+  if (t.includes('alg') || t.includes('struct') || t.includes('net') || t.includes('olym')) {
+    return <Network size={13} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('py') || t.includes('react') || t.includes('code') || t.includes('web') || t.includes('c++')) {
+    return <Code2 size={13} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('calc') || t.includes('integ') || t.includes('alge') || t.includes('geom') || t.includes('math')) {
+    return <Sigma size={13} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('phys') || t.includes('quant') || t.includes('mech') || t.includes('thermo')) {
+    return <Atom size={13} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('chem') || t.includes('organ') || t.includes('react')) {
+    return <FlaskConical size={13} className="text-[#0066cc] shrink-0" />
+  }
+  return <Cpu size={13} className="text-[#0066cc] shrink-0" />
+}
+
 const FALLBACK_CONTRIBUTORS = [
   { rank: 1, name: 'Dr. Alex Vance', karma: 3450, solved: 142, badge: 'Verified Master' },
   { rank: 2, name: 'Prof. Sarah Jenkins', karma: 2890, solved: 118, badge: 'Physics Scholar' },
@@ -1470,14 +1490,14 @@ export default function CommunityPage() {
                                       handleAddTag(tag)
                                     }
                                   }}
-                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer select-none border flex items-center gap-1 ${
+                                  className={`px-3 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer select-none border flex items-center gap-1.5 ${
                                     isSelected
-                                      ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
-                                      : 'bg-white border-[#e0e0e4] text-[#6e6e73] hover:border-[#0066cc]/50 hover:text-[#0066cc]'
+                                      ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc] shadow-2xs'
+                                      : 'bg-[#f5f5f7] border-[#e0e0e4] text-[#3a3a3c] hover:bg-[#e8e8ea] hover:border-[#0066cc]/40'
                                   }`}
                                 >
+                                  {getTagIcon(tag)}
                                   <span>#{tag}</span>
-                                  <span className="w-3 text-center inline-block font-extrabold">{isSelected ? '✓' : '+'}</span>
                                 </button>
                               )
                             })}
