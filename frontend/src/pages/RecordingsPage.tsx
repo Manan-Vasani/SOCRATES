@@ -144,6 +144,8 @@ export default function RecordingsPage() {
   const [activeSubject, setActiveSubject] = useState('All')
   const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
   const [isPlayingVideo, setIsPlayingVideo] = useState(false)
+  const [selectedDateFilter, setSelectedDateFilter] = useState('All')
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [calendarYear, setCalendarYear] = useState(2026)
   const [calendarMonth, setCalendarMonth] = useState(6) // 0-indexed: 6 = July 2026
