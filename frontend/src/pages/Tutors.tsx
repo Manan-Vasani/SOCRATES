@@ -685,7 +685,7 @@ export default function Tutors() {
           </div>
         )}
       </section>
-      </main>
+      </motion.div>
 
       {/* Homepage Matching Footer */}
       <Footer />
