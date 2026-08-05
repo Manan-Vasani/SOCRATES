@@ -1,45 +1,68 @@
 import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Logo from './Logo'
 import { useAuthStore } from '../store/useAuthStore'
 import { getInitialsAvatar } from '../services/authService'
-import { User, LogOut, LayoutDashboard, Video } from 'lucide-react'
+import { User, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
 
-  const handleLogout = () => {
-    logout()
-    toast.success('Signed out successfully')
-    navigate('/')
-  }
+  const navLinks = [
+    { path: '/practice', label: 'AI Practice' },
+    { path: '/community', label: 'Community' },
+    { path: '/recordings', label: 'AI Recaps' },
+    { path: '/tutors', label: 'Tutors' },
+    { path: '/#pricing', label: 'Pricing', isHash: true },
+  ]
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-[#e0e0e0]/60 transition-all select-none">
+    <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-[#e5e5e7] transition-all select-none">
       <nav 
-        className="max-w-6xl mx-auto px-6 h-12 flex items-center justify-between text-xs font-normal text-[#1d1d1f]"
+        className="max-w-6xl mx-auto px-6 h-14 sm:h-16 flex items-center justify-between text-sm font-semibold text-[#1d1d1f]"
         aria-label="Global navigation"
       >
-        <Link to="/" className="hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0066cc] rounded-lg">
-          <Logo size="sm" />
+        <Link to="/" className="hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0066cc] rounded-lg shrink-0">
+          <Logo size="md" />
         </Link>
 
-        <div className="hidden md:flex items-center gap-7 text-[#1d1d1f]/80">
-          <Link to="/practice" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">AI Practice</Link>
-          <Link to="/community" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Community</Link>
-          <Link to="/recordings" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">AI Recaps</Link>
-          <Link to="/tutors" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Tutors</Link>
-          <a href="/#pricing" className="hover:text-[#1d1d1f] transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]">Pricing</a>
+        {/* Big, Crisp, Beautiful Navigation Links */}
+        <div className="hidden md:flex items-center gap-2 text-[#1d1d1f]">
+          {navLinks.map((link) => {
+            const isActive = !link.isHash && location.pathname === link.path
+            return link.isHash ? (
+              <a
+                key={link.path}
+                href={link.path}
+                className="px-3.5 py-2 rounded-xl text-sm font-semibold text-[#3a3a3c] hover:text-[#0066cc] hover:bg-[#0066cc]/5 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#0066cc]"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`px-3.5 py-2 rounded-xl text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#0066cc] ${
+                  isActive
+                    ? 'text-[#0066cc] font-bold bg-[#0066cc]/8'
+                    : 'font-semibold text-[#3a3a3c] hover:text-[#0066cc] hover:bg-[#0066cc]/5'
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-3">
               <Link
                 to="/profile"
-                className="flex items-center gap-2.5 px-1 py-1 rounded-full text-[#1d1d1f] hover:opacity-80 transition-all group cursor-pointer select-none"
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5e7] text-[#1d1d1f] transition-all group cursor-pointer select-none"
                 title="My Profile"
               >
                 <img
@@ -48,24 +71,24 @@ export default function Navbar() {
                   onError={(e) => {
                     e.currentTarget.src = getInitialsAvatar(user.fullName || user.name)
                   }}
-                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                  className="w-8 h-8 rounded-xl object-cover shrink-0 ring-1 ring-black/10"
                 />
-                <span className="font-semibold text-xs text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[140px] truncate">
+                <span className="font-bold text-xs sm:text-sm text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors max-w-[140px] truncate">
                   {user.fullName || user.name}
                 </span>
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link 
                 to="/login" 
-                className="hover:text-[#0066cc] transition-colors font-medium focus-visible:outline-2 focus-visible:outline-[#0066cc] rounded"
+                className="px-3.5 py-2 rounded-xl text-sm font-semibold text-[#1d1d1f] hover:text-[#0066cc] hover:bg-[#0066cc]/5 transition-colors focus-visible:outline-2 focus-visible:outline-[#0066cc]"
               >
                 Sign In
               </Link>
               <Link 
                 to="/signup" 
-                className="px-3.5 py-1.5 rounded-full bg-[#0066cc] text-white font-medium hover:bg-[#0077ed] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] shadow-sm"
+                className="px-4.5 py-2 rounded-full bg-[#0066cc] text-white text-sm font-bold hover:bg-[#0077ed] transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066cc] shadow-sm hover:shadow-md"
               >
                 Get Started
               </Link>
