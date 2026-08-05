@@ -1378,7 +1378,7 @@ export default function CommunityPage() {
             ) : (
               <div className="space-y-4">
                 {/* Inline Post Doubt Thread Accordion (FAQ Style) */}
-                <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xs hover:shadow-md transition-all overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[#e5e5e7] shadow-2xs hover:shadow-md transition-all overflow-hidden">
                   {/* Accordion Header Bar */}
                   <div
                     onClick={() => setIsCreateFormExpanded(!isCreateFormExpanded)}
