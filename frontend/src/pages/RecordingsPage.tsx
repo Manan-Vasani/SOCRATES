@@ -248,8 +248,8 @@ export default function RecordingsPage() {
                 </div>
 
                 {/* Duration Badge */}
-                <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-mono font-bold border border-white/20 shadow-md">
-                  <Clock size={13} />
+                <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-display font-bold tracking-wide border border-white/25 shadow-md select-none">
+                  <Clock size={13} className="text-white/90" />
                   <span>{rec.duration}</span>
                 </div>
 
