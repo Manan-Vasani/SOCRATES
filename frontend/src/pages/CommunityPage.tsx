@@ -1307,9 +1307,15 @@ export default function CommunityPage() {
                   {/* Accordion Header Bar */}
                   <div
                     onClick={() => setIsCreateFormExpanded(!isCreateFormExpanded)}
-                    className="p-4 md:p-5 flex items-center justify-center cursor-pointer select-none group bg-white hover:bg-[#fafafa] transition-colors text-center"
+                    className={`p-4 md:p-5 flex items-center justify-center cursor-pointer select-none group transition-all text-center ${
+                      isCreateFormExpanded
+                        ? 'bg-[#0066cc] text-white shadow-md'
+                        : 'bg-white hover:bg-[#f5f5f7] text-[#1d1d1f]'
+                    }`}
                   >
-                    <span className="text-xs font-bold text-[#1d1d1f] transition-colors group-hover:text-[#0066cc]">
+                    <span className={`text-sm sm:text-base font-extrabold tracking-tight transition-colors ${
+                      isCreateFormExpanded ? 'text-white' : 'text-[#1d1d1f] group-hover:text-[#0066cc]'
+                    }`}>
                       Ask an Academic Doubt / Post Thread
                     </span>
                   </div>
