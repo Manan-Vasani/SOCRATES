@@ -1442,27 +1442,27 @@ export default function CommunityPage() {
                   {/* Accordion Header Bar */}
                   <div
                     onClick={() => setIsCreateFormExpanded(!isCreateFormExpanded)}
-                    className={`p-4 md:p-5 flex items-center justify-center gap-3 cursor-pointer select-none group transition-colors duration-150 transform-gpu text-center ${
+                    className={`p-4 md:p-5 flex items-center justify-center gap-2.5 cursor-pointer select-none group transition-colors duration-150 transform-gpu text-center ${
                       isCreateFormExpanded
                         ? 'bg-[#0066cc] text-white'
                         : 'bg-gradient-to-r from-[#f0f7ff] via-white to-[#f0f7ff] hover:from-[#e5f1ff] hover:to-[#e5f1ff] text-[#1d1d1f]'
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150 transform-gpu ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150 transform-gpu ${
                         isCreateFormExpanded
                           ? 'bg-white/20 text-white'
                           : 'bg-[#0066cc] text-white shadow-2xs'
                       }`}
                     >
                       <Plus
-                        size={18}
+                        size={16}
                         className={`stroke-[3] transition-transform duration-150 transform-gpu ease-out ${
                           isCreateFormExpanded ? 'rotate-45' : ''
                         }`}
                       />
                     </div>
-                    <span className={`text-base font-extrabold tracking-tight transition-colors duration-150 ${
+                    <span className={`text-sm sm:text-base font-extrabold tracking-tight transition-colors duration-150 ${
                       isCreateFormExpanded ? 'text-white' : 'text-[#0066cc] group-hover:text-[#004d99]'
                     }`}>
                       Ask an Academic Doubt / Post Thread
