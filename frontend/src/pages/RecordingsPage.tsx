@@ -327,32 +327,36 @@ export default function RecordingsPage() {
                         const shortMonth = monthNames[calendarMonth].substring(0, 3)
                         const fullDateStr = `${shortMonth} ${dayNum}, ${calendarYear}`
 
-                        // Check session status
+                        // Check session status & current today date
+                        const today = new Date()
+                        const isToday =
+                          dayNum === today.getDate() &&
+                          calendarMonth === today.getMonth() &&
+                          calendarYear === today.getFullYear()
+
                         const hasRecording = recordings.some((r) => r.date === fullDateStr)
                         const isCancelled = ['Jul 15, 2026', 'Jul 22, 2026'].includes(fullDateStr)
-                        const isSelected = selectedDateFilter === fullDateStr
+                        const isSelected = selectedDateFilter === fullDateStr || (selectedDateFilter === 'All' && isToday)
 
                         return (
                           <button
                             key={dayNum}
                             type="button"
                             onClick={() => {
-                              setSelectedDateFilter(isSelected ? 'All' : fullDateStr)
+                              setSelectedDateFilter(selectedDateFilter === fullDateStr ? 'All' : fullDateStr)
                               setIsCalendarOpen(false)
                             }}
-                            className={`h-8 rounded-xl flex flex-col items-center justify-center font-bold text-xs relative transition-colors cursor-pointer select-none ${
+                            className={`h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-colors cursor-pointer select-none ${
                               isSelected
                                 ? 'bg-[#0066cc] text-white border border-[#0066cc] shadow-2xs'
-                                : 'text-[#1d1d1f] hover:bg-[#f5f5f7] border-none'
+                                : isCancelled
+                                ? 'bg-red-50 text-red-700 border border-red-300/80 hover:bg-red-100'
+                                : hasRecording
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-300/80 hover:bg-emerald-100'
+                                : 'text-[#1d1d1f] hover:bg-[#f5f5f7] border border-transparent'
                             }`}
                           >
                             <span>{dayNum}</span>
-                            {!isSelected && hasRecording && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute bottom-1" title="Past Recorded Session" />
-                            )}
-                            {!isSelected && isCancelled && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 absolute bottom-1" title="Cancelled Session" />
-                            )}
                           </button>
                         )
                       })}
@@ -360,16 +364,16 @@ export default function RecordingsPage() {
 
                     {/* Calendar Status Legend */}
                     <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold text-[#6e6e73]">
-                      <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-md bg-emerald-50 border border-emerald-300 inline-block" />
                         <span>Past Session</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-md bg-red-50 border border-red-300 inline-block" />
                         <span>Cancelled</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-[#0066cc] inline-block" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-md bg-[#0066cc] inline-block" />
                         <span>Selected</span>
                       </div>
                     </div>
