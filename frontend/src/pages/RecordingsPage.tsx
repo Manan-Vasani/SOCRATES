@@ -242,8 +242,8 @@ export default function RecordingsPage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Play size={24} className="fill-[#0066cc] ml-1" />
+                  <div className="w-14 h-14 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-xl ring-4 ring-white/30 backdrop-blur-sm group-hover:scale-110 transition-transform duration-200">
+                    <Play size={22} className="fill-[#0066cc] translate-x-[1.5px]" />
                   </div>
                 </div>
 
@@ -387,9 +387,9 @@ export default function RecordingsPage() {
                       <img src={selectedRecord.thumbnailUrl} alt={selectedRecord.title} className="w-full h-full object-cover opacity-80" />
                       <button
                         onClick={() => setIsPlayingVideo(true)}
-                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform cursor-pointer"
+                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 hover:scale-110 transition-transform cursor-pointer"
                       >
-                        <Play size={28} className="fill-white ml-1" />
+                        <Play size={26} className="fill-white translate-x-[2px]" />
                       </button>
                     </div>
                   )}
