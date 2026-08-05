@@ -11,6 +11,7 @@ import {
   Cpu,
   FlaskConical,
   Image as ImageIcon,
+  Layers,
   Loader2,
   MessageCircle,
   MessageSquare,
@@ -546,6 +547,26 @@ const getTagIcon = (tag: string) => {
     return <Percent size={14} className="text-[#0066cc] shrink-0" />
   }
   return <Cpu size={14} className="text-[#0066cc] shrink-0" />
+}
+
+const getSubjectFilterIcon = (subj: string, isActive: boolean) => {
+  const colorClass = isActive ? 'text-white' : 'text-[#0066cc]'
+  switch (subj) {
+    case 'All':
+      return <Layers size={14} className={`${colorClass} shrink-0`} />
+    case 'Mathematics':
+      return <Sigma size={14} className={`${colorClass} shrink-0`} />
+    case 'Computer Science':
+      return <Code2 size={14} className={`${colorClass} shrink-0`} />
+    case 'Physics':
+      return <Atom size={14} className={`${colorClass} shrink-0`} />
+    case 'Chemistry':
+      return <FlaskConical size={14} className={`${colorClass} shrink-0`} />
+    case 'Engineering':
+      return <Cpu size={14} className={`${colorClass} shrink-0`} />
+    default:
+      return <BookOpen size={14} className={`${colorClass} shrink-0`} />
+  }
 }
 
 const BASE_SUBJECT_OPTIONS: DropdownOption<string>[] = [
@@ -1177,50 +1198,60 @@ export default function CommunityPage() {
             />
           </div>
 
-          {/* Filter Modes */}
+          {/* Filter Modes (100% Immovable on Selection) */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFilterMode('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                filterMode === 'all' ? 'bg-[#1d1d1f] text-white' : 'bg-white border border-[#e0e0e2] text-[#6e6e73] hover:text-[#1d1d1f]'
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer select-none border ${
+                filterMode === 'all'
+                  ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                  : 'bg-white border-[#e0e0e2] text-[#6e6e73] hover:text-[#1d1d1f] hover:border-[#1d1d1f]/40'
               }`}
             >
               All Threads
             </button>
             <button
               onClick={() => setFilterMode('unsolved')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                filterMode === 'unsolved' ? 'bg-amber-500 text-white' : 'bg-white border border-[#e0e0e2] text-[#6e6e73] hover:text-[#1d1d1f]'
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer select-none border ${
+                filterMode === 'unsolved'
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-white border-[#e0e0e2] text-[#6e6e73] hover:text-amber-600 hover:border-amber-500/40'
               }`}
             >
               Open / Unsolved
             </button>
             <button
               onClick={() => setFilterMode('solved')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                filterMode === 'solved' ? 'bg-emerald-600 text-white' : 'bg-white border border-[#e0e0e2] text-[#6e6e73] hover:text-[#1d1d1f]'
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer select-none border ${
+                filterMode === 'solved'
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white border-[#e0e0e2] text-[#6e6e73] hover:text-emerald-600 hover:border-emerald-500/40'
               }`}
             >
-              Solved ✓
+              Solved
             </button>
           </div>
         </div>
 
-        {/* Subject Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {['All', 'Mathematics', 'Computer Science', 'Physics', 'Chemistry', 'Engineering'].map((subj) => (
-            <button
-              key={subj}
-              onClick={() => setActiveSubject(subj)}
-              className={`px-4 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                activeSubject === subj
-                  ? 'bg-[#0066cc] text-white shadow-xs'
-                  : 'bg-white border border-[#e0e0e2] text-[#6e6e73] hover:border-[#0066cc]/30 hover:text-[#1d1d1f]'
-              }`}
-            >
-              {subj}
-            </button>
-          ))}
+        {/* Subject Filter Pills (Icon-supported & 100% Immovable on selection - Matches Image 3) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {['All', 'Mathematics', 'Computer Science', 'Physics', 'Chemistry', 'Engineering'].map((subj) => {
+            const isActive = activeSubject === subj
+            return (
+              <button
+                key={subj}
+                onClick={() => setActiveSubject(subj)}
+                className={`px-4 py-2 rounded-2xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap select-none border flex items-center gap-2 ${
+                  isActive
+                    ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-2xs'
+                    : 'bg-white border-[#e0e0e2] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
+                }`}
+              >
+                {getSubjectFilterIcon(subj, isActive)}
+                <span>{subj}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* Full-Width Doubt Feed Container */}
