@@ -234,57 +234,60 @@ export default function RecordingsPage() {
               }}
               className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-xs hover:border-[#0066cc]/50 transition-colors duration-150 cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group transform-gpu select-none"
             >
-              {/* Left Column: Wide Video Thumbnail Frame (4 cols) */}
-              <div className="md:col-span-4 relative aspect-video md:aspect-auto min-h-[220px] bg-black overflow-hidden">
+              {/* Left Column: Wide Video Thumbnail Frame (5 cols) */}
+              <div className="md:col-span-5 lg:col-span-4 relative aspect-video md:aspect-auto min-h-[280px] sm:min-h-[310px] bg-black overflow-hidden">
                 <img
                   src={rec.thumbnailUrl}
                   alt={rec.title}
                   className="w-full h-full object-cover opacity-95 group-hover:opacity-100 transition-opacity duration-150"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-colors duration-150">
-                    <Play size={22} className="fill-current translate-x-[1.5px] transition-colors duration-150" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-colors duration-150">
+                    <Play size={24} className="fill-current translate-x-[1.5px] transition-colors duration-150" />
                   </div>
                 </div>
 
                 {/* Duration Badge */}
-                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/75 backdrop-blur-sm text-white text-xs font-mono font-bold border border-white/20">
+                <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-mono font-bold border border-white/20 shadow-md">
                   <Clock size={13} />
                   <span>{rec.duration}</span>
                 </div>
 
                 {/* Subject Badge */}
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-xl bg-white/95 backdrop-blur-sm text-[#0066cc] text-xs font-bold shadow-xs border border-[#0066cc]/20 flex items-center gap-1.5">
+                <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-md text-[#0066cc] text-xs font-bold shadow-xs border border-[#0066cc]/20 flex items-center gap-1.5">
                   {getSubjectFilterIcon(rec.subject, false)}
                   <span>{rec.subject}</span>
                 </div>
               </div>
 
-              {/* Right Column: Expansive Information Body (8 cols) */}
-              <div className="md:col-span-8 p-6 sm:p-7 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
+              {/* Right Column: Expansive Information Body (7 cols) */}
+              <div className="md:col-span-7 lg:col-span-8 p-7 sm:p-8 flex flex-col justify-between space-y-5">
+                <div className="space-y-4">
                   {/* Title & Instructor Info */}
-                  <div className="space-y-1.5">
-                    <h3 className="text-lg sm:text-xl font-extrabold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug tracking-tight">
+                  <div className="space-y-2">
+                    <h3 className="font-display text-xl sm:text-2xl font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug tracking-tight">
                       {rec.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-[#6e6e73]">
-                      <User size={14} className="text-[#0066cc]" />
-                      <span className="font-bold text-[#1d1d1f]">{rec.tutorName}</span>
-                      <span>• {rec.date}</span>
+                    <div className="flex items-center gap-2.5 text-xs font-semibold text-[#525252]">
+                      <div className="inline-flex items-center gap-1.5">
+                        <User size={14} className="text-[#0066cc]" />
+                        <span className="font-bold text-[#1d1d1f]">{rec.tutorName}</span>
+                      </div>
+                      <span>•</span>
+                      <span>{rec.date}</span>
                     </div>
                   </div>
 
                   {/* Socratic AI Summary Multi-point List */}
-                  <div className="bg-[#f4f8fc] border border-[#0066cc]/15 rounded-2xl p-4 space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#0066cc] uppercase tracking-wider">
+                  <div className="bg-[#f4f8fc] border border-[#0066cc]/15 rounded-2xl p-4.5 space-y-2.5 shadow-2xs">
+                    <div className="flex items-center gap-1.5 font-display text-xs font-bold text-[#0066cc] uppercase tracking-wider">
                       <Sparkles size={14} />
-                      <span>Socrates AI Summary & Takeaways</span>
+                      <span>Socrates AI Summary & Key Takeaways</span>
                     </div>
-                    <ul className="space-y-1 text-xs text-[#525252] leading-relaxed">
-                      {rec.aiSummary.slice(0, 2).map((point, idx) => (
+                    <ul className="space-y-1.5 text-xs sm:text-[13px] text-[#424245] leading-relaxed font-normal">
+                      {rec.aiSummary.map((point, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-[#0066cc] font-bold">•</span>
+                          <span className="text-[#0066cc] font-bold shrink-0">•</span>
                           <span>{point}</span>
                         </li>
                       ))}
@@ -293,10 +296,10 @@ export default function RecordingsPage() {
 
                   {/* Key Formula / Equation Tags */}
                   {rec.keyEquations && rec.keyEquations.length > 0 && (
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="text-[11px] font-bold text-[#7a7a7a] uppercase tracking-wider">Formulas:</span>
+                    <div className="flex flex-wrap gap-2.5 items-center pt-0.5">
+                      <span className="font-display text-xs font-bold text-[#7a7a7a] uppercase tracking-wider">Formulas:</span>
                       {rec.keyEquations.map((eq, idx) => (
-                        <span key={idx} className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e0e0e2] text-[11px] font-mono text-[#1d1d1f] font-semibold">
+                        <span key={idx} className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e5] font-mono text-xs text-[#1d1d1f] font-bold shadow-2xs">
                           {eq}
                         </span>
                       ))}
@@ -305,12 +308,12 @@ export default function RecordingsPage() {
                 </div>
 
                 {/* Bottom Action Footer Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#f0f0f2]">
-                  <span className="text-xs font-semibold text-[#86868b]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#f0f0f2]">
+                  <span className="text-xs font-semibold text-[#7a7a7a]">
                     {rec.fileSize} HD • 1080p Video & Transcript
                   </span>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -318,9 +321,9 @@ export default function RecordingsPage() {
                         setSelectedRecord(rec)
                         setIsPlayingVideo(true)
                       }}
-                      className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-extrabold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer select-none"
+                      className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white font-display text-xs font-bold transition-colors shadow-xs flex items-center gap-2 cursor-pointer select-none"
                     >
-                      <Play size={13} className="fill-white" />
+                      <Play size={14} className="fill-white" />
                       <span>Watch Recording</span>
                     </button>
 
@@ -330,9 +333,9 @@ export default function RecordingsPage() {
                         e.stopPropagation()
                         handleDownloadPDF(rec.title)
                       }}
-                      className="px-4 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e0e0e4] text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer select-none"
+                      className="px-5 py-2.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e0e0e4] font-display text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer select-none"
                     >
-                      <Download size={13} />
+                      <Download size={14} />
                       <span>AI Notes PDF</span>
                     </button>
                   </div>
