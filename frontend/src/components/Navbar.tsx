@@ -30,7 +30,7 @@ export default function Navbar() {
           <Logo size="sm" />
         </Link>
 
-        <div className="hidden md:flex items-center gap-1.5">
+        <div className="hidden md:flex items-center gap-7">
           {navLinks.map((link) => {
             const isPricing = link.path === '/#pricing'
             const isActive = isPricing
@@ -42,10 +42,10 @@ export default function Navbar() {
                 <a
                   key={link.path}
                   href={link.path}
-                  className={`px-3.5 py-1.5 rounded-full text-xs transition-colors duration-150 select-none transform-gpu flex items-center ${
+                  className={`text-xs transition-colors duration-150 select-none ${
                     isActive
-                      ? 'bg-[#0066cc]/10 text-[#0066cc] font-bold border border-[#0066cc]/20 shadow-2xs'
-                      : 'text-[#525252] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] font-semibold'
+                      ? 'text-[#0066cc] font-bold'
+                      : 'text-[#1d1d1f]/80 hover:text-[#0066cc] font-semibold'
                   }`}
                 >
                   {link.name}
@@ -57,10 +57,10 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3.5 py-1.5 rounded-full text-xs transition-colors duration-150 select-none transform-gpu flex items-center ${
+                className={`text-xs transition-colors duration-150 select-none ${
                   isActive
-                    ? 'bg-[#0066cc]/10 text-[#0066cc] font-bold border border-[#0066cc]/20 shadow-2xs'
-                    : 'text-[#525252] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] font-semibold'
+                    ? 'text-[#0066cc] font-bold'
+                    : 'text-[#1d1d1f]/80 hover:text-[#0066cc] font-semibold'
                 }`}
               >
                 {link.name}
@@ -74,11 +74,7 @@ export default function Navbar() {
             <div className="flex items-center gap-3">
               <Link
                 to="/profile"
-                className={`flex items-center gap-2.5 px-2 py-1 rounded-full text-[#1d1d1f] transition-all group cursor-pointer select-none ${
-                  isProfileActive
-                    ? 'bg-[#0066cc]/10 text-[#0066cc] ring-1.5 ring-[#0066cc]/30'
-                    : 'hover:bg-[#f5f5f7]'
-                }`}
+                className="flex items-center gap-2.5 text-[#1d1d1f] transition-all group cursor-pointer select-none"
                 title="My Profile"
               >
                 <img
@@ -87,7 +83,7 @@ export default function Navbar() {
                   onError={(e) => {
                     e.currentTarget.src = getInitialsAvatar(user.fullName || user.name)
                   }}
-                  className={`w-7 h-7 rounded-full object-cover shrink-0 border ${
+                  className={`w-8 h-8 rounded-full object-cover shrink-0 border ${
                     isProfileActive ? 'border-[#0066cc]' : 'border-transparent'
                   }`}
                 />
