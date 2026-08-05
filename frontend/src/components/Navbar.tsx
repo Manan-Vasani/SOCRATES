@@ -83,16 +83,16 @@ export default function Navbar() {
             <div className="flex items-center gap-2.5">
               <Link 
                 to="/login" 
-                className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-[#3a3a3c] hover:text-[#0066cc] hover:bg-[#f4f4f7] transition-all duration-200"
+                className="px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-[#3a3a3c] hover:text-[#0066cc] hover:bg-[#f4f4f7] transition-colors duration-150 ease-out transform-gpu select-none"
               >
                 Sign In
               </Link>
               <Link 
                 to="/signup" 
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#0066cc] via-[#0077ed] to-[#0055b3] text-white text-xs sm:text-sm font-bold hover:shadow-[0_6px_20px_rgba(0,102,204,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md shadow-[#0066cc]/25 flex items-center gap-1.5"
+                className="px-5 py-2 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs sm:text-sm font-semibold transition-colors duration-150 ease-out shadow-xs hover:shadow-md flex items-center gap-1.5 transform-gpu select-none cursor-pointer"
               >
-                <Sparkles size={14} className="text-white/90" />
-                <span>Get Started</span>
+                <Sparkles size={14} className="text-white/90 shrink-0" />
+                <span className="select-none">Get Started</span>
               </Link>
             </div>
           )}
