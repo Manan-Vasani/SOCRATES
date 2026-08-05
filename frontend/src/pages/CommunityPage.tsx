@@ -1435,25 +1435,35 @@ export default function CommunityPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Inline Post Doubt Thread Accordion (FAQ Style) */}
-                <div className="bg-white rounded-2xl border border-[#e5e5e7] shadow-2xs hover:shadow-md transition-all overflow-hidden">
+                {/* Inline Post Doubt Thread Accordion (High-Visibility Highlighted) */}
+                <div className={`rounded-2xl border transition-all overflow-hidden ${
+                  isCreateFormExpanded ? 'border-[#0066cc] shadow-md' : 'border-[#0066cc]/30 shadow-xs hover:border-[#0066cc] hover:shadow-md'
+                }`}>
                   {/* Accordion Header Bar */}
                   <div
                     onClick={() => setIsCreateFormExpanded(!isCreateFormExpanded)}
-                    className={`p-4 md:p-5 flex items-center justify-center gap-2 cursor-pointer select-none group transition-all text-center ${
+                    className={`p-4 md:p-5 flex items-center justify-center gap-3 cursor-pointer select-none group transition-all text-center ${
                       isCreateFormExpanded
-                        ? 'bg-[#0066cc] text-white shadow-md'
-                        : 'bg-white hover:bg-[#f5f5f7] text-[#1d1d1f]'
+                        ? 'bg-[#0066cc] text-white'
+                        : 'bg-gradient-to-r from-[#f0f7ff] via-white to-[#f0f7ff] hover:from-[#e5f1ff] hover:to-[#e5f1ff] text-[#1d1d1f]'
                     }`}
                   >
-                    <Plus
-                      size={18}
-                      className={`shrink-0 stroke-[2.5] transition-transform duration-200 ${
-                        isCreateFormExpanded ? 'rotate-45 text-white' : 'text-[#1d1d1f] group-hover:text-[#0066cc]'
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                        isCreateFormExpanded
+                          ? 'bg-white/20 text-white'
+                          : 'bg-[#0066cc] text-white group-hover:scale-110 shadow-2xs'
                       }`}
-                    />
-                    <span className={`text-sm sm:text-base font-extrabold tracking-tight transition-colors ${
-                      isCreateFormExpanded ? 'text-white' : 'text-[#1d1d1f] group-hover:text-[#0066cc]'
+                    >
+                      <Plus
+                        size={18}
+                        className={`stroke-[3] transition-transform duration-200 ${
+                          isCreateFormExpanded ? 'rotate-45' : ''
+                        }`}
+                      />
+                    </div>
+                    <span className={`text-base font-extrabold tracking-tight transition-colors ${
+                      isCreateFormExpanded ? 'text-white' : 'text-[#0066cc] group-hover:text-[#004d99]'
                     }`}>
                       Ask an Academic Doubt / Post Thread
                     </span>
