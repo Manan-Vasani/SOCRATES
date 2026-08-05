@@ -223,8 +223,8 @@ export default function RecordingsPage() {
           </div>
         </div>
 
-        {/* Recordings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Recordings List - Wide & Rich Information Cards */}
+        <div className="space-y-6">
           {filteredRecordings.map((rec) => (
             <div
               key={rec.id}
@@ -232,70 +232,110 @@ export default function RecordingsPage() {
                 setSelectedRecord(rec)
                 setIsPlayingVideo(false)
               }}
-              className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-2xs hover:shadow-xl hover:border-[#0066cc]/40 transition-all cursor-pointer flex flex-col group"
+              className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-2xs hover:shadow-xl hover:border-[#0066cc]/40 transition-all cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group transform-gpu select-none"
             >
-              {/* Thumbnail Container */}
-              <div className="relative aspect-video bg-[#1d1d1f] overflow-hidden">
+              {/* Left Column: Wide Video Thumbnail Frame (4 cols) */}
+              <div className="md:col-span-4 relative aspect-video md:aspect-auto min-h-[220px] bg-black overflow-hidden">
                 <img
                   src={rec.thumbnailUrl}
                   alt={rec.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/90 text-[#0066cc] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Play size={20} className="fill-[#0066cc] ml-1" />
+                  <div className="w-14 h-14 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Play size={24} className="fill-[#0066cc] ml-1" />
                   </div>
                 </div>
 
                 {/* Duration Badge */}
-                <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-sm text-white text-[10px] font-mono font-semibold">
-                  <Clock size={12} />
+                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/75 backdrop-blur-sm text-white text-xs font-mono font-bold border border-white/20">
+                  <Clock size={13} />
                   <span>{rec.duration}</span>
                 </div>
 
                 {/* Subject Badge */}
-                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#1d1d1f] text-[10px] font-bold">
-                  {rec.subject}
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-xl bg-white/95 backdrop-blur-sm text-[#0066cc] text-xs font-bold shadow-xs border border-[#0066cc]/20 flex items-center gap-1.5">
+                  {getSubjectFilterIcon(rec.subject, false)}
+                  <span>{rec.subject}</span>
                 </div>
               </div>
 
-              {/* Card Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug line-clamp-2">
-                    {rec.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-xs text-[#6e6e73]">
-                    <User size={13} className="text-[#0066cc]" />
-                    <span className="font-semibold text-[#1d1d1f]">{rec.tutorName}</span>
-                    <span>• {rec.date}</span>
+              {/* Right Column: Expansive Information Body (8 cols) */}
+              <div className="md:col-span-8 p-6 sm:p-7 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  {/* Title & Instructor Info */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg sm:text-xl font-extrabold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug tracking-tight">
+                      {rec.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-[#6e6e73]">
+                      <User size={14} className="text-[#0066cc]" />
+                      <span className="font-bold text-[#1d1d1f]">{rec.tutorName}</span>
+                      <span>• {rec.date}</span>
+                    </div>
                   </div>
+
+                  {/* Socratic AI Summary Multi-point List */}
+                  <div className="bg-[#f4f8fc] border border-[#0066cc]/15 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#0066cc] uppercase tracking-wider">
+                      <Sparkles size={14} />
+                      <span>Socrates AI Summary & Takeaways</span>
+                    </div>
+                    <ul className="space-y-1 text-xs text-[#525252] leading-relaxed">
+                      {rec.aiSummary.slice(0, 2).map((point, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-[#0066cc] font-bold">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Key Formula / Equation Tags */}
+                  {rec.keyEquations && rec.keyEquations.length > 0 && (
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className="text-[11px] font-bold text-[#7a7a7a] uppercase tracking-wider">Formulas:</span>
+                      {rec.keyEquations.map((eq, idx) => (
+                        <span key={idx} className="px-2.5 py-1 rounded-lg bg-[#f5f5f7] border border-[#e0e0e2] text-[11px] font-mono text-[#1d1d1f] font-semibold">
+                          {eq}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* AI Summary Snippet */}
-                <div className="bg-[#f5f5f7] border border-[#e5e5e7] rounded-2xl p-3 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#0066cc] uppercase tracking-wider">
-                    <Sparkles size={12} />
-                    <span>Socrates AI Summary</span>
-                  </div>
-                  <p className="text-[11px] text-[#6e6e73] line-clamp-2 leading-relaxed">
-                    {rec.aiSummary[0]}
-                  </p>
-                </div>
+                {/* Bottom Action Footer Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#f0f0f2]">
+                  <span className="text-xs font-semibold text-[#86868b]">
+                    {rec.fileSize} HD • 1080p Video & Transcript
+                  </span>
 
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
-                  <span className="text-[#86868b] text-[11px]">{rec.fileSize} HD</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDownloadPDF(rec.title)
-                    }}
-                    className="flex items-center gap-1 text-[#0066cc] font-bold hover:underline cursor-pointer"
-                  >
-                    <Download size={13} />
-                    <span>AI Notes PDF</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedRecord(rec)
+                        setIsPlayingVideo(true)
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-extrabold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer select-none"
+                    >
+                      <Play size={13} className="fill-white" />
+                      <span>Watch Recording</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDownloadPDF(rec.title)
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e0e0e4] text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer select-none"
+                    >
+                      <Download size={13} />
+                      <span>AI Notes PDF</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
