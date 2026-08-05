@@ -42,10 +42,10 @@ export default function Navbar() {
                 <a
                   key={link.path}
                   href={link.path}
-                  className={`text-xs transition-colors duration-150 select-none ${
+                  className={`text-xs font-semibold transition-colors duration-150 select-none transform-gpu ${
                     isActive
-                      ? 'text-[#0066cc] font-bold'
-                      : 'text-[#1d1d1f]/80 hover:text-[#0066cc] font-semibold'
+                      ? 'text-[#0066cc]'
+                      : 'text-[#1d1d1f]/80 hover:text-[#0066cc]'
                   }`}
                 >
                   {link.name}
@@ -57,10 +57,10 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`text-xs transition-colors duration-150 select-none ${
+                className={`text-xs font-semibold transition-colors duration-150 select-none transform-gpu ${
                   isActive
-                    ? 'text-[#0066cc] font-bold'
-                    : 'text-[#1d1d1f]/80 hover:text-[#0066cc] font-semibold'
+                    ? 'text-[#0066cc]'
+                    : 'text-[#1d1d1f]/80 hover:text-[#0066cc]'
                 }`}
               >
                 {link.name}
@@ -87,8 +87,8 @@ export default function Navbar() {
                     isProfileActive ? 'border-[#0066cc]' : 'border-transparent'
                   }`}
                 />
-                <span className={`text-xs max-w-[140px] truncate transition-colors ${
-                  isProfileActive ? 'font-bold text-[#0066cc]' : 'font-semibold text-[#1d1d1f] group-hover:text-[#0066cc]'
+                <span className={`text-xs font-semibold max-w-[140px] truncate transition-colors ${
+                  isProfileActive ? 'text-[#0066cc]' : 'text-[#1d1d1f] group-hover:text-[#0066cc]'
                 }`}>
                   {user.fullName || user.name}
                 </span>
