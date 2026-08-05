@@ -32,14 +32,14 @@ export default function Navbar() {
         </Link>
 
         {/* Luxurious Navigation Links Capsule Track */}
-        <div className="hidden md:flex items-center gap-1.5 p-1 rounded-full bg-[#f4f4f7]/80 border border-slate-200/50 shadow-inner">
+        <div className="hidden md:flex items-center gap-1.5 p-1 rounded-full bg-[#f4f4f7] border border-[#e5e5e7] transform-gpu select-none">
           {navLinks.map((link) => {
             const isActive = !link.isHash && location.pathname === link.path
             return link.isHash ? (
               <a
                 key={link.path}
                 href={link.path}
-                className="px-4 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold text-[#525255] hover:text-[#0066cc] hover:bg-white/80 transition-all duration-200"
+                className="px-4 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold text-[#525255] hover:text-[#0066cc] hover:bg-white transition-colors duration-150 ease-out transform-gpu select-none"
               >
                 {link.label}
               </a>
@@ -47,10 +47,10 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-4 py-1.5 rounded-full text-xs sm:text-[13px] transition-all duration-200 ${
+                className={`px-4 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-colors duration-150 ease-out transform-gpu select-none ${
                   isActive
-                    ? 'bg-[#0066cc] text-white font-bold shadow-md shadow-[#0066cc]/30 scale-[1.02]'
-                    : 'font-semibold text-[#525255] hover:text-[#0066cc] hover:bg-white/80'
+                    ? 'bg-[#0066cc] text-white shadow-xs'
+                    : 'text-[#525255] hover:text-[#0066cc] hover:bg-white'
                 }`}
               >
                 {link.label}
