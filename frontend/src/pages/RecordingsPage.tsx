@@ -16,6 +16,7 @@ import {
   Eye,
   FileCode,
   FileText,
+  Filter,
   FlaskConical,
   Layers,
   Play,
@@ -148,14 +149,27 @@ export default function RecordingsPage() {
   const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
   const [isPlayingVideo, setIsPlayingVideo] = useState(false)
 
-  const filteredRecordings = recordings.filter((r) => {
-    const matchesSubject = activeSubject === 'All' || r.subject === activeSubject
-    const matchesSearch =
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.tutorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.aiSummary.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
-    return matchesSubject && matchesSearch
-  })
+  const [selectedDateFilter, setSelectedDateFilter] = useState('All')
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
+
+  const dateOptions = ['All', ...Array.from(new Set(recordings.map((r) => r.date)))]
+
+  const filteredRecordings = recordings
+    .filter((r) => {
+      const matchesSubject = activeSubject === 'All' || r.subject === activeSubject
+      const matchesDate = selectedDateFilter === 'All' || r.date === selectedDateFilter
+      const matchesSearch =
+        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.tutorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.aiSummary.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+      return matchesSubject && matchesDate && matchesSearch
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime()
+      const dateB = new Date(b.date).getTime()
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB
+    })
 
   const handleDownloadPDF = (title: string) => {
     toast.success(`Exporting AI Notes PDF for "${title}"... Download started!`)
@@ -189,37 +203,105 @@ export default function RecordingsPage() {
 
       {/* Main Body */}
       <main className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
-        {/* Search & Subject Filter Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-lg">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search recordings by topic, tutor name, or keyword..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-[#e0e0e2] text-xs outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition-all shadow-2xs"
-            />
+        {/* Integrated Search, Date & Subject Control Panel */}
+        <div className="bg-white rounded-3xl border border-[#e5e5e7] p-4 sm:p-5 space-y-4 shadow-2xs">
+          {/* Top Control Bar: Search Input + Date Filter + Sort Order */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            {/* Search Input Box */}
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search recordings by topic, tutor name, date, or keyword..."
+                className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-[#f5f5f7] border border-transparent text-xs font-semibold outline-none focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1a1a6] hover:text-[#1d1d1f] p-1"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Side Filters: Date & Sort Order */}
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+              {/* Date Filter Dropdown */}
+              <div className="relative flex items-center flex-1 sm:flex-none">
+                <Calendar size={14} className="absolute left-3.5 text-[#0066cc] pointer-events-none" />
+                <select
+                  value={selectedDateFilter}
+                  onChange={(e) => setSelectedDateFilter(e.target.value)}
+                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-transparent text-xs font-bold text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none"
+                >
+                  <option value="All">📅 All Dates</option>
+                  {dateOptions
+                    .filter((d) => d !== 'All')
+                    .map((dateStr) => (
+                      <option key={dateStr} value={dateStr}>
+                        {dateStr}
+                      </option>
+                    ))}
+                </select>
+                <div className="absolute right-3 pointer-events-none text-[#86868b] text-[10px]">▼</div>
+              </div>
+
+              {/* Sort Order Dropdown */}
+              <div className="relative flex items-center flex-1 sm:flex-none">
+                <Filter size={14} className="absolute left-3.5 text-[#0066cc] pointer-events-none" />
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-transparent text-xs font-bold text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none"
+                >
+                  <option value="newest">Sort: Newest First</option>
+                  <option value="oldest">Sort: Oldest First</option>
+                </select>
+                <div className="absolute right-3 pointer-events-none text-[#86868b] text-[10px]">▼</div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {['All', 'Mathematics', 'Computer Science', 'Physics'].map((subj) => {
-              const isActive = activeSubject === subj
-              return (
-                <button
-                  key={subj}
-                  onClick={() => setActiveSubject(subj)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-colors duration-150 cursor-pointer whitespace-nowrap select-none border flex items-center gap-2 transform-gpu ${
-                    isActive
-                      ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-2xs'
-                      : 'bg-white border-[#e0e0e2] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
-                  }`}
-                >
-                  {getSubjectFilterIcon(subj, isActive)}
-                  <span>{subj}</span>
-                </button>
-              )
-            })}
+          {/* Bottom Control Bar: Subject Filter Pills + Clear Button */}
+          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none border-t border-[#f0f0f2] pt-3">
+            <div className="flex items-center gap-2">
+              {['All', 'Mathematics', 'Computer Science', 'Physics'].map((subj) => {
+                const isActive = activeSubject === subj
+                return (
+                  <button
+                    key={subj}
+                    onClick={() => setActiveSubject(subj)}
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-colors duration-150 cursor-pointer whitespace-nowrap select-none border flex items-center gap-2 transform-gpu ${
+                      isActive
+                        ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-2xs'
+                        : 'bg-white border-[#e0e0e2] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
+                    }`}
+                  >
+                    {getSubjectFilterIcon(subj, isActive)}
+                    <span>{subj}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Clear All Active Filters */}
+            {(selectedDateFilter !== 'All' || activeSubject !== 'All' || searchQuery !== '') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDateFilter('All')
+                  setActiveSubject('All')
+                  setSearchQuery('')
+                }}
+                className="px-3.5 py-2 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] text-xs font-bold transition-colors cursor-pointer select-none whitespace-nowrap border border-[#e0e0e4] shrink-0"
+              >
+                Clear All Filters
+              </button>
+            )}
           </div>
         </div>
 
