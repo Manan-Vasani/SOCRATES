@@ -18,9 +18,9 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 py-2.5 px-4 sm:px-6 w-full select-none">
+    <header className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-md border-b border-[#e5e5e7]/60 transition-all select-none">
       <nav 
-        className="max-w-6xl mx-auto h-14 sm:h-16 px-4 sm:px-6 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-black/5 flex items-center justify-between transition-all duration-300 transform-gpu"
+        className="max-w-6xl mx-auto h-14 sm:h-16 px-6 flex items-center justify-between transition-all duration-300 transform-gpu"
         aria-label="Global navigation"
       >
         {/* Brand Logo */}
@@ -31,15 +31,15 @@ export default function Navbar() {
           <Logo size="md" />
         </Link>
 
-        {/* Luxurious Navigation Links Capsule Track */}
-        <div className="hidden md:flex items-center gap-1.5 p-1 rounded-full bg-[#f4f4f7]/80 border border-slate-200/50 shadow-inner">
+        {/* Clean Nav Links Without Card Background */}
+        <div className="hidden md:flex items-center gap-2">
           {navLinks.map((link) => {
             const isActive = !link.isHash && location.pathname === link.path
             return link.isHash ? (
               <a
                 key={link.path}
                 href={link.path}
-                className="px-4 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold text-[#525255] hover:text-[#0066cc] hover:bg-white/80 transition-all duration-200"
+                className="px-4 py-2 rounded-full text-sm font-semibold text-[#1d1d1f] hover:text-[#0066cc] hover:bg-[#0066cc]/5 transition-all duration-150"
               >
                 {link.label}
               </a>
@@ -47,10 +47,10 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-4 py-1.5 rounded-full text-xs sm:text-[13px] transition-all duration-200 ${
+                className={`px-4 py-2 rounded-full text-sm transition-all duration-150 ${
                   isActive
-                    ? 'bg-[#0066cc] text-white font-bold shadow-md shadow-[#0066cc]/30 scale-[1.02]'
-                    : 'font-semibold text-[#525255] hover:text-[#0066cc] hover:bg-white/80'
+                    ? 'text-[#0066cc] font-bold bg-[#0066cc]/10'
+                    : 'font-semibold text-[#1d1d1f] hover:text-[#0066cc] hover:bg-[#0066cc]/5'
                 }`}
               >
                 {link.label}
@@ -83,13 +83,13 @@ export default function Navbar() {
             <div className="flex items-center gap-2.5">
               <Link 
                 to="/login" 
-                className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-[#3a3a3c] hover:text-[#0066cc] hover:bg-[#f4f4f7] transition-all duration-200"
+                className="px-4 py-2 rounded-full text-sm font-bold text-[#1d1d1f] hover:text-[#0066cc] hover:bg-[#f4f4f7] transition-all duration-200"
               >
                 Sign In
               </Link>
               <Link 
                 to="/signup" 
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#0066cc] via-[#0077ed] to-[#0055b3] text-white text-xs sm:text-sm font-bold hover:shadow-[0_6px_20px_rgba(0,102,204,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md shadow-[#0066cc]/25 flex items-center gap-1.5"
+                className="px-5 py-2 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5"
               >
                 <Sparkles size={14} className="text-white/90" />
                 <span>Get Started</span>
