@@ -346,26 +346,28 @@ export default function RecordingsPage() {
       {/* Homepage Matching Footer */}
       <Footer />
 
-      {/* RECAP DETAIL MODAL */}
+      {/* RECAP DETAIL MODAL - Anti-Lag GPU Hardware Locked */}
       {selectedRecord && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-150 transform-gpu select-none">
+          <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 transform-gpu">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-[#fafafa]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-white">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold shrink-0">
-                  {selectedRecord.subject}
+                <div className="px-3.5 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold shrink-0 border border-[#0066cc]/20 flex items-center gap-1.5">
+                  {getSubjectFilterIcon(selectedRecord.subject, false)}
+                  <span>{selectedRecord.subject}</span>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-[#1d1d1f] truncate">{selectedRecord.title}</h3>
-                  <span className="text-xs text-[#86868b]">{selectedRecord.tutorName} • {selectedRecord.date} • {selectedRecord.duration}</span>
+                  <h3 className="text-base font-extrabold text-[#1d1d1f] truncate leading-snug">{selectedRecord.title}</h3>
+                  <span className="text-xs text-[#6e6e73] font-medium">{selectedRecord.tutorName} • {selectedRecord.date} • {selectedRecord.duration} • {selectedRecord.fileSize} HD</span>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedRecord(null)}
-                className="p-2 rounded-2xl hover:bg-[#e0e0e2] text-[#7a7a7a] transition-all cursor-pointer"
+                className="p-2 rounded-2xl hover:bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors cursor-pointer shrink-0"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -374,7 +376,7 @@ export default function RecordingsPage() {
               {/* Left Column: Video Player & Equations */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Video Player Box */}
-                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-xl relative border border-[#2a2a2e]">
+                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-xl relative border border-[#2a2a2e] transform-gpu">
                   {isPlayingVideo ? (
                     <video
                       src={selectedRecord.videoUrl}
@@ -384,10 +386,12 @@ export default function RecordingsPage() {
                     />
                   ) : (
                     <div className="relative w-full h-full">
-                      <img src={selectedRecord.thumbnailUrl} alt={selectedRecord.title} className="w-full h-full object-cover opacity-80" />
+                      <img src={selectedRecord.thumbnailUrl} alt={selectedRecord.title} className="w-full h-full object-cover opacity-85" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       <button
+                        type="button"
                         onClick={() => setIsPlayingVideo(true)}
-                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 hover:scale-110 transition-transform cursor-pointer"
+                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 hover:scale-105 transition-transform duration-150 cursor-pointer transform-gpu"
                       >
                         <Play size={26} className="fill-white translate-x-[2px]" />
                       </button>
@@ -396,61 +400,77 @@ export default function RecordingsPage() {
                 </div>
 
                 {/* Key Equations Section */}
-                <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
-                    <FileCode size={15} className="text-[#0066cc]" />
-                    <span>Key Equations & Derivations Covered</span>
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedRecord.keyEquations.map((eq, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] font-mono text-xs text-[#1d1d1f] font-bold">
-                        {eq}
-                      </div>
-                    ))}
+                {selectedRecord.keyEquations && selectedRecord.keyEquations.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3.5 shadow-2xs">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                      <Sigma size={16} className="text-[#0066cc]" />
+                      <span>Key Equations & Derivations Covered</span>
+                    </h4>
+                    <div className="space-y-2.5">
+                      {selectedRecord.keyEquations.map((eq, i) => (
+                        <div key={i} className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] font-mono text-xs text-[#0f172a] font-bold flex items-center justify-between shadow-2xs">
+                          <span className="truncate">{eq}</span>
+                          <span className="text-[10px] font-mono text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-md font-bold shrink-0">LaTeX</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Right Column: AI Summary & Interactive Transcript */}
-              <div className="space-y-6">
-                {/* AI Summary Box */}
-                <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#0066cc]">
-                    <Sparkles size={16} />
-                    <span>Socrates AI Summary</span>
+              <div className="space-y-6 flex flex-col justify-between">
+                <div className="space-y-6">
+                  {/* AI Summary Box */}
+                  <div className="bg-gradient-to-br from-[#f4f8fc] via-white to-[#f4f8fc] rounded-2xl border border-[#0066cc]/20 p-5 space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 text-xs font-extrabold text-[#0066cc] uppercase tracking-wider">
+                      <Sparkles size={16} />
+                      <span>Socrates AI Summary & Takeaways</span>
+                    </div>
+                    <ul className="space-y-2 text-xs text-[#525252] leading-relaxed">
+                      {selectedRecord.aiSummary.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-[#0066cc] font-bold shrink-0">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="space-y-2 text-xs text-[#525252] list-disc pl-4 leading-relaxed">
-                    {selectedRecord.aiSummary.map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
 
-                {/* Interactive Transcript */}
-                <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
-                    <Clock size={15} className="text-[#0066cc]" />
-                    <span>Interactive Transcript</span>
-                  </h4>
-                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                    {selectedRecord.transcript.map((t, i) => (
-                      <div key={i} className="text-xs space-y-0.5 border-b border-[#f0f0f2] pb-2 last:border-0">
-                        <div className="flex items-center justify-between text-[10px] text-[#86868b]">
-                          <span className="font-bold text-[#1d1d1f]">{t.speaker}</span>
-                          <span className="font-mono text-[#0066cc] cursor-pointer hover:underline">{t.time}</span>
+                  {/* Interactive Transcript */}
+                  <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                      <Clock size={16} className="text-[#0066cc]" />
+                      <span>Interactive Transcript</span>
+                    </h4>
+                    <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                      {selectedRecord.transcript.map((t, i) => (
+                        <div key={i} className="text-xs space-y-1 border-b border-[#f0f0f2] pb-2.5 last:border-0">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-[#1d1d1f]">{t.speaker}</span>
+                            <button
+                              type="button"
+                              onClick={() => setIsPlayingVideo(true)}
+                              className="font-mono text-[#0066cc] bg-[#0066cc]/10 hover:bg-[#0066cc] hover:text-white px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors cursor-pointer select-none"
+                              title="Jump to video timestamp"
+                            >
+                              {t.time}
+                            </button>
+                          </div>
+                          <p className="text-[#525252] font-normal leading-relaxed">{t.text}</p>
                         </div>
-                        <p className="text-[#525252]">{t.text}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 {/* PDF Export Action */}
                 <button
+                  type="button"
                   onClick={() => handleDownloadPDF(selectedRecord.title)}
-                  className="w-full py-3 rounded-2xl bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#0066cc]/20 cursor-pointer"
+                  className="w-full py-3.5 rounded-2xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-extrabold transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#0066cc]/20 cursor-pointer transform-gpu select-none mt-4"
                 >
-                  <Download size={15} />
+                  <Download size={16} />
                   <span>Download Full AI Notes PDF</span>
                 </button>
               </div>
