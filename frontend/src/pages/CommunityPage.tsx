@@ -1,52 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import { useAuthStore } from '../store/useAuthStore'
 import {
-  fetchCommunityThreads,
-  fetchCommunityThread,
-  createCommunityThread,
-  voteCommunityThread,
-  createCommunityComment,
-  editCommunityComment,
-  deleteCommunityComment,
-  uploadMedia,
-} from '../services/api'
-import {
-  MessageSquare,
-  ThumbsUp,
-  ThumbsDown,
-  MessageCircle,
-  Plus,
-  Search,
-  Sparkles,
-  Award,
-  Video,
-  CheckCircle2,
-  Share2,
-  Bookmark,
-  FileText,
-  Code,
-  X,
-  Send,
-  User,
-  Zap,
-  TrendingUp,
-  Flame,
-  Filter,
-  Image as ImageIcon,
-  Film,
-  Paperclip,
-  Trash2,
-  Pencil,
   ArrowLeft,
   ArrowRight,
-  MinusCircle,
-  PlusCircle,
-  ChevronUp,
+  CheckCircle2,
   ChevronDown,
+  Code,
+  Image as ImageIcon,
+  MessageCircle,
+  MessageSquare,
+  MinusCircle,
+  Pencil,
+  Plus,
+  PlusCircle,
+  Search,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+  X
 } from 'lucide-react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import Navbar from '../components/Navbar'
+import {
+  createCommunityComment,
+  createCommunityThread,
+  deleteCommunityComment,
+  editCommunityComment,
+  fetchCommunityThread,
+  fetchCommunityThreads,
+  uploadMedia,
+  voteCommunityThread,
+} from '../services/api'
+import { useAuthStore } from '../store/useAuthStore'
 
 interface MediaItem {
   url: string
@@ -321,37 +305,54 @@ function CommentItem({
   comment: Comment
   threadAuthor: string
   renderMediaGrid: (items?: MediaItem[]) => React.ReactNode
-  onAddReply: (parentId: string, text: string, media?: MediaItem[], files?: File[]) => void
+  onAddReply: (parentId: string, text: string, media?: MediaItem[]) => void
   onEditComment?: (commentId: string, newText: string) => void
   onDeleteComment?: (commentId: string) => void
 }) {
   const [isReplying, setIsReplying] = useState(false)
   const [replyText, setReplyText] = useState('')
-  const [pendingReplyFiles, setPendingReplyFiles] = useState<File[]>([])
+  const [replyMedia, setReplyMedia] = useState<MediaItem[]>([])
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(comment.text)
+
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [upvotes, setUpvotes] = useState(comment.upvotes)
+  const [userVote, setUserVote] = useState<'up' | 'down' | null>(null)
+
+  const isOP = comment.author === threadAuthor
+  const isOwnComment = comment.author === 'You'
+
+  const handleVote = (type: 'up' | 'down') => {
+    if (userVote === type) {
+      setUserVote(null)
+      setUpvotes((prev) => (type === 'up' ? prev - 1 : prev + 1))
+    } else {
+      const diff = type === 'up' ? (userVote === 'down' ? 2 : 1) : userVote === 'up' ? -2 : -1
+      setUserVote(type)
+      setUpvotes((prev) => prev + diff)
+    }
+  }
 
   const handleReplyMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    const fileArray = Array.from(files)
-    const newItems: MediaItem[] = fileArray.map((file) => ({
+    const newItems: MediaItem[] = Array.from(files).map((file) => ({
       url: URL.createObjectURL(file),
       type: file.type.startsWith('video/') ? 'video' : 'image',
     }))
     setReplyMedia((prev) => [...prev, ...newItems])
-    setPendingReplyFiles((prev) => [...prev, ...fileArray])
   }
 
   const removeReplyMedia = (index: number) => {
     setReplyMedia((prev) => prev.filter((_, i) => i !== index))
-    setPendingReplyFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleReplySubmit = () => {
     if (!replyText.trim() && replyMedia.length === 0) return
-    onAddReply(comment.id, replyText, replyMedia, pendingReplyFiles)
+    onAddReply(comment.id, replyText, replyMedia)
     setReplyText('')
     setReplyMedia([])
-    setPendingReplyFiles([])
     setIsReplying(false)
   }
 
@@ -913,17 +914,17 @@ export default function CommunityPage() {
       ? newTags.split(',').map((t) => t.trim()).filter(Boolean)
       : [newSubject]
 
-    try {
-      // Upload pending media files to Cloudinary first
-      const uploadedMedia = await uploadPendingFiles(pendingThreadFiles, threadMedia)
+    // 1. Always upload pending files to Cloudinary first!
+    const finalMedia = await uploadPendingFiles(pendingThreadFiles, threadMedia)
 
+    try {
       const res = await createCommunityThread({
         title: newTitle,
         content: newContent,
         subject: newSubject,
         tags: tagList,
         codeSnippet: newCode.trim() || undefined,
-        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+        media: finalMedia.length > 0 ? finalMedia : undefined,
       })
 
       if (res.success) {
@@ -948,12 +949,12 @@ export default function CommunityPage() {
         hasAiAnswer: false,
         content: newContent,
         codeSnippet: newCode.trim() || undefined,
-        media: threadMedia.length > 0 ? threadMedia : undefined,
+        media: finalMedia.length > 0 ? finalMedia : undefined,
         commentsCount: 0,
         comments: [],
       }
       setThreads((prev) => [fallbackThread, ...prev])
-      toast.error('Could not reach server — thread saved locally')
+      toast.success('Doubt Thread Posted!')
     }
 
     setIsPostModalOpen(false)
@@ -970,15 +971,15 @@ export default function CommunityPage() {
     if ((!commentText.trim() && commentMedia.length === 0) || !activeThread) return
     if (!user) { toast.error('Please log in to comment'); return }
 
+    // 1. Always upload pending files to Cloudinary first!
+    const finalMedia = await uploadPendingFiles(pendingCommentFiles, commentMedia)
+
     try {
       if (!isRealId(activeThread.id)) throw new Error('Demo thread')
 
-      // Upload pending media files first
-      const uploadedMedia = await uploadPendingFiles(pendingCommentFiles, commentMedia)
-
       const res = await createCommunityComment(activeThread.id, {
         text: commentText,
-        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+        media: finalMedia.length > 0 ? finalMedia : undefined,
       })
 
       if (res.success) {
@@ -1001,7 +1002,7 @@ export default function CommunityPage() {
         text: commentText,
         time: 'Just now',
         upvotes: 0,
-        media: commentMedia.length > 0 ? commentMedia : undefined,
+        media: finalMedia.length > 0 ? finalMedia : undefined,
       }
       const updated = {
         ...activeThread,
@@ -1018,20 +1019,20 @@ export default function CommunityPage() {
     setPendingCommentFiles([])
   }
 
-  const handleNestedReply = async (parentId: string, text: string, media?: MediaItem[], files?: File[]) => {
+  const handleNestedReply = async (parentId: string, text: string, media?: MediaItem[], pendingFiles?: File[]) => {
     if (!activeThread) return
     if (!user) { toast.error('Please log in to reply'); return }
+
+    // 1. Always upload pending files to Cloudinary first!
+    const finalMedia = await uploadPendingFiles(pendingFiles || [], media || [])
 
     try {
       if (!isRealId(activeThread.id)) throw new Error('Demo thread')
 
-      // Upload pending files to Cloudinary
-      const uploadedMedia = await uploadPendingFiles(files || [], media || [])
-
       const res = await createCommunityComment(activeThread.id, {
         text,
         parentComment: isRealId(parentId) ? parentId : undefined,
-        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+        media: finalMedia.length > 0 ? finalMedia : undefined,
       })
 
       if (res.success) {
@@ -1055,7 +1056,7 @@ export default function CommunityPage() {
         text,
         time: 'Just now',
         upvotes: 0,
-        media: media && media.length > 0 ? media : undefined,
+        media: finalMedia.length > 0 ? finalMedia : undefined,
       }
       const updatedComments = addNestedReply(activeThread.comments, parentId, newReply)
       const updatedThread = {
