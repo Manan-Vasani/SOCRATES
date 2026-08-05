@@ -522,6 +522,32 @@ function CommentItem({
   )
 }
 
+const getTagIcon = (tag: string) => {
+  const t = tag.toLowerCase()
+  if (t.includes('algor') || t.includes('struct') || t.includes('tree') || t.includes('graph') || t.includes('net')) {
+    return <Network size={14} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('python') || t.includes('term') || t.includes('bash')) {
+    return <Terminal size={14} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('c++') || t.includes('code') || t.includes('react') || t.includes('web') || t.includes('dev')) {
+    return <Code2 size={14} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('math') || t.includes('calc') || t.includes('int') || t.includes('algeb') || t.includes('geom') || t.includes('olym')) {
+    return <Sigma size={14} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('phys') || t.includes('quant') || t.includes('mech') || t.includes('thermo') || t.includes('electro')) {
+    return <Atom size={14} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('chem') || t.includes('organ') || t.includes('inorgan') || t.includes('react')) {
+    return <FlaskConical size={14} className="text-[#0066cc] shrink-0" />
+  }
+  if (t.includes('stat') || t.includes('prob') || t.includes('data')) {
+    return <Percent size={14} className="text-[#0066cc] shrink-0" />
+  }
+  return <Cpu size={14} className="text-[#0066cc] shrink-0" />
+}
+
 const BASE_SUBJECT_OPTIONS: DropdownOption<string>[] = [
   { value: 'Mathematics', label: 'Mathematics', icon: <Sigma size={15} className="text-[#0066cc]" /> },
   { value: 'Computer Science', label: 'Computer Science', icon: <Code2 size={15} className="text-[#0066cc]" /> },
@@ -533,26 +559,6 @@ const BASE_SUBJECT_OPTIONS: DropdownOption<string>[] = [
   { value: 'Statistics & Data Science', label: 'Statistics & Data Science', icon: <Percent size={15} className="text-[#0066cc]" /> },
   { value: 'Engineering & Statics', label: 'Engineering & Statics', icon: <Cpu size={15} className="text-[#0066cc]" /> },
 ]
-
-const getTagIcon = (tag: string) => {
-  const t = tag.toLowerCase()
-  if (t.includes('alg') || t.includes('struct') || t.includes('net') || t.includes('olym')) {
-    return <Network size={13} className="text-[#0066cc] shrink-0" />
-  }
-  if (t.includes('py') || t.includes('react') || t.includes('code') || t.includes('web') || t.includes('c++')) {
-    return <Code2 size={13} className="text-[#0066cc] shrink-0" />
-  }
-  if (t.includes('calc') || t.includes('integ') || t.includes('alge') || t.includes('geom') || t.includes('math')) {
-    return <Sigma size={13} className="text-[#0066cc] shrink-0" />
-  }
-  if (t.includes('phys') || t.includes('quant') || t.includes('mech') || t.includes('thermo')) {
-    return <Atom size={13} className="text-[#0066cc] shrink-0" />
-  }
-  if (t.includes('chem') || t.includes('organ') || t.includes('react')) {
-    return <FlaskConical size={13} className="text-[#0066cc] shrink-0" />
-  }
-  return <Cpu size={13} className="text-[#0066cc] shrink-0" />
-}
 
 const FALLBACK_CONTRIBUTORS = [
   { rank: 1, name: 'Dr. Alex Vance', karma: 3450, solved: 142, badge: 'Verified Master' },
@@ -1463,18 +1469,18 @@ export default function CommunityPage() {
                             </button>
                           </div>
 
-                          {/* Immovable Quick Suggestions (Fixed position under input, zero layout shift) */}
-                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {/* Immovable Quick Suggestions with Left Domain Icons (Matches Image 3) */}
+                          <div className="flex flex-wrap items-center gap-2 pt-0.5">
                             <span className="text-[10px] font-bold text-[#86868b] mr-1 select-none">Quick Suggestions:</span>
                             {(newSubject === 'Mathematics'
-                              ? ['Calculus', 'Integrals', 'Algebra', 'Olympiad', 'Geometry']
+                              ? ['Calculus', 'Integrals', 'Linear Algebra', 'Olympiad', 'Geometry']
                               : newSubject === 'Computer Science'
-                              ? ['Algorithms', 'DataStructures', 'React', 'Python', 'WebDev']
+                              ? ['Algorithms', 'Data Structures', 'React', 'Python', 'C++']
                               : newSubject === 'Physics'
-                              ? ['Mechanics', 'Quantum', 'Thermodynamics', 'Electromagnetism']
+                              ? ['Mechanics', 'Quantum Physics', 'Thermodynamics', 'Electromagnetism']
                               : newSubject === 'Chemistry'
-                              ? ['Organic', 'Inorganic', 'Thermodynamics', 'Reactions']
-                              : ['Circuits', 'Thermodynamics', 'Statics', 'ControlSystems']
+                              ? ['Organic Chemistry', 'Inorganic Chemistry', 'Thermodynamics', 'Reactions']
+                              : ['Circuits', 'Thermodynamics', 'Statics', 'Control Systems']
                             ).map((tag) => {
                               const activeList = newTags ? newTags.split(',').map((t) => t.trim()).filter(Boolean) : []
                               const formattedTag = `#${tag}`
@@ -1490,14 +1496,14 @@ export default function CommunityPage() {
                                       handleAddTag(tag)
                                     }
                                   }}
-                                  className={`px-3 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer select-none border flex items-center gap-1.5 ${
+                                  className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer select-none border flex items-center gap-2 ${
                                     isSelected
                                       ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc] shadow-2xs'
-                                      : 'bg-[#f5f5f7] border-[#e0e0e4] text-[#3a3a3c] hover:bg-[#e8e8ea] hover:border-[#0066cc]/40'
+                                      : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#1d1d1f] hover:bg-[#e8e8ea] hover:border-[#d0d0d4]'
                                   }`}
                                 >
                                   {getTagIcon(tag)}
-                                  <span>#{tag}</span>
+                                  <span>{tag}</span>
                                 </button>
                               )
                             })}
