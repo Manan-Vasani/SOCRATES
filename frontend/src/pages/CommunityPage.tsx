@@ -1435,43 +1435,43 @@ export default function CommunityPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Inline Post Doubt Thread Accordion (High-Visibility Highlighted) */}
-                <div className={`rounded-2xl border transition-all overflow-hidden ${
-                  isCreateFormExpanded ? 'border-[#0066cc] shadow-md' : 'border-[#0066cc]/30 shadow-xs hover:border-[#0066cc] hover:shadow-md'
+                {/* Inline Post Doubt Thread Accordion (GPU-Locked High-Performance Anti-Lag) */}
+                <div className={`rounded-2xl border transition-colors duration-150 transform-gpu overflow-hidden ${
+                  isCreateFormExpanded ? 'border-[#0066cc] shadow-md' : 'border-[#0066cc]/30 shadow-2xs hover:border-[#0066cc] hover:shadow-sm'
                 }`}>
                   {/* Accordion Header Bar */}
                   <div
                     onClick={() => setIsCreateFormExpanded(!isCreateFormExpanded)}
-                    className={`p-4 md:p-5 flex items-center justify-center gap-3 cursor-pointer select-none group transition-all text-center ${
+                    className={`p-4 md:p-5 flex items-center justify-center gap-3 cursor-pointer select-none group transition-colors duration-150 transform-gpu text-center ${
                       isCreateFormExpanded
                         ? 'bg-[#0066cc] text-white'
                         : 'bg-gradient-to-r from-[#f0f7ff] via-white to-[#f0f7ff] hover:from-[#e5f1ff] hover:to-[#e5f1ff] text-[#1d1d1f]'
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150 transform-gpu ${
                         isCreateFormExpanded
                           ? 'bg-white/20 text-white'
-                          : 'bg-[#0066cc] text-white group-hover:scale-110 shadow-2xs'
+                          : 'bg-[#0066cc] text-white shadow-2xs'
                       }`}
                     >
                       <Plus
                         size={18}
-                        className={`stroke-[3] transition-transform duration-200 ${
+                        className={`stroke-[3] transition-transform duration-150 transform-gpu ease-out ${
                           isCreateFormExpanded ? 'rotate-45' : ''
                         }`}
                       />
                     </div>
-                    <span className={`text-base font-extrabold tracking-tight transition-colors ${
+                    <span className={`text-base font-extrabold tracking-tight transition-colors duration-150 ${
                       isCreateFormExpanded ? 'text-white' : 'text-[#0066cc] group-hover:text-[#004d99]'
                     }`}>
                       Ask an Academic Doubt / Post Thread
                     </span>
                   </div>
 
-                  {/* Accordion Body Panel (Opens below header) */}
+                  {/* Accordion Body Panel (GPU-Accelerated Instant Render) */}
                   {isCreateFormExpanded && (
-                    <div className="p-5 md:p-6 border-t border-[#f0f0f2] bg-white space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="p-5 md:p-6 border-t border-[#f0f0f2] bg-white space-y-4 transform-gpu">
                       {/* Subject Custom Dropdown Menu (Matches Tutors & Domains Dropdown) */}
                       <div>
                         <label className="block text-[11px] font-extrabold text-[#6e6e73] uppercase tracking-wider mb-2">
