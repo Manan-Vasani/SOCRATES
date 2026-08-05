@@ -236,9 +236,9 @@ export default function RecordingsPage() {
                 <select
                   value={selectedDateFilter}
                   onChange={(e) => setSelectedDateFilter(e.target.value)}
-                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-transparent text-xs font-bold text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none"
+                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none shadow-2xs"
                 >
-                  <option value="All">📅 All Dates</option>
+                  <option value="All">All Dates</option>
                   {dateOptions
                     .filter((d) => d !== 'All')
                     .map((dateStr) => (
@@ -247,7 +247,7 @@ export default function RecordingsPage() {
                       </option>
                     ))}
                 </select>
-                <div className="absolute right-3 pointer-events-none text-[#86868b] text-[10px]">▼</div>
+                <ChevronDown size={14} className="absolute right-3 text-[#6e6e73] pointer-events-none" />
               </div>
 
               {/* Sort Order Dropdown */}
@@ -256,12 +256,12 @@ export default function RecordingsPage() {
                 <select
                   value={sortOrder}
                   onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-transparent text-xs font-bold text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none"
+                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none shadow-2xs"
                 >
                   <option value="newest">Sort: Newest First</option>
                   <option value="oldest">Sort: Oldest First</option>
                 </select>
-                <div className="absolute right-3 pointer-events-none text-[#86868b] text-[10px]">▼</div>
+                <ChevronDown size={14} className="absolute right-3 text-[#6e6e73] pointer-events-none" />
               </div>
             </div>
           </div>
