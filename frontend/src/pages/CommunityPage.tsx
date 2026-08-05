@@ -360,25 +360,22 @@ function CommentItem({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-4 text-[11px] font-semibold text-[#86868b] pt-1 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-[#f5f5f7] rounded-full px-2.5 py-0.5 border border-[#e5e5e7]">
+            {/* Reddit / Apple Pill Upvote/Downvote Bar */}
+            <div className="flex items-center bg-[#f5f5f7] border border-[#e5e5e7] rounded-full px-2 py-0.5 gap-1">
               <button
                 onClick={() => handleVote('up')}
-                className={`hover:text-[#0066cc] cursor-pointer flex items-center gap-1 transition-colors ${
-                  userVote === 'up' ? 'text-[#0066cc] font-extrabold' : 'text-[#6e6e73]'
-                }`}
+                className="hover:text-[#0066cc] cursor-pointer flex items-center justify-center transition-colors text-[#6e6e73]"
                 title="Like"
               >
-                <ThumbsUp size={12} className={userVote === 'up' ? 'fill-[#0066cc]' : ''} />
+                <ThumbsUp size={12} className={userVote === 'up' ? 'fill-[#0066cc] text-[#0066cc]' : ''} />
               </button>
-              <span className="font-extrabold text-xs text-[#1d1d1f] px-1">{upvotes}</span>
+              <span className="min-w-[1.25rem] text-center font-extrabold text-xs text-[#1d1d1f] inline-block">{upvotes}</span>
               <button
                 onClick={() => handleVote('down')}
-                className={`hover:text-red-500 cursor-pointer flex items-center gap-1 transition-colors ${
-                  userVote === 'down' ? 'text-red-500 font-extrabold' : 'text-[#6e6e73]'
-                }`}
+                className="hover:text-red-500 cursor-pointer flex items-center justify-center transition-colors text-[#6e6e73]"
                 title="Dislike"
               >
-                <ThumbsDown size={12} className={userVote === 'down' ? 'fill-red-500' : ''} />
+                <ThumbsDown size={12} className={userVote === 'down' ? 'fill-red-500 text-red-500' : ''} />
               </button>
             </div>
 
@@ -1271,22 +1268,18 @@ export default function CommunityPage() {
                   <div className="flex items-center gap-1.5 bg-[#f0f0f4] rounded-full px-3.5 py-1.5 border border-[#e0e0e4]">
                     <button
                       onClick={(e) => handleUpvote(activeThread.id, e)}
-                      className={`hover:text-[#0066cc] transition-colors cursor-pointer flex items-center gap-1 ${
-                        activeThread.userVote === 'up' ? 'text-[#0066cc] font-extrabold' : 'text-[#6e6e73]'
-                      }`}
+                      className="hover:text-[#0066cc] transition-colors cursor-pointer flex items-center justify-center text-[#6e6e73]"
                       title="Like"
                     >
-                      <ThumbsUp size={13} className={activeThread.userVote === 'up' ? 'fill-[#0066cc]' : ''} />
+                      <ThumbsUp size={13} className={activeThread.userVote === 'up' ? 'fill-[#0066cc] text-[#0066cc]' : ''} />
                     </button>
-                    <span className="font-extrabold text-xs text-[#1d1d1f] px-2">{activeThread.upvotes}</span>
+                    <span className="min-w-[1.5rem] text-center font-extrabold text-xs text-[#1d1d1f] inline-block">{activeThread.upvotes}</span>
                     <button
                       onClick={(e) => handleDownvote(activeThread.id, e)}
-                      className={`hover:text-red-500 transition-colors cursor-pointer flex items-center gap-1 ${
-                        activeThread.userVote === 'down' ? 'text-red-500 font-extrabold' : 'text-[#6e6e73]'
-                      }`}
+                      className="hover:text-red-500 transition-colors cursor-pointer flex items-center justify-center text-[#6e6e73]"
                       title="Dislike"
                     >
-                      <ThumbsDown size={13} className={activeThread.userVote === 'down' ? 'fill-red-500' : ''} />
+                      <ThumbsDown size={13} className={activeThread.userVote === 'down' ? 'fill-red-500 text-red-500' : ''} />
                     </button>
                   </div>
 
@@ -1680,22 +1673,18 @@ export default function CommunityPage() {
                       <div className="flex items-center gap-1.5 bg-[#f5f5f7] rounded-full px-3 py-1 border border-[#e5e5e7]">
                         <button
                           onClick={(e) => handleUpvote(thread.id, e)}
-                          className={`hover:text-[#0066cc] transition-colors cursor-pointer flex items-center gap-1 ${
-                            thread.userVote === 'up' ? 'text-[#0066cc] font-bold' : 'text-[#6e6e73]'
-                          }`}
+                          className="hover:text-[#0066cc] transition-colors cursor-pointer flex items-center justify-center text-[#6e6e73]"
                           title="Like"
                         >
-                          <ThumbsUp size={13} className={thread.userVote === 'up' ? 'fill-[#0066cc]' : ''} />
+                          <ThumbsUp size={13} className={thread.userVote === 'up' ? 'fill-[#0066cc] text-[#0066cc]' : ''} />
                         </button>
-                        <span className="font-extrabold text-[#1d1d1f] px-1.5 text-xs">{thread.upvotes}</span>
+                        <span className="min-w-[1.5rem] text-center font-extrabold text-[#1d1d1f] text-xs inline-block">{thread.upvotes}</span>
                         <button
                           onClick={(e) => handleDownvote(thread.id, e)}
-                          className={`hover:text-red-500 transition-colors cursor-pointer flex items-center gap-1 ${
-                            thread.userVote === 'down' ? 'text-red-500 font-bold' : 'text-[#6e6e73]'
-                          }`}
+                          className="hover:text-red-500 transition-colors cursor-pointer flex items-center justify-center text-[#6e6e73]"
                           title="Dislike"
                         >
-                          <ThumbsDown size={13} className={thread.userVote === 'down' ? 'fill-red-500' : ''} />
+                          <ThumbsDown size={13} className={thread.userVote === 'down' ? 'fill-red-500 text-red-500' : ''} />
                         </button>
                       </div>
 
