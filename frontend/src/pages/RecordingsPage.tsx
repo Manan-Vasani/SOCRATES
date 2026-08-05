@@ -3,22 +3,29 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
-  Video,
-  FileText,
+  Atom,
+  BookOpen,
+  Bookmark,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Code2,
+  Cpu,
   Download,
+  Eye,
+  FileCode,
+  FileText,
+  FlaskConical,
+  Layers,
   Play,
   Search,
-  Sparkles,
-  Clock,
-  Calendar,
-  User,
-  CheckCircle2,
   Share2,
-  Bookmark,
-  ChevronRight,
-  FileCode,
+  Sigma,
+  Sparkles,
+  User,
+  Video,
   X,
-  Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -114,6 +121,26 @@ const SAMPLE_RECORDINGS: SessionRecord[] = [
   },
 ]
 
+const getSubjectFilterIcon = (subj: string, isActive: boolean) => {
+  const colorClass = isActive ? 'text-white' : 'text-[#0066cc]'
+  switch (subj) {
+    case 'All':
+      return <Layers size={14} className={`${colorClass} shrink-0`} />
+    case 'Mathematics':
+      return <Sigma size={14} className={`${colorClass} shrink-0`} />
+    case 'Computer Science':
+      return <Code2 size={14} className={`${colorClass} shrink-0`} />
+    case 'Physics':
+      return <Atom size={14} className={`${colorClass} shrink-0`} />
+    case 'Chemistry':
+      return <FlaskConical size={14} className={`${colorClass} shrink-0`} />
+    case 'Engineering':
+      return <Cpu size={14} className={`${colorClass} shrink-0`} />
+    default:
+      return <BookOpen size={14} className={`${colorClass} shrink-0`} />
+  }
+}
+
 export default function RecordingsPage() {
   const [recordings] = useState<SessionRecord[]>(SAMPLE_RECORDINGS)
   const [searchQuery, setSearchQuery] = useState('')
@@ -142,10 +169,6 @@ export default function RecordingsPage() {
       <section className="bg-white border-b border-[#e5e5e7] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0066cc]/8 border border-[#0066cc]/15 text-[#0066cc] text-xs font-semibold">
-              <Video size={14} />
-              <span>SOCRATES AI Session Archive</span>
-            </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
               Session Recordings & AI Notes Library
             </h1>
@@ -179,20 +202,24 @@ export default function RecordingsPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {['All', 'Mathematics', 'Computer Science', 'Physics'].map((subj) => (
-              <button
-                key={subj}
-                onClick={() => setActiveSubject(subj)}
-                className={`px-4 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  activeSubject === subj
-                    ? 'bg-[#0066cc] text-white shadow-xs'
-                    : 'bg-white border border-[#e0e0e2] text-[#6e6e73] hover:border-[#0066cc]/30 hover:text-[#1d1d1f]'
-                }`}
-              >
-                {subj}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {['All', 'Mathematics', 'Computer Science', 'Physics'].map((subj) => {
+              const isActive = activeSubject === subj
+              return (
+                <button
+                  key={subj}
+                  onClick={() => setActiveSubject(subj)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-colors duration-150 cursor-pointer whitespace-nowrap select-none border flex items-center gap-2 transform-gpu ${
+                    isActive
+                      ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-2xs'
+                      : 'bg-white border-[#e0e0e2] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
+                  }`}
+                >
+                  {getSubjectFilterIcon(subj, isActive)}
+                  <span>{subj}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
