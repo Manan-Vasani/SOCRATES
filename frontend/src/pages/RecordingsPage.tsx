@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
   Atom,
   BookOpen,
   Calendar,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -147,6 +150,7 @@ export default function RecordingsPage() {
   const [selectedDateFilter, setSelectedDateFilter] = useState('All')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [isSortOpen, setIsSortOpen] = useState(false)
   const [calendarYear, setCalendarYear] = useState(2026)
   const [calendarMonth, setCalendarMonth] = useState(6) // 0-indexed: 6 = July 2026
 
@@ -393,18 +397,60 @@ export default function RecordingsPage() {
                 )}
               </div>
 
-              {/* Sort Order Dropdown */}
-              <div className="relative flex items-center flex-1 sm:flex-none">
-                <Filter size={14} className="absolute left-3.5 text-[#0066cc] pointer-events-none" />
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0066cc] transition-colors cursor-pointer appearance-none select-none shadow-2xs"
+              {/* Custom Apple-Grade Interactive Sort Order Dropdown */}
+              <div className="relative flex-1 sm:flex-none">
+                <button
+                  type="button"
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] flex items-center gap-2 transition-colors cursor-pointer select-none shadow-2xs"
                 >
-                  <option value="newest">Sort: Newest First</option>
-                  <option value="oldest">Sort: Oldest First</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-3 text-[#6e6e73] pointer-events-none" />
+                  <Filter size={14} className="text-[#0066cc]" />
+                  <span>{sortOrder === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}</span>
+                  <ChevronDown size={14} className="text-[#6e6e73]" />
+                </button>
+
+                {/* Custom Sort Options Popover Menu */}
+                {isSortOpen && (
+                  <div className="absolute right-0 top-12 z-50 w-52 bg-white rounded-2xl border border-[#e5e5e7] shadow-xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOrder('newest')
+                        setIsSortOpen(false)
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold font-display flex items-center justify-between transition-colors cursor-pointer ${
+                        sortOrder === 'newest'
+                          ? 'bg-[#0066cc]/10 text-[#0066cc]'
+                          : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ArrowDownWideNarrow size={15} className="text-[#0066cc]" />
+                        <span>Newest First</span>
+                      </div>
+                      {sortOrder === 'newest' && <Check size={14} className="text-[#0066cc]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOrder('oldest')
+                        setIsSortOpen(false)
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold font-display flex items-center justify-between transition-colors cursor-pointer ${
+                        sortOrder === 'oldest'
+                          ? 'bg-[#0066cc]/10 text-[#0066cc]'
+                          : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ArrowUpNarrowWide size={15} className="text-[#0066cc]" />
+                        <span>Oldest First</span>
+                      </div>
+                      {sortOrder === 'oldest' && <Check size={14} className="text-[#0066cc]" />}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
