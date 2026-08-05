@@ -1759,31 +1759,6 @@ export default function CommunityPage() {
                         We couldn't find any academic threads matching your selected criteria. Be the first scholar to start a discussion!
                       </p>
                     </div>
-
-                    <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsPostModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs sm:text-sm font-extrabold transition-all shadow-md shadow-[#0066cc]/25 cursor-pointer transform-gpu select-none"
-                      >
-                        <Plus size={18} />
-                        <span>Ask an Academic Doubt / Post Thread</span>
-                      </button>
-
-                      {(activeSubject !== 'All' || searchQuery || filterMode !== 'all') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveSubject('All')
-                            setSearchQuery('')
-                            setFilterMode('all')
-                          }}
-                          className="px-4 py-3 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] text-xs font-bold transition-colors cursor-pointer select-none border border-[#e0e0e4]"
-                        >
-                          Reset Filters
-                        </button>
-                      )}
-                    </div>
                   </div>
                 ) : (
               filteredThreads.map((thread) => (
