@@ -232,18 +232,18 @@ export default function RecordingsPage() {
                 setSelectedRecord(rec)
                 setIsPlayingVideo(false)
               }}
-              className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-2xs hover:shadow-xl hover:border-[#0066cc]/40 transition-all cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group transform-gpu select-none"
+              className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-xs hover:border-[#0066cc]/50 transition-colors duration-150 cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group transform-gpu select-none"
             >
               {/* Left Column: Wide Video Thumbnail Frame (4 cols) */}
               <div className="md:col-span-4 relative aspect-video md:aspect-auto min-h-[220px] bg-black overflow-hidden">
                 <img
                   src={rec.thumbnailUrl}
                   alt={rec.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
+                  className="w-full h-full object-cover opacity-95 group-hover:opacity-100 transition-opacity duration-150"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-xl ring-4 ring-white/30 backdrop-blur-sm group-hover:scale-110 transition-transform duration-200">
-                    <Play size={22} className="fill-[#0066cc] translate-x-[1.5px]" />
+                  <div className="w-14 h-14 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-colors duration-150">
+                    <Play size={22} className="fill-current translate-x-[1.5px] transition-colors duration-150" />
                   </div>
                 </div>
 
@@ -391,7 +391,7 @@ export default function RecordingsPage() {
                       <button
                         type="button"
                         onClick={() => setIsPlayingVideo(true)}
-                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 hover:scale-105 transition-transform duration-150 cursor-pointer transform-gpu"
+                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 transition-colors duration-150 cursor-pointer transform-gpu select-none"
                       >
                         <Play size={26} className="fill-white translate-x-[2px]" />
                       </button>
