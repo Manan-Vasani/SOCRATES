@@ -291,7 +291,7 @@ export default function Tutors() {
     return () => { isMounted = false }
   }, [])
 
-  // Default academic subjects combined with user-added tutor subjects
+  // Default academic subjects combined with user-added tutor subjects (Curated to fit exactly 3 rows)
   const DEFAULT_SUBJECTS = useMemo(
     () => [
       'All',
@@ -309,6 +309,7 @@ export default function Tutors() {
       'Organic Chemistry',
       'Calculus',
       'C++',
+      'Database Systems',
     ],
     []
   )
@@ -481,8 +482,8 @@ export default function Tutors() {
 
             {/* Secondary Filters Grid */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs pt-3 border-t border-[#f0f0f2]">
-              {/* Combined Subject Chips Wrapped Across Two Lines */}
-              <div className="flex flex-wrap items-center gap-1.5 max-w-full flex-1 max-h-[84px] overflow-y-auto scrollbar-none py-0.5">
+              {/* Combined Subject Chips Displayed in Exactly 3 Rows (No Scrollbar / No Slider) */}
+              <div className="flex flex-wrap items-center gap-1.5 max-w-full flex-1 max-h-[108px] overflow-hidden py-0.5">
                 {allSubjects.map((sub) => {
                   const isActive = selectedSubject === sub
                   return (
