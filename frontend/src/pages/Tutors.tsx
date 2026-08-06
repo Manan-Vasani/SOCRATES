@@ -374,13 +374,6 @@ export default function Tutors() {
     return <BookOpen size={13} className="text-[#0066cc]" />
   }
 
-  const subjectDropdownOptions: DropdownOption<string>[] = useMemo(() => {
-    return allSubjects.map((sub) => ({
-      value: sub,
-      label: sub === 'All' ? 'All Academic Domains' : sub,
-      icon: getSubjectIcon(sub),
-    }))
-  }, [allSubjects])
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -457,18 +450,8 @@ export default function Tutors() {
 
             {/* Secondary Filters Grid */}
             <div className="flex flex-wrap items-center justify-between gap-4 text-xs pt-2 border-t border-[#f0f0f2]">
-              {/* Subject Dropdown & Quick Chips */}
-              <div className="flex flex-wrap items-center gap-2 max-w-full shrink-0">
-                <CustomDropdown<string>
-                  options={subjectDropdownOptions}
-                  value={selectedSubject}
-                  onChange={(val: string) => setSelectedSubject(val)}
-                  buttonClassName="py-1.5 w-[205px] sm:w-[215px] justify-between shrink-0 select-none transform-gpu"
-                  align="center"
-                  className="shrink-0"
-                />
-
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full shrink-0">
+              {/* Quick Subject Chips */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full shrink-0">
                   {allSubjects.map((sub) => {
                     const isActive = selectedSubject === sub
                     return (
@@ -490,7 +473,6 @@ export default function Tutors() {
                     )
                   })}
                 </div>
-              </div>
 
               {/* Price & Rating Selectors */}
               <div className="flex items-center gap-3">
