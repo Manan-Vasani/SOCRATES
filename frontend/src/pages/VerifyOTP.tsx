@@ -28,7 +28,7 @@ export default function VerifyOTP() {
 
     setIsResending(true)
     try {
-      const response = await api.post('/auth/forgot-password', { email })
+      const response = await api.post('/auth/forgot-password', { email }, { timeout: 25000 })
       if (response.data?.success) {
         setOtp(Array(6).fill(''))
         setError('')

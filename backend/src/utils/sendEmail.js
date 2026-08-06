@@ -142,33 +142,7 @@ const sendEmail = async (options) => {
 
   const htmlContent = options.html || defaultHtml;
 
-  // 1. Try Gmail SMTP via Nodemailer
-  if (gmailUser && gmailPass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: gmailUser,
-          pass: gmailPass,
-        },
-      });
-
-      const mailOptions = {
-        from: `"${fromName}" <${fromEmail}>`,
-        to: options.to,
-        subject: options.subject || 'SOCRATES — Verification Code',
-        html: htmlContent,
-      };
-
-      const info = await transporter.sendMail(mailOptions);
-      console.log('✅ Gmail SMTP Email Sent Successfully to', options.to, 'MessageID:', info.messageId);
-      return { success: true, method: 'gmail-smtp', messageId: info.messageId };
-    } catch (gmailError) {
-      console.error('⚠️ Gmail SMTP Error:', gmailError.message);
-    }
-  }
-
-  // 2. Try Brevo REST API v3 if BREVO_API_KEY is available
+  // 1. Try Brevo REST API v3 FIRST if BREVO_API_KEY is set (Uses HTTPS Port 443 - Never Blocked on Cloud Providers)
   if (apiKey && apiKey !== 'your_brevo_api_key_here') {
     try {
       const response = await axios.post(
@@ -185,6 +159,7 @@ const sendEmail = async (options) => {
             'Content-Type': 'application/json',
             Accept: 'application/json',
           },
+          timeout: 12000,
         }
       );
       console.log('✅ Brevo REST API Email Sent Successfully:', response.data);
@@ -194,9 +169,40 @@ const sendEmail = async (options) => {
     }
   }
 
-  // Fallback: Log OTP to console
+  // 2. Try SMTP via Nodemailer with strict 6s connection timeout
+  if (gmailUser && gmailPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.EMAIL_PORT, 10) || 465,
+        secure: process.env.EMAIL_SECURE !== 'false',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 8000,
+      });
+
+      const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: options.to,
+        subject: options.subject || 'SOCRATES — Verification Code',
+        html: htmlContent,
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log('✅ SMTP Email Sent Successfully to', options.to, 'MessageID:', info.messageId);
+      return { success: true, method: 'smtp', messageId: info.messageId };
+    } catch (smtpError) {
+      console.error('⚠️ SMTP Error (Connection Timeout / Cloud Firewall Block):', smtpError.message);
+    }
+  }
+
+  // 3. Fallback: Log OTP to server console (Prevents 500 error or hanging on Render)
   console.log('\n==================================================');
-  console.log('📧 [DEVELOPMENT EMAIL FALLBACK]');
+  console.log('📧 [SOCRATES OTP EMAIL FALLBACK LOG]');
   console.log(`TO: ${options.to}`);
   console.log(`SUBJECT: ${options.subject}`);
   if (options.otp) console.log(`VERIFICATION OTP CODE: ${options.otp}`);

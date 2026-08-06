@@ -40,9 +40,13 @@ export default function ForgotPassword() {
   const onSubmit = async (data: ForgotPasswordFields) => {
     setIsLoading(true)
     try {
-      const response = await api.post('/auth/forgot-password', {
-        email: data.email,
-      })
+      const response = await api.post(
+        '/auth/forgot-password',
+        {
+          email: data.email,
+        },
+        { timeout: 25000 }
+      )
 
       if (response.data?.success) {
         sessionStorage.setItem('reset_email', data.email)
