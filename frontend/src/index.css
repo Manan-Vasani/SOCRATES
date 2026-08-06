@@ -129,6 +129,30 @@ button, a, [role="button"] {
   background-color: #0066cc !important;
 }
 
+/* Visible Modern Subject Slider Bar */
+.subject-slider {
+  scrollbar-width: thin !important;
+  scrollbar-color: #c1c1c6 transparent !important;
+}
+
+.subject-slider::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.subject-slider::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 9999px !important;
+}
+
+.subject-slider::-webkit-scrollbar-thumb {
+  background-color: #c1c1c6 !important;
+  border-radius: 9999px !important;
+}
+
+.subject-slider::-webkit-scrollbar-thumb:hover {
+  background-color: #0066cc !important;
+}
+
 /* Sonner Toast Close Button Vertically Centered Right */
 [data-sonner-toast] [data-close-button] {
   top: 50% !important;

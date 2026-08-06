@@ -486,8 +486,8 @@ export default function Tutors() {
 
             {/* Secondary Filters Grid */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs pt-3 border-t border-[#f0f0f2]">
-              {/* Combined Subject Chips Displayed in Exactly 3 Rows Surface with Slider */}
-              <div className="flex flex-wrap items-center content-start gap-1.5 max-w-full flex-1 h-[98px] max-h-[98px] overflow-y-auto custom-scrollbar pr-1.5 py-0">
+              {/* Combined Subject Chips Displayed in Exactly 3 Rows Surface with Visible Slider */}
+              <div className="flex flex-wrap items-center content-start gap-1.5 max-w-full flex-1 max-h-[105px] overflow-y-auto subject-slider pr-2 py-0.5">
                 {allSubjects.map((sub) => {
                   const isActive = selectedSubject === sub
                   return (
