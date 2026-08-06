@@ -291,15 +291,46 @@ export default function Tutors() {
     return () => { isMounted = false }
   }, [])
 
-  // All unique subjects
+  // Default academic subjects combined with user-added tutor subjects
+  const DEFAULT_SUBJECTS = useMemo(
+    () => [
+      'All',
+      'Algorithms',
+      'Data Structures',
+      'Linear Algebra',
+      'Machine Learning',
+      'PyTorch',
+      'Python',
+      'React',
+      'TypeScript',
+      'Node.js',
+      'Quantum Physics',
+      'Statistics',
+      'Organic Chemistry',
+      'Calculus',
+      'C++',
+    ],
+    []
+  )
+
+  // Combined set of default subjects + custom subjects added by user tutors
   const allSubjects = useMemo(() => {
-    const set = new Set<string>()
-    set.add('All')
+    const set = new Set<string>(DEFAULT_SUBJECTS)
     tutorsList.forEach((t) => {
-      t.subjects.forEach((s) => set.add(s))
+      if (t.subjects && Array.isArray(t.subjects)) {
+        t.subjects.forEach((s) => {
+          if (s && typeof s === 'string' && s.trim()) set.add(s.trim())
+        })
+      }
+      if (t.subject && typeof t.subject === 'string') {
+        t.subject.split(',').forEach((s) => {
+          const trimmed = s.trim()
+          if (trimmed && !trimmed.includes('&')) set.add(trimmed)
+        })
+      }
     })
     return Array.from(set)
-  }, [tutorsList])
+  }, [tutorsList, DEFAULT_SUBJECTS])
 
   // Filtered tutors based on search and dropdown filters
   const filteredTutors = useMemo(() => {
@@ -449,30 +480,31 @@ export default function Tutors() {
             </div>
 
             {/* Secondary Filters Grid */}
-            <div className="flex flex-wrap items-center justify-between gap-4 text-xs pt-2 border-t border-[#f0f0f2]">
-              {/* Quick Subject Chips */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full shrink-0">
-                  {allSubjects.map((sub) => {
-                    const isActive = selectedSubject === sub
-                    return (
-                      <button
-                        key={sub}
-                        onClick={() => setSelectedSubject(sub)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors duration-150 shrink-0 cursor-pointer whitespace-nowrap select-none border inline-flex items-center gap-2 transform-gpu ${
-                          isActive
-                            ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
-                            : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
-                        }`}
-                      >
-                        {React.cloneElement(getSubjectIcon(sub) as React.ReactElement<any>, {
-                          size: 13,
-                          className: isActive ? 'text-white shrink-0' : 'text-[#0066cc] shrink-0'
-                        })}
-                        <span>{sub}</span>
-                      </button>
-                    )
-                  })}
-                </div>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs pt-3 border-t border-[#f0f0f2]">
+              {/* Combined Subject Chips Wrapped Across Two Lines */}
+              <div className="flex flex-wrap items-center gap-1.5 max-w-full flex-1 max-h-[84px] overflow-y-auto scrollbar-none py-0.5">
+                {allSubjects.map((sub) => {
+                  const isActive = selectedSubject === sub
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setSelectedSubject(sub)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 shrink-0 cursor-pointer whitespace-nowrap select-none border inline-flex items-center gap-1.5 transform-gpu ${
+                        isActive
+                          ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
+                          : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
+                      }`}
+                    >
+                      {React.cloneElement(getSubjectIcon(sub) as React.ReactElement<any>, {
+                        size: 13,
+                        className: isActive ? 'text-white shrink-0' : 'text-[#0066cc] shrink-0',
+                      })}
+                      <span>{sub}</span>
+                    </button>
+                  )
+                })}
+              </div>
 
               {/* Price & Rating Selectors */}
               <div className="flex items-center gap-3">
