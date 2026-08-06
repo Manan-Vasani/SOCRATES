@@ -17,10 +17,15 @@ const studyRoomRoutes = require('./routes/studyRoomRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const { createSocketServer } = require('./socket/socketServer');
 
+const { globalLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiter');
+
 const { passport } = require('./config/passport');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust proxy for rate limiting on cloud platforms like Render
+app.set('trust proxy', 1);
 
 // Connect Database
 connectDB();
@@ -37,16 +42,18 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Apply Global Rate Limiter to all /api/v1 endpoints
+app.use('/api/v1', globalLimiter);
 
 // Passport Middleware
 app.use(passport.initialize());
 
 // API Routes
-app.use('/auth', authRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/v1/auth', authRoutes);
+app.use('/auth', authLimiter, authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/homepage', homepageRoutes);
-app.use('/api/v1/ai', aiRoutes);
+app.use('/api/v1/ai', aiLimiter, aiRoutes);
 app.use('/api/v1/tutors', tutorRoutes);
 app.use('/api/v1/compile', compileRoutes);
 app.use('/api/v1/community', communityRoutes);

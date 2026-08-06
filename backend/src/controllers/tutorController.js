@@ -226,11 +226,29 @@ exports.createBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required booking fields' });
     }
 
+    const cleanDate = date.trim();
+    const cleanTime = time.trim();
+
+    // Check for existing active booking for this tutor at the requested date and time slot
+    const existingBooking = await Booking.findOne({
+      tutorId: id,
+      date: cleanDate,
+      time: cleanTime,
+      status: { $ne: 'cancelled' },
+    });
+
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: `This time slot (${cleanTime}) on ${cleanDate} is already booked for this tutor. Please select another time slot.`,
+      });
+    }
+
     const booking = await Booking.create({
       tutorId: id,
       studentName,
-      date,
-      time,
+      date: cleanDate,
+      time: cleanTime,
       subject,
       duration: duration || 60,
       topic: topic || '',
