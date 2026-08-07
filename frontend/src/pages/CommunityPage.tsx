@@ -117,11 +117,11 @@ function mapApiThread(t: any, currentUserId?: string): DoubtThread {
 
 function mapApiComment(c: any): Comment {
   return {
-    id: c._id,
-    author: c.role === 'ai' ? 'Socrates AI' : (c.author?.fullName || c.author?.name || 'Anonymous'),
-    role: c.role || 'student',
-    avatar: c.author?.profileImage || undefined,
-    text: c.text,
+    id: c._id || c.id,
+    author: c.isAiGenerated || c.role === 'ai' ? 'Socrates AI Assistant' : (c.author?.fullName || c.author?.name || 'Anonymous'),
+    role: c.isAiGenerated ? 'ai' : (c.role || 'student'),
+    avatar: c.author?.avatar || c.author?.profileImage || undefined,
+    text: c.content || c.text || '',
     time: formatTimeAgo(c.createdAt),
     upvotes: c.upvotes || 0,
     isVerified: c.isVerified || false,

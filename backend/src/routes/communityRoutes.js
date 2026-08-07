@@ -1,29 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const communityController = require('../controllers/communityController');
 const { protect } = require('../middleware/authMiddleware');
-const community = require('../controllers/communityController');
 
-// ─── Thread Routes ─────────────────────────────────────────────
-router.get('/threads', community.getThreads);
-router.get('/threads/:id', community.getThread);
-router.post('/threads', protect, community.createThread);
-router.put('/threads/:id', protect, community.updateThread);
-router.delete('/threads/:id', protect, community.deleteThread);
+// Public endpoints (threads list & single thread)
+router.get('/', communityController.getThreads);
+router.get('/threads', communityController.getThreads);
+router.get('/:id', communityController.getThreadById);
+router.get('/threads/:id', communityController.getThreadById);
 
-// ─── Thread Actions ────────────────────────────────────────────
-router.post('/threads/:id/vote', protect, community.voteThread);
-router.post('/threads/:id/bookmark', protect, community.bookmarkThread);
-router.post('/threads/:id/solve', protect, community.solveThread);
+// Protected endpoints (create, vote, comment, solve)
+router.post('/', protect, communityController.createThread);
+router.post('/threads', protect, communityController.createThread);
 
-// ─── Comment Routes ────────────────────────────────────────────
-router.get('/threads/:id/comments', community.getComments);
-router.post('/threads/:id/comments', protect, community.createComment);
-router.put('/comments/:id', protect, community.updateComment);
-router.delete('/comments/:id', protect, community.deleteComment);
-router.post('/comments/:id/vote', protect, community.voteComment);
+router.post('/:id/vote', protect, communityController.voteThread);
+router.post('/threads/:id/vote', protect, communityController.voteThread);
 
-// ─── Leaderboard & Bookmarks ──────────────────────────────────
-router.get('/leaderboard', community.getLeaderboard);
-router.get('/bookmarks', protect, community.getBookmarks);
+router.post('/:id/comments', protect, communityController.addComment);
+router.post('/threads/:id/comments', protect, communityController.addComment);
+
+router.post('/comments/:commentId/vote', protect, communityController.voteComment);
+
+router.post('/:id/solve', protect, communityController.markSolved);
+router.post('/threads/:id/solve', protect, communityController.markSolved);
 
 module.exports = router;

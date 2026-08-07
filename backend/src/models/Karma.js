@@ -6,39 +6,33 @@ const karmaSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-    },
-    action: {
-      type: String,
-      enum: [
-        'post_thread',
-        'comment',
-        'reply',
-        'upvote_received',
-        'downvote_received',
-        'solution_accepted',
-        'ai_assist',
-      ],
-      required: true,
+      index: true,
     },
     points: {
       type: Number,
       required: true,
     },
-    reference: {
+    action: {
+      type: String,
+      enum: [
+        'THREAD_CREATED',
+        'UPVOTE_RECEIVED',
+        'DOWNVOTE_RECEIVED',
+        'COMMENT_CREATED',
+        'SOLUTION_ACCEPTED',
+      ],
+      required: true,
+    },
+    referenceId: {
       type: mongoose.Schema.Types.ObjectId,
       default: null,
     },
-    refModel: {
-      type: String,
-      enum: ['DoubtThread', 'Comment'],
-      default: null,
-    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-// Indexes
 karmaSchema.index({ user: 1, createdAt: -1 });
-karmaSchema.index({ user: 1, action: 1 });
 
 module.exports = mongoose.model('Karma', karmaSchema);
