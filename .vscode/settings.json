@@ -1,11 +1,5 @@
 {
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
-    "source.organizeImports": "explicit"
-  },
-  "typescript.tsdk": "node_modules/typescript/lib",
   "files.associations": {
     "*.css": "tailwindcss"
   },
@@ -19,10 +13,5 @@
     "${workspaceFolder}/ai-service",
     "${workspaceFolder}/ai-service/.venv/Lib/site-packages"
   ],
-  "python.analysis.autoSearchPaths": true,
-  "pyrefly.pythonPath": "${workspaceFolder}/ai-service/.venv/Scripts/python.exe",
-  "pyrefly.searchPaths": [
-    "${workspaceFolder}/ai-service",
-    "${workspaceFolder}/ai-service/.venv/Lib/site-packages"
-  ]
+  "python.analysis.autoSearchPaths": true
 }

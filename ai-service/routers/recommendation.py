@@ -1,10 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import List, Optional
-import math
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 router = APIRouter(prefix="/api/v1/ai/recommend", tags=["Smart ML Recommendation"])
 
@@ -43,11 +39,19 @@ class ScoredTutorMatch(BaseModel):
     is_online: bool
     matching_reasons: List[str]
 
+try:
+    from hybrid_recommender import HybridTutorRecommender
+except ImportError:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from hybrid_recommender import HybridTutorRecommender
+
 class RecommendationResponse(BaseModel):
     success: bool
     total_matches: int
     recommendations: List[ScoredTutorMatch]
-    algorithm: str = "TF-IDF Vector Cosine + MAUT Multi-Attribute Utility Scoring"
+    algorithm: str = "SOCRATES Hybrid Recommendation Engine (CBF Cosine + SVD Matrix Factorization)"
 
 def extract_review_count(reviews: str | int) -> int:
     if isinstance(reviews, int):
@@ -63,89 +67,66 @@ def compute_ml_tutor_scores(
     if not candidates:
         return []
 
-    # Prepare corpus for TF-IDF Vectorization
-    tutor_corpora = []
-    for t in candidates:
-        text = f"{t.name} {t.subject} {' '.join(t.subjects)} {t.bio} {t.institution} {t.experience}"
-        tutor_corpora.append(text.lower())
+    # 1. Format candidates into tutor dictionary array for Hybrid Engine
+    tutors_data = []
+    for c in candidates:
+        exp_years = 5.0
+        if c.experience:
+            import re
+            nums = re.findall(r'\d+', c.experience)
+            if nums:
+                exp_years = float(nums[0])
+        tutors_data.append({
+            "id": c.id,
+            "name": c.name,
+            "subject": c.subject,
+            "subjects": c.subjects,
+            "bio": c.bio,
+            "hourly_rate": c.hourly_rate,
+            "rating": c.rating,
+            "experience_years": exp_years
+        })
 
-    student_text = f"{req.query or ''} {req.subject if req.subject != 'All' else ''} {req.learning_style or ''}".lower().strip()
-    if not student_text:
-        student_text = "computer science mathematics physics algorithms web development linear algebra quantum tutoring"
+    # 2. Initialize and fit Hybrid Tutor Recommender
+    recommender = HybridTutorRecommender(alpha=0.6)
+    recommender.fit(tutors_data, ratings_data=[])
 
-    # 1. TF-IDF Cosine Similarity Matrix
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words="english")
-    try:
-        all_texts = tutor_corpora + [student_text]
-        tfidf_matrix = vectorizer.fit_transform(all_texts)
-        tutor_vectors = tfidf_matrix[:-1]
-        student_vector = tfidf_matrix[-1:]
-        cosine_sims = cosine_similarity(student_vector, tutor_vectors).flatten()
-    except Exception:
-        # Fallback if corpus vocabulary is empty
-        cosine_sims = np.array([0.5] * len(candidates))
+    # 3. Format student requirements
+    pref = {
+        "subject": req.subject if req.subject != "All" else "",
+        "keywords": f"{req.query or ''} {req.learning_style or ''}",
+        "max_budget": req.max_budget or 100.0,
+        "min_rating": req.min_rating or 0.0,
+        "min_experience": 0.0
+    }
 
+    # 4. Generate hybrid ML recommendations
+    recs = recommender.recommend(req.student_id or "guest_student", pref, top_k=len(candidates))
+
+    # Map output candidates back to ScoredTutorMatch
+    candidate_map = {c.id: c for c in candidates}
     results: List[ScoredTutorMatch] = []
 
-    for idx, tutor in enumerate(candidates):
-        text_sim = float(cosine_sims[idx]) if idx < len(cosine_sims) else 0.5
-        
-        # 2. Bayesian Rating Confidence Score (0.0 to 1.0)
-        review_cnt = extract_review_count(tutor.reviews)
-        rating_score = (tutor.rating / 5.0) * min(1.0, math.log2(review_cnt + 1) / 6.0)
-
-        # 3. Budget Affinity Score (0.0 to 1.0)
-        budget = req.max_budget or 100.0
-        if tutor.hourly_rate <= budget:
-            budget_score = 1.0
-        else:
-            over = tutor.hourly_rate - budget
-            budget_score = max(0.0, 1.0 - (over / (budget * 0.5)))
-
-        # 4. Trust & Online Signals (0.0 to 1.0)
-        trust_score = (0.6 if tutor.is_verified else 0.2) + (0.4 if tutor.is_online else 0.1)
-
-        # Multi-Attribute Utility Weighting
-        w_text = 0.40
-        w_rating = 0.25
-        w_budget = 0.15
-        w_trust = 0.20
-
-        composite = (
-            w_text * text_sim +
-            w_rating * rating_score +
-            w_budget * budget_score +
-            w_trust * trust_score
-        )
-
-        match_pct = int(min(99, max(50, round(composite * 100))))
-
-        reasons = []
-        if text_sim > 0.3 or req.subject in tutor.subjects or req.subject == tutor.subject:
-            reasons.append(f"Domain Match: {tutor.subject}")
-        if tutor.hourly_rate <= budget:
-            reasons.append(f"Fits Budget (${int(tutor.hourly_rate)}/hr)")
-        if tutor.is_verified:
-            reasons.append("Verified Academic Scholar")
-        if tutor.rating >= 4.9:
-            reasons.append(f"Top Rated ({tutor.rating}★)")
+    for r in recs:
+        tid = r.get('tutor_id') or r.get('id')
+        c = candidate_map.get(tid)
+        is_ver = c.is_verified if c else True
+        is_on = c.is_online if c else True
 
         results.append(
             ScoredTutorMatch(
-                tutor_id=tutor.id,
-                name=tutor.name,
-                match_score=match_pct,
-                subject=tutor.subject,
-                hourly_rate=tutor.hourly_rate,
-                rating=tutor.rating,
-                is_verified=tutor.is_verified,
-                is_online=tutor.is_online,
-                matching_reasons=reasons[:3]
+                tutor_id=tid,
+                name=r['name'],
+                match_score=int(r['match_score']),
+                subject=r['subject'],
+                hourly_rate=float(r['hourly_rate']),
+                rating=float(r['rating']),
+                is_verified=is_ver,
+                is_online=is_on,
+                matching_reasons=r['reasons'][:3]
             )
         )
 
-    # Sort descending by ML match_score
-    results.sort(key=lambda x: x.match_score, reverse=True)
     return results
 
 @router.post("/tutors", response_model=RecommendationResponse)

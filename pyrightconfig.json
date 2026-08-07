@@ -2,13 +2,7 @@
   "venvPath": "ai-service",
   "venv": ".venv",
   "extraPaths": [
-    "ai-service"
-  ],
-  "executionEnvironments": [
-    {
-      "root": "ai-service",
-      "venvPath": "ai-service",
-      "venv": ".venv"
-    }
+    "ai-service",
+    "ai-service/.venv/Lib/site-packages"
   ]
 }
