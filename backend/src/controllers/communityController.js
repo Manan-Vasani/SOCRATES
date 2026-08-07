@@ -125,6 +125,7 @@ exports.getThreads = async (req, res) => {
     return res.status(200).json({
       success: true,
       threads,
+      data: threads,
       pagination: {
         total,
         page: parseInt(page),
@@ -162,6 +163,10 @@ exports.getThreadById = async (req, res) => {
       success: true,
       thread,
       comments,
+      data: {
+        ...thread.toObject(),
+        comments,
+      },
     });
   } catch (error) {
     console.error('[getThreadById Error]', error);

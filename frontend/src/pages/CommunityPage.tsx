@@ -640,11 +640,17 @@ export default function CommunityPage() {
   const loadThreads = useCallback(async () => {
     setIsLoading(true)
     try {
-      const res = await fetchCommunityThreads()
-      if (res.success && res.data.length > 0) {
-        setThreads(res.data.map((t: any) => mapApiThread(t, user?._id)))
+      const res = await fetchCommunityThreads({
+        subject: activeSubject !== 'All' ? activeSubject : undefined,
+        filter: filterMode !== 'all' ? filterMode : undefined,
+        search: searchQuery || undefined,
+      })
+      const threadList = res?.threads || res?.data || []
+      if (res?.success && Array.isArray(threadList) && threadList.length > 0) {
+        setThreads(threadList.map((t: any) => mapApiThread(t, user?._id)))
+      } else if (res?.success && Array.isArray(threadList) && threadList.length === 0) {
+        setThreads([])
       } else {
-        // Fallback to demo data if DB is empty
         setThreads(FALLBACK_THREADS)
       }
     } catch {
@@ -652,7 +658,7 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [user?._id])
+  }, [user?._id, activeSubject, filterMode, searchQuery])
 
   useEffect(() => {
     loadThreads()
@@ -1768,8 +1774,9 @@ export default function CommunityPage() {
                     // Fetch full thread with comments from API
                     try {
                       const res = await fetchCommunityThread(thread.id)
-                      if (res?.success) {
-                        setActiveThread(mapApiThread(res.data, user?._id))
+                      const fullThread = res?.data || (res?.thread ? { ...res.thread, comments: res.comments || [] } : null)
+                      if (res?.success && fullThread) {
+                        setActiveThread(mapApiThread(fullThread, user?._id))
                       } else {
                         setActiveThread(thread)
                       }
