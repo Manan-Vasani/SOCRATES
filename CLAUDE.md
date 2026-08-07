@@ -10,9 +10,10 @@ SOCRATES is a full-stack educational platform built with React 19 + TypeScript o
 - **Frontend Source**: [frontend/](file:///d:/SOCRATES/frontend)
 - **Backend Source**: [backend/](file:///d:/SOCRATES/backend)
 
-## 🚨 MANDATORY GROUP COLLABORATION RULE: CHECK LATEST GIT COMMITS FIRST
+## 🚨 MANDATORY GROUP COLLABORATION & GIT PUSH RULES
 - **Always Check Remote Commits First**: This project is a group collaboration where multiple team members contribute directly to the same branch (`main`) in the same repository.
 - **Required Action**: BEFORE starting any task, research, or writing code, ALWAYS run `git fetch origin` (and check `git status` or `git diff HEAD origin/main`) to inspect for remote commits pushed by teammates. If remote commits exist, pull them (`git pull origin main`) immediately to stay in sync.
+- **🚨 STRICT NO-AUTO-PUSH RULE (MANDATORY)**: NEVER run `git push` automatically. All code changes, tests, and commits must remain local. Execute `git push` ONLY when the user explicitly instructs you to push.
 
 ## Quick Commands
 ```bash
@@ -31,7 +32,8 @@ npm run seed     # Seed database
 
 ## Architecture & Mandatory Code Conventions
 - **Frontend Stack**: React 19, TypeScript, Vite, Tailwind CSS v4 (`@tailwindcss/vite`), Zustand, TanStack Query, React Router v7, Framer Motion, Lucide React icons.
-- **Backend Stack**: Node.js, Express (CommonJS), Mongoose, Socket.IO, JWT Auth, Cloudinary/Multer, Nodemailer, Razorpay.
+- **Backend Stack**: Node.js, Express (CommonJS), Mongoose, Socket.IO real-time server (`/socket/socketServer.js`), Community Doubt Board API (`/api/v1/community`), Karma ledger, JWT Auth, Cloudinary/Multer, Brevo API v3.
+- **AI Microservice**: Python 3.14 + FastAPI (`ai-service/`). Powered by `HybridTutorRecommender` (`ai-service/hybrid_recommender.py`) combining TF-IDF Content-Based Cosine Similarity + SVD Matrix Factorization. Interpreter locked at `ai-service/.venv/Scripts/python.exe`.
 - **UI & Performance Guidelines (MANDATORY)**:
   - **Pixel-Perfect CSS Perfectionism**: The product creator is a strict perfectionist. Visual defects like misalignments, sloppy margins/paddings, inconsistent borders, lazy layout wrappers, or missing shadows/transitions are unacceptable. Write clean, complete, responsive, and gorgeous CSS for every element.
   - You MUST strictly follow the anti-jank and performance rules in [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt).

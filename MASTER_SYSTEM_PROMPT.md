@@ -3,7 +3,8 @@
 
 > **MANDATORY FIRST STEP OF EXECUTION:** 
 > 1. **Check & Sync Git Commits (Group Collaboration)**: This is an active team project with multiple contributors on `main`. BEFORE performing any task, research, or code modifications, ALWAYS run `git fetch origin` (and inspect `git status` or `git diff HEAD origin/main`) to verify and pull (`git pull origin main`) the latest remote commits pushed by teammates.
-> 2. **Design & Rules Compliance**: Read the design system in [docs/DESIGN-apple.md](file:///d:/SOCRATES/docs/DESIGN-apple.md) and agent guidelines in [.agents/AGENTS.md](file:///d:/SOCRATES/.agents/AGENTS.md) to ensure compliance with the SOCRATES Apple-inspired UI identity and local ML architecture.
+> 2. **🚨 STRICT NO-AUTO-PUSH MANDATE**: NEVER run `git push` automatically. Keep all code edits, builds, and commits strictly local. Execute `git push` ONLY when the user explicitly instructs you to push.
+> 3. **Design & Rules Compliance**: Read the design system in [docs/DESIGN-apple.md](file:///d:/SOCRATES/docs/DESIGN-apple.md) and agent guidelines in [.agents/AGENTS.md](file:///d:/SOCRATES/.agents/AGENTS.md) to ensure compliance with the SOCRATES Apple-inspired UI identity and local ML architecture.
 
 ---
 

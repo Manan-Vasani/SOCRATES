@@ -1,11 +1,11 @@
-# Custom Agent Rules
+# Custom Agent Rules (Backup / Docs Root)
 
 This file defines project-specific rules, style guidelines, and behavioral constraints for the agent.
 
 ## Core Workspace File Paths
 - **Master System Prompt**: [MASTER_SYSTEM_PROMPT.md](file:///d:/SOCRATES/MASTER_SYSTEM_PROMPT.md)
 - **Documentation Directory**: [docs/](file:///d:/SOCRATES/docs)
-- **Agent Config Backup in Docs**: [docs/.agents/AGENTS.md](file:///d:/SOCRATES/docs/.agents/AGENTS.md)
+- **Agent Config**: [.agents/AGENTS.md](file:///d:/SOCRATES/.agents/AGENTS.md)
 - **Strict CSS Performance Rules**: [strict css.txt](file:///d:/SOCRATES/Usefull%20Tools/strict%20css.txt)
 - **Design Specifications**: [docs/DESIGN-apple.md](file:///d:/SOCRATES/docs/DESIGN-apple.md)
 - **Frontend App**: [frontend/](file:///d:/SOCRATES/frontend)
@@ -67,7 +67,6 @@ This file defines project-specific rules, style guidelines, and behavioral const
 - **Build Local ML Models First**: Always design, build, and use custom local Machine Learning / NLP models (e.g., using scikit-learn, PyTorch, Hugging Face transformers, local sentence embeddings, or local Ollama) for tasks like tutor matching, recommendations, similarity scoring, classification, and content analysis.
 - **Selective API Key Usage**: Use external LLM API keys (e.g., Gemini / OpenAI) ONLY for specific tasks where a local ML model is insufficient or impossible (e.g., complex open-ended multi-step conversational tutoring).
 - **Strict API Efficiency**: Never invoke external LLM APIs for tasks that a custom local ML algorithm can handle (e.g., recommendation scoring, search indexing, data filtering).
-
 
 ## Development Commands
 - Frontend dev server: `cd frontend && npm run dev`
