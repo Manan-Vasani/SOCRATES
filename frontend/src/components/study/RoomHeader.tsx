@@ -17,7 +17,7 @@ import {
   Circle,
   Users,
   Clock,
-  MessageSquare,
+  Share2,
   PanelRightClose,
   PanelRightOpen,
 } from 'lucide-react'
@@ -42,6 +42,7 @@ interface RoomHeaderProps {
   onLeave: () => void
   isChatOpen: boolean
   onChatToggle: () => void
+  onShareLink?: () => void
 }
 
 export default function RoomHeader({
@@ -62,6 +63,7 @@ export default function RoomHeader({
   onLeave,
   isChatOpen,
   onChatToggle,
+  onShareLink,
 }: RoomHeaderProps) {
   const [elapsed, setElapsed] = useState(0)
 
@@ -156,7 +158,7 @@ export default function RoomHeader({
         ))}
       </div>
 
-      {/* Right: Media Controls + Timer */}
+      {/* Right: Media Controls + Share + Timer */}
       <div className="flex items-center gap-1.5 flex-1 justify-end">
         <div className="hidden sm:flex items-center gap-2 mr-1.5 shrink-0">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/6 border border-white/10 text-white/90 text-xs font-mono font-semibold tabular-nums tracking-wide shadow-2xs">
@@ -168,6 +170,17 @@ export default function RoomHeader({
             <span>{participantCount}</span>
           </div>
         </div>
+
+        {onShareLink && (
+          <button
+            onClick={onShareLink}
+            className="px-3 py-2 rounded-xl bg-[#0066cc]/20 hover:bg-[#0066cc]/30 text-[#4d9fff] border border-[#0066cc]/35 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+            title="Share Meeting Link"
+          >
+            <Share2 size={14} />
+            <span className="hidden md:inline">Share</span>
+          </button>
+        )}
 
         <MediaBtn active={isMicOn} danger={!isMicOn} onClick={onMicToggle} title={isMicOn ? 'Mute' : 'Unmute'}>
           {isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
