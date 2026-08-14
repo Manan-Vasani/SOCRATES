@@ -2,6 +2,7 @@ import { AnimatePresence, motion, Variants } from 'framer-motion'
 import {
     ArrowLeft,
     Atom,
+    BarChart2,
     BookOpen,
     Calendar as CalendarIcon,
     CheckCircle2,
@@ -10,10 +11,13 @@ import {
     Clock,
     Code2,
     Cpu,
+    Database,
+    FlaskConical,
     Globe,
     GraduationCap,
     Layers,
     Lock,
+    Network,
     ShieldCheck,
     Sigma,
     Sparkles,
@@ -230,24 +234,123 @@ interface DaySchedule {
 
 function getSubjectIcon(sub: string) {
   const lower = sub.toLowerCase()
+  if (lower === 'all') return <Layers size={14} className="text-[#0066cc]" />
   if (lower.includes('python')) return <Terminal size={14} className="text-[#0066cc]" />
-  if (lower.includes('algebra') || lower.includes('math') || lower.includes('calculus')) {
+  if (
+    lower.includes('algebra') ||
+    lower.includes('math') ||
+    lower.includes('calculus') ||
+    lower.includes('geometry') ||
+    lower.includes('trigonometry') ||
+    lower.includes('discrete')
+  ) {
     return <Sigma size={14} className="text-[#0066cc]" />
   }
-  if (lower.includes('machine') || lower.includes('ai') || lower.includes('torch')) {
+  if (
+    lower.includes('machine') ||
+    lower.includes('ai') ||
+    lower.includes('torch') ||
+    lower.includes('artificial intelligence') ||
+    lower.includes('neural') ||
+    lower.includes('deep learning') ||
+    lower.includes('nlp')
+  ) {
     return <Sparkles size={14} className="text-[#0066cc]" />
   }
-  if (lower.includes('structure') || lower.includes('algorithm') || lower.includes('data')) {
-    return <Layers size={14} className="text-[#0066cc]" />
+  if (
+    lower.includes('structure') ||
+    lower.includes('algorithm') ||
+    lower.includes('data structure') ||
+    lower.includes('sorting') ||
+    lower.includes('tree') ||
+    lower.includes('graph')
+  ) {
+    return <Network size={14} className="text-[#0066cc]" />
   }
-  if (lower.includes('c++') || lower.includes('code') || lower.includes('system')) {
+  if (
+    lower.includes('database') ||
+    lower.includes('sql') ||
+    lower.includes('mongo') ||
+    lower.includes('postgres')
+  ) {
+    return <Database size={14} className="text-[#0066cc]" />
+  }
+  if (
+    lower.includes('c++') ||
+    lower.includes('code') ||
+    lower.includes('system') ||
+    lower.includes('java') ||
+    lower.includes('c#') ||
+    lower.includes('rust') ||
+    lower.includes('golang') ||
+    lower.includes('compiler') ||
+    lower.includes('os')
+  ) {
     return <Code2 size={14} className="text-[#0066cc]" />
   }
-  if (lower.includes('react') || lower.includes('web') || lower.includes('frontend')) {
+  if (
+    lower.includes('react') ||
+    lower.includes('typescript') ||
+    lower.includes('javascript') ||
+    lower.includes('node') ||
+    lower.includes('frontend') ||
+    lower.includes('backend') ||
+    lower.includes('fullstack') ||
+    lower.includes('full-stack') ||
+    lower.includes('next.js') ||
+    lower.includes('vue')
+  ) {
     return <Atom size={14} className="text-[#0066cc]" />
   }
-  if (lower.includes('physics') || lower.includes('quantum')) {
+  if (
+    lower.includes('web') ||
+    lower.includes('network') ||
+    lower.includes('cloud') ||
+    lower.includes('internet') ||
+    lower.includes('devops')
+  ) {
+    return <Globe size={14} className="text-[#0066cc]" />
+  }
+  if (
+    lower.includes('physics') ||
+    lower.includes('quantum') ||
+    lower.includes('thermo') ||
+    lower.includes('mechanics') ||
+    lower.includes('optics') ||
+    lower.includes('electromagnetism') ||
+    lower.includes('engineering') ||
+    lower.includes('hardware')
+  ) {
     return <Cpu size={14} className="text-[#0066cc]" />
+  }
+  if (
+    lower.includes('chem') ||
+    lower.includes('organic') ||
+    lower.includes('inorganic') ||
+    lower.includes('biochem') ||
+    lower.includes('bio') ||
+    lower.includes('mcat')
+  ) {
+    return <FlaskConical size={14} className="text-[#0066cc]" />
+  }
+  if (
+    lower.includes('security') ||
+    lower.includes('cyber') ||
+    lower.includes('crypto') ||
+    lower.includes('ethical') ||
+    lower.includes('infosec')
+  ) {
+    return <ShieldCheck size={14} className="text-[#0066cc]" />
+  }
+  if (
+    lower.includes('stat') ||
+    lower.includes('probability') ||
+    lower.includes('analytics') ||
+    lower.includes('data science') ||
+    lower.includes(' r') ||
+    lower === 'r'
+  ) {
+    return <BarChart2 size={14} className="text-[#0066cc]" />
   }
   return <BookOpen size={14} className="text-[#0066cc]" />
 }

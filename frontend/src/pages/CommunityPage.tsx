@@ -10,7 +10,9 @@ import {
   Code,
   Code2,
   Cpu,
+  Database,
   FlaskConical,
+  Globe,
   Image as ImageIcon,
   Layers,
   Loader2,
@@ -34,9 +36,8 @@ import {
   Users,
   X
 } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
@@ -44,6 +45,7 @@ import {
   createCommunityThread,
   deleteCommunityComment,
   editCommunityComment,
+  fetchAllTutors,
   fetchCommunityThread,
   fetchCommunityThreads,
   uploadMedia,
@@ -555,36 +557,152 @@ const getTagIcon = (tag: string) => {
   return <Cpu size={14} className="text-[#0066cc] shrink-0" />
 }
 
-const getSubjectFilterIcon = (subj: string, isActive: boolean) => {
+const getSubjectFilterIcon = (subj: string, isActive: boolean = false, size: number = 13) => {
   const colorClass = isActive ? 'text-white' : 'text-[#0066cc]'
-  switch (subj) {
-    case 'All':
-      return <Layers size={14} className={`${colorClass} shrink-0`} />
-    case 'Mathematics':
-      return <Sigma size={14} className={`${colorClass} shrink-0`} />
-    case 'Computer Science':
-      return <Code2 size={14} className={`${colorClass} shrink-0`} />
-    case 'Physics':
-      return <Atom size={14} className={`${colorClass} shrink-0`} />
-    case 'Chemistry':
-      return <FlaskConical size={14} className={`${colorClass} shrink-0`} />
-    case 'Engineering':
-      return <Cpu size={14} className={`${colorClass} shrink-0`} />
-    default:
-      return <BookOpen size={14} className={`${colorClass} shrink-0`} />
+  const lower = (subj || '').toLowerCase().trim()
+
+  if (lower === 'all') return <Layers size={size} className={`${colorClass} shrink-0`} />
+  if (lower.includes('python')) return <Terminal size={size} className={`${colorClass} shrink-0`} />
+  if (
+    lower.includes('algebra') ||
+    lower.includes('math') ||
+    lower.includes('calculus') ||
+    lower.includes('geometry') ||
+    lower.includes('trigonometry') ||
+    lower.includes('discrete')
+  ) {
+    return <Sigma size={size} className={`${colorClass} shrink-0`} />
   }
+  if (
+    lower.includes('machine') ||
+    lower.includes('ai') ||
+    lower.includes('torch') ||
+    lower.includes('artificial intelligence') ||
+    lower.includes('neural') ||
+    lower.includes('deep learning') ||
+    lower.includes('nlp')
+  ) {
+    return <Sparkles size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('structure') ||
+    lower.includes('algorithm') ||
+    lower.includes('data structure') ||
+    lower.includes('sorting') ||
+    lower.includes('tree') ||
+    lower.includes('graph')
+  ) {
+    return <Network size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('database') ||
+    lower.includes('sql') ||
+    lower.includes('mongo') ||
+    lower.includes('postgres') ||
+    lower.includes('data warehouse')
+  ) {
+    return <Database size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('c++') ||
+    lower.includes('code') ||
+    lower.includes('system') ||
+    lower.includes('java') ||
+    lower.includes('c#') ||
+    lower.includes('rust') ||
+    lower.includes('golang') ||
+    lower.includes('compiler') ||
+    lower.includes('os')
+  ) {
+    return <Code2 size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('react') ||
+    lower.includes('typescript') ||
+    lower.includes('javascript') ||
+    lower.includes('node') ||
+    lower.includes('frontend') ||
+    lower.includes('backend') ||
+    lower.includes('fullstack') ||
+    lower.includes('full-stack') ||
+    lower.includes('next.js') ||
+    lower.includes('vue')
+  ) {
+    return <Atom size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('web') ||
+    lower.includes('network') ||
+    lower.includes('cloud') ||
+    lower.includes('internet') ||
+    lower.includes('devops')
+  ) {
+    return <Globe size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('physics') ||
+    lower.includes('quantum') ||
+    lower.includes('thermo') ||
+    lower.includes('mechanics') ||
+    lower.includes('optics') ||
+    lower.includes('electromagnetism') ||
+    lower.includes('engineering') ||
+    lower.includes('hardware')
+  ) {
+    return <Cpu size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('chem') ||
+    lower.includes('organic') ||
+    lower.includes('inorganic') ||
+    lower.includes('biochem') ||
+    lower.includes('bio') ||
+    lower.includes('mcat')
+  ) {
+    return <FlaskConical size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('security') ||
+    lower.includes('cyber') ||
+    lower.includes('crypto') ||
+    lower.includes('ethical') ||
+    lower.includes('infosec')
+  ) {
+    return <ShieldCheck size={size} className={`${colorClass} shrink-0`} />
+  }
+  if (
+    lower.includes('stat') ||
+    lower.includes('probability') ||
+    lower.includes('analytics') ||
+    lower.includes('data science') ||
+    lower.includes(' r') ||
+    lower === 'r'
+  ) {
+    return <BarChart2 size={size} className={`${colorClass} shrink-0`} />
+  }
+  return <BookOpen size={size} className={`${colorClass} shrink-0`} />
 }
 
-const BASE_SUBJECT_OPTIONS: DropdownOption<string>[] = [
-  { value: 'Mathematics', label: 'Mathematics', icon: <Sigma size={15} className="text-[#0066cc]" /> },
-  { value: 'Computer Science', label: 'Computer Science', icon: <Code2 size={15} className="text-[#0066cc]" /> },
-  { value: 'Algorithms & Data Structures', label: 'Algorithms & Data Structures', icon: <Network size={15} className="text-[#0066cc]" /> },
-  { value: 'Linear Algebra & AI Foundations', label: 'Linear Algebra & AI Foundations', icon: <BarChart2 size={15} className="text-[#0066cc]" /> },
-  { value: 'Physics & Quantum Mechanics', label: 'Physics & Quantum Mechanics', icon: <Atom size={15} className="text-[#0066cc]" /> },
-  { value: 'Chemistry & Biochemistry', label: 'Chemistry & Biochemistry', icon: <FlaskConical size={15} className="text-[#0066cc]" /> },
-  { value: 'Full-Stack Web Development', label: 'Full-Stack Web Development', icon: <Terminal size={15} className="text-[#0066cc]" /> },
-  { value: 'Statistics & Data Science', label: 'Statistics & Data Science', icon: <Percent size={15} className="text-[#0066cc]" /> },
-  { value: 'Engineering & Statics', label: 'Engineering & Statics', icon: <Cpu size={15} className="text-[#0066cc]" /> },
+const DEFAULT_SUBJECTS = [
+  'Algorithms',
+  'Data Structures',
+  'Linear Algebra',
+  'Machine Learning',
+  'PyTorch',
+  'Python',
+  'React',
+  'TypeScript',
+  'Node.js',
+  'Quantum Physics',
+  'Statistics',
+  'Organic Chemistry',
+  'Calculus',
+  'C++',
+  'Database Systems',
+  'Computer Networks',
+  'Web Development',
+  'Artificial Intelligence',
+  'Cyber Security',
 ]
 
 const FALLBACK_CONTRIBUTORS = [
@@ -597,38 +715,39 @@ const FALLBACK_CONTRIBUTORS = [
 export default function CommunityPage() {
   const { user } = useAuthStore()
 
-  // Dynamically merge Base Subjects + Student Enrolled Learning Subjects + Tutor Subjects from profile
-  const subjectDropdownOptions = useCallback(() => {
-    const optionsMap = new Map<string, DropdownOption<string>>()
+  // Fetch backend tutor subjects (matches Tutors page subject field)
+  const [tutorSubjects, setTutorSubjects] = useState<string[]>([])
 
-    BASE_SUBJECT_OPTIONS.forEach((opt) => optionsMap.set(opt.value, opt))
-
-    const studentSubjects = (user as any)?.learningSubjects || []
-    studentSubjects.forEach((sub: string) => {
-      const clean = sub.trim()
-      if (clean && !optionsMap.has(clean)) {
-        optionsMap.set(clean, {
-          value: clean,
-          label: clean,
-          icon: <BookOpen size={15} className="text-[#0066cc]" />,
+  useEffect(() => {
+    let isMounted = true
+    fetchAllTutors()
+      .then((data) => {
+        if (!isMounted || !data) return
+        const set = new Set<string>()
+        data.forEach((t) => {
+          const subs = (t as any)?.subjects
+          if (Array.isArray(subs)) subs.forEach((s: string) => s && set.add(s.trim()))
+          if ((t as any)?.subject && typeof (t as any).subject === 'string') {
+            ;(t as any).subject.split(',').forEach((s: string) => {
+              const trimmed = s.trim()
+              if (trimmed && !trimmed.includes('&')) set.add(trimmed)
+            })
+          }
         })
-      }
-    })
+        setTutorSubjects(Array.from(set))
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
-    const tutorSubjects = user?.subjects || []
-    tutorSubjects.forEach((sub: string) => {
-      const clean = sub.trim()
-      if (clean && !optionsMap.has(clean)) {
-        optionsMap.set(clean, {
-          value: clean,
-          label: clean,
-          icon: <Award size={15} className="text-[#0066cc]" />,
-        })
-      }
-    })
-
-    return Array.from(optionsMap.values())
-  }, [user])()
+  // Combined set of Tutors-page default subjects + backend tutor subjects
+  const allSubjects = useMemo(() => {
+    const set = new Set<string>(DEFAULT_SUBJECTS)
+    tutorSubjects.forEach((s) => set.add(s))
+    return Array.from(set)
+  }, [tutorSubjects])
 
   const [threads, setThreads] = useState<DoubtThread[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -669,7 +788,7 @@ export default function CommunityPage() {
   const [isCreateFormExpanded, setIsCreateFormExpanded] = useState(false)
   const [activeThread, setActiveThread] = useState<DoubtThread | null>(null)
   const [newTitle, setNewTitle] = useState('')
-  const [newSubject, setNewSubject] = useState('Mathematics')
+  const [newSubject, setNewSubject] = useState('Algorithms')
   const [newTags, setNewTags] = useState('')
   const [tagInput, setTagInput] = useState('')
   const [newContent, setNewContent] = useState('')
@@ -1552,18 +1671,31 @@ export default function CommunityPage() {
                   {/* Accordion Body Panel (GPU-Accelerated Instant Render) */}
                   {isCreateFormExpanded && (
                     <div className="p-5 md:p-6 border-t border-[#f0f0f2] bg-white space-y-4 transform-gpu">
-                      {/* Subject Custom Dropdown Menu (Matches Tutors & Domains Dropdown) */}
+                      {/* Subject Chips (Matches Tutors Page Subject Field) */}
                       <div>
                         <label className="block text-[11px] font-extrabold text-[#6e6e73] uppercase tracking-wider mb-2">
                           Subject Domain
                         </label>
-                        <CustomDropdown
-                          options={subjectDropdownOptions}
-                          value={newSubject}
-                          onChange={(val) => setNewSubject(val)}
-                          placeholder="Select Academic Subject..."
-                          buttonClassName="w-full sm:w-80 border border-[#e0e0e4] bg-[#f5f5f7] hover:bg-[#e8e8ea] text-[#1d1d1f] text-xs font-extrabold rounded-2xl py-2.5 px-4 shadow-2xs transition-all"
-                        />
+                        <div className="flex flex-wrap items-center content-start gap-1.5 max-w-full flex-1 max-h-[105px] overflow-y-auto subject-slider pr-2 py-0.5">
+                          {allSubjects.map((sub) => {
+                            const isActive = newSubject === sub
+                            return (
+                              <button
+                                key={sub}
+                                type="button"
+                                onClick={() => setNewSubject(sub)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 shrink-0 cursor-pointer whitespace-nowrap select-none border inline-flex items-center gap-1.5 transform-gpu ${
+                                  isActive
+                                    ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
+                                    : 'bg-[#f5f5f7] border-[#e5e5e7] text-[#525252] hover:border-[#0066cc]/40 hover:text-[#0066cc]'
+                                }`}
+                              >
+                                {getSubjectFilterIcon(sub, isActive)}
+                                <span>{sub}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
 
                       {/* Hashtag List Selection */}
@@ -1600,8 +1732,8 @@ export default function CommunityPage() {
                           {/* Immovable Quick Suggestions with Left Domain Icons (Matches Image 3) */}
                           <div className="flex flex-wrap items-center gap-2 pt-0.5">
                             <span className="text-[10px] font-bold text-[#86868b] mr-1 select-none">Quick Suggestions:</span>
-                            {(newSubject === 'Mathematics'
-                              ? ['Calculus', 'Integrals', 'Linear Algebra', 'Olympiad', 'Geometry']
+                            {(newSubject === 'Algorithms'
+                              ? ['Sorting', 'Graphs', 'Dynamic Programming', 'Complexity']
                               : newSubject === 'Computer Science'
                               ? ['Algorithms', 'Data Structures', 'React', 'Python', 'C++']
                               : newSubject === 'Physics'
