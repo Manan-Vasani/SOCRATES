@@ -174,10 +174,10 @@ export default function MeetingLobby({
 
       {/* Main Center Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 md:py-14 w-full">
-        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          {/* Left: Device Camera & Audio Viewport (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col gap-3">
-            <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#1c1c1e] border border-[#e5e5e7] shadow-xl shadow-black/8 group">
+        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* Left: Device Camera & Audio Viewport (7 cols) - Matches Right Card Height Exactly */}
+          <div className="lg:col-span-7 flex flex-col">
+            <div className="relative w-full h-full min-h-[380px] sm:min-h-[410px] rounded-3xl overflow-hidden bg-[#1c1c1e] border border-[#e5e5e7] shadow-xl shadow-black/8 group flex flex-col items-center justify-center">
               {/* Video Element */}
               {localStream && isCameraOn ? (
                 <video
@@ -193,7 +193,7 @@ export default function MeetingLobby({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover scale-x-[-1]"
+                  className="w-full h-full object-cover scale-x-[-1] absolute inset-0"
                 />
               ) : (
                 /* Camera Off State */
@@ -266,41 +266,32 @@ export default function MeetingLobby({
             </div>
           </div>
 
-          {/* Right: Clean White Join Card (5 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl border border-[#e5e5e7] p-7 sm:p-9 shadow-sm space-y-6 flex flex-col justify-between">
+          {/* Right: Clean White Join Card (5 cols) - Matches Left Viewport Height Exactly */}
+          <div className="lg:col-span-5 bg-white rounded-3xl border border-[#e5e5e7] p-7 sm:p-8 shadow-sm space-y-6 flex flex-col justify-between h-full min-h-[380px] sm:min-h-[410px]">
             {/* Header / Session Details */}
-            <div className="space-y-1.5">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f] truncate">
                 {heroTitle}
               </h1>
 
-              {sessionDetails?.tutorName && (
-                <p className="text-xs text-[#7a7a7a]">
+              {sessionDetails?.tutorName ? (
+                <p className="text-xs text-[#7a7a7a] truncate">
                   Hosted by{' '}
                   <strong className="text-[#1d1d1f] font-semibold">
                     {sessionDetails.tutorName}
                   </strong>
                 </p>
+              ) : (
+                <p className="text-xs text-[#7a7a7a]">Live Tutoring Session</p>
               )}
             </div>
 
-            {/* Display Name Input with Quick Clear Button */}
+            {/* Display Name Input with 100% Fixed Dimensions */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[#7a7a7a] uppercase tracking-wider flex items-center gap-1.5 select-none">
-                  <User size={13} className="text-[#0066cc] shrink-0" />
-                  Your name
-                </label>
-                {displayName.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => onNameChange('')}
-                    className="text-[11px] font-medium text-[#7a7a7a] hover:text-[#0066cc] transition-colors cursor-pointer select-none"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
+              <label className="text-xs font-semibold text-[#7a7a7a] uppercase tracking-wider flex items-center gap-1.5 select-none h-5">
+                <User size={13} className="text-[#0066cc] shrink-0" />
+                Your name
+              </label>
 
               <div className="relative">
                 <input
@@ -310,18 +301,18 @@ export default function MeetingLobby({
                   placeholder="Enter your name"
                   maxLength={40}
                   autoComplete="name"
-                  className="w-full pl-4 pr-10 py-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] text-sm font-semibold text-[#1d1d1f] placeholder:text-[#a1a1a6] outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-colors duration-150"
+                  className="w-full pl-4 pr-10 h-11 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] text-sm font-semibold text-[#1d1d1f] placeholder:text-[#a1a1a6] outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-colors duration-150"
                 />
-                {displayName.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => onNameChange('')}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#a1a1a6] hover:text-[#1d1d1f] hover:bg-black/5 transition-colors cursor-pointer"
-                    title="Clear input"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => onNameChange('')}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#a1a1a6] hover:text-[#1d1d1f] hover:bg-black/5 transition-opacity duration-150 cursor-pointer ${
+                    displayName.length > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                  title="Clear input"
+                >
+                  <X size={14} />
+                </button>
               </div>
             </div>
 
@@ -329,7 +320,7 @@ export default function MeetingLobby({
             <button
               onClick={onJoinMeeting}
               disabled={!displayName.trim()}
-              className="w-full py-2.5 sm:py-3 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-sm transition-colors duration-150 shadow-sm hover:shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none"
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-sm transition-colors duration-150 shadow-sm hover:shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none shrink-0"
             >
               <Video size={16} className="shrink-0" />
               <span>Join now</span>
@@ -337,13 +328,13 @@ export default function MeetingLobby({
 
             {/* Share Link Strip */}
             <div className="pt-4 border-t border-[#f0f0f0] space-y-2.5">
-              <div className="flex items-center justify-between text-xs text-[#7a7a7a] select-none">
+              <div className="flex items-center justify-between text-xs text-[#7a7a7a] select-none h-4">
                 <span className="font-semibold text-[#1d1d1f]">Invite link</span>
                 <span className="text-[11px] text-[#7a7a7a]">Anyone with the link can join</span>
               </div>
 
               {/* Full-width Meeting URL Box */}
-              <div className="w-full px-3.5 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-mono text-[#1d1d1f] truncate select-all">
+              <div className="w-full px-3.5 h-9 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-mono text-[#1d1d1f] truncate select-all flex items-center">
                 {shareUrl}
               </div>
 
@@ -351,7 +342,7 @@ export default function MeetingLobby({
               <div className="grid grid-cols-2 gap-2 pt-0.5">
                 <button
                   onClick={handleCopyLink}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 border border-[#e5e5e7] select-none"
+                  className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 border border-[#e5e5e7] select-none"
                 >
                   {copied ? (
                     <>
@@ -368,7 +359,7 @@ export default function MeetingLobby({
 
                 <button
                   onClick={handleShare}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 border border-[#e5e5e7] select-none"
+                  className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 border border-[#e5e5e7] select-none"
                 >
                   <Share2 size={14} className="shrink-0" />
                   <span>Share invite</span>
