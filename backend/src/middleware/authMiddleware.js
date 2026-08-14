@@ -60,7 +60,28 @@ const authorize = (...roles) => {
   };
 };
 
+/**
+ * Optional authentication middleware: attaches req.user if a valid token exists
+ */
+const optionalAuth = async (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const secret = process.env.JWT_SECRET || 'socrates_secret_jwt_key_2026_dev';
+      const decoded = jwt.verify(token, secret);
+      req.user = await User.findById(decoded.id).select('-password');
+    } catch (error) {
+      // Ignore token failure for optional auth
+    }
+  }
+  next();
+};
+
 module.exports = {
   protect,
   authorize,
+  optionalAuth,
 };

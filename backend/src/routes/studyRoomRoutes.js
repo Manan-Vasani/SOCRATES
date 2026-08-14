@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, optionalAuth } = require('../middleware/authMiddleware');
 const studyRoom = require('../controllers/studyRoomController');
 
 // ─── Room Routes ───────────────────────────────────────────────
 router.get('/', studyRoom.getRooms);
 router.post('/', protect, studyRoom.createRoom);
-router.get('/:id', studyRoom.getRoom);
+router.get('/:id', optionalAuth, studyRoom.getRoom);
 
 // ─── Room Actions ──────────────────────────────────────────────
 router.post('/:id/join', protect, studyRoom.joinRoom);

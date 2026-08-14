@@ -56,46 +56,79 @@ export interface ProfileSessionItem {
   status: 'Upcoming' | 'Completed' | 'Cancelled'
 }
 
-const INITIAL_PROFILE_SESSIONS: ProfileSessionItem[] = [
-  {
-    id: 'sess-101',
-    tutorName: 'Dr. Evelyn Reed',
-    studentName: 'Alex Mercer',
-    subject: 'Algorithms & Data Structures',
-    topic: 'Graph Traversals & BFS',
-    dateStr: 'Sat, Jul 25, 2026',
-    timeStr: '01:30 PM',
-    duration: 60,
-    fee: 33,
-    isGroupSplit: true,
-    status: 'Upcoming'
-  },
-  {
-    id: 'sess-102',
-    tutorName: 'Marcus Chen',
-    studentName: 'Alex Mercer',
-    subject: 'Machine Learning',
-    topic: 'PyTorch Model Optimization',
-    dateStr: 'Sun, Jul 26, 2026',
-    timeStr: '11:30 AM',
-    duration: 60,
-    fee: 65,
-    isGroupSplit: false,
-    status: 'Upcoming'
-  },
-  {
-    id: 'sess-103',
-    tutorName: 'Dr. Evelyn Reed',
-    studentName: 'Alex Mercer',
-    subject: 'Linear Algebra',
-    dateStr: 'Wed, Jul 22, 2026',
-    timeStr: '04:00 PM',
-    duration: 30,
-    fee: 28,
-    isGroupSplit: true,
-    status: 'Completed'
+function getDynamicInitialProfileSessions(): ProfileSessionItem[] {
+  const now = new Date()
+
+  const formatDateStr = (d: Date): string => {
+    return d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
   }
-]
+
+  // Active session starting in 2 minutes (within 5-min pre-window so Join Room is active!)
+  const activeSessionDate = new Date(now)
+  let activeHours = activeSessionDate.getHours()
+  let activeMins = activeSessionDate.getMinutes() + 2
+  if (activeMins >= 60) {
+    activeHours = (activeHours + 1) % 24
+    activeMins = activeMins % 60
+  }
+  const ampm = activeHours >= 12 ? 'PM' : 'AM'
+  const dispHours = activeHours % 12 === 0 ? 12 : activeHours % 12
+  const dispHoursStr = dispHours < 10 ? `0${dispHours}` : `${dispHours}`
+  const dispMinsStr = activeMins < 10 ? `0${activeMins}` : `${activeMins}`
+  const activeTimeStr = `${dispHoursStr}:${dispMinsStr} ${ampm}`
+
+  // Upcoming session tomorrow
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+  // Past session yesterday
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+
+  return [
+    {
+      id: 'sess-101',
+      tutorName: 'Dr. Evelyn Reed',
+      studentName: 'Alex Mercer',
+      subject: 'Algorithms & Data Structures',
+      topic: 'Graph Traversals & BFS',
+      dateStr: formatDateStr(activeSessionDate),
+      timeStr: activeTimeStr,
+      duration: 60,
+      fee: 33,
+      isGroupSplit: true,
+      status: 'Upcoming',
+    },
+    {
+      id: 'sess-102',
+      tutorName: 'Marcus Chen',
+      studentName: 'Alex Mercer',
+      subject: 'Machine Learning',
+      topic: 'PyTorch Model Optimization',
+      dateStr: formatDateStr(tomorrow),
+      timeStr: '11:30 AM',
+      duration: 60,
+      fee: 65,
+      isGroupSplit: false,
+      status: 'Upcoming',
+    },
+    {
+      id: 'sess-103',
+      tutorName: 'Dr. Evelyn Reed',
+      studentName: 'Alex Mercer',
+      subject: 'Linear Algebra',
+      dateStr: formatDateStr(yesterday),
+      timeStr: '04:00 PM',
+      duration: 30,
+      fee: 28,
+      isGroupSplit: true,
+      status: 'Completed',
+    },
+  ]
+}
 
 export interface BookmarkedTutor {
   id: string
@@ -122,6 +155,56 @@ export interface PayoutLog {
   amount: number
   status: 'Completed' | 'Pending'
   account: string
+}
+
+function checkIsSessionJoinable(dateStr?: string, timeStr?: string, durationMinutes = 60): { isJoinable: boolean; statusText: string } {
+  if (!dateStr || !timeStr) {
+    return { isJoinable: false, statusText: 'Opens 5m before' }
+  }
+
+  try {
+    const timeMatch = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    if (!timeMatch) return { isJoinable: false, statusText: 'Opens 5m before' }
+
+    let hours = parseInt(timeMatch[1], 10)
+    const minutes = parseInt(timeMatch[2], 10)
+    const ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : null
+
+    if (ampm === 'PM' && hours < 12) hours += 12
+    if (ampm === 'AM' && hours === 12) hours = 0
+
+    const parsedDate = new Date(dateStr)
+    if (isNaN(parsedDate.getTime())) {
+      return { isJoinable: false, statusText: 'Opens 5m before' }
+    }
+
+    parsedDate.setHours(hours, minutes, 0, 0)
+    const now = new Date().getTime()
+    const sessionStart = parsedDate.getTime()
+    const windowStart = sessionStart - 5 * 60 * 1000 // 5 minutes before session start
+    const windowEnd = sessionStart + durationMinutes * 60 * 1000 // Until session ends
+
+    if (now >= windowStart && now <= windowEnd) {
+      return { isJoinable: true, statusText: 'Join Room' }
+    }
+
+    if (now < windowStart) {
+      const diffMs = windowStart - now
+      const diffMins = Math.ceil(diffMs / (60 * 1000))
+      if (diffMins < 60) {
+        return { isJoinable: false, statusText: `Opens in ${diffMins}m` }
+      }
+      const diffHours = Math.floor(diffMins / 60)
+      if (diffHours < 24) {
+        return { isJoinable: false, statusText: `Opens in ${diffHours}h` }
+      }
+      return { isJoinable: false, statusText: 'Opens 5m before' }
+    }
+
+    return { isJoinable: false, statusText: 'Ended' }
+  } catch (e) {
+    return { isJoinable: false, statusText: 'Opens 5m before' }
+  }
 }
 
 const MOCK_BOOKMARKED_TUTORS: BookmarkedTutor[] = [
@@ -274,7 +357,7 @@ export const getStoredProfileSessions = (): ProfileSessionItem[] => {
   } catch (e) {
     console.error(e)
   }
-  return INITIAL_PROFILE_SESSIONS
+  return getDynamicInitialProfileSessions()
 }
 
 export const saveStoredProfileSessions = (sessions: ProfileSessionItem[]) => {
@@ -1025,38 +1108,55 @@ export default function Profile() {
                     <span>Topic: <strong className="text-[#1d1d1f] font-medium">{session.topic || 'None'}</strong></span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
-                    <div className="text-[#7a7a7a]">
-                      {viewPerspective === 'tutor' ? (
-                        <span>Student: <strong className="text-[#1d1d1f] font-semibold">{session.studentName}</strong></span>
-                      ) : (
-                        <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{session.tutorName}</strong></span>
-                      )}
-                      <span className="ml-2 text-[#a1a1a6]">({session.duration} min • ${session.fee})</span>
-                    </div>
+                  {(() => {
+                    const joinInfo = checkIsSessionJoinable(session.dateStr, session.timeStr, session.duration)
+                    return (
+                      <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
+                        <div className="text-[#7a7a7a]">
+                          {viewPerspective === 'tutor' ? (
+                            <span>Student: <strong className="text-[#1d1d1f] font-semibold">{session.studentName}</strong></span>
+                          ) : (
+                            <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{session.tutorName}</strong></span>
+                          )}
+                          <span className="ml-2 text-[#a1a1a6]">({session.duration} min • ${session.fee})</span>
+                        </div>
 
-                    {session.status === 'Upcoming' ? (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Link
-                          to={`/study-room/${session.id}`}
-                          className="w-[110px] py-1.5 rounded-xl bg-[#0066cc]/10 hover:bg-[#0066cc]/20 text-[#0066cc] border border-[#0066cc]/20 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1"
-                        >
-                          <Video size={12} /> Join Room
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setCancellingSession(session)}
-                          className="w-[110px] py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1"
-                        >
-                          <X size={12} /> Cancel
-                        </button>
+                        {session.status === 'Upcoming' ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {joinInfo.isJoinable ? (
+                              <Link
+                                to={`/study-room/${session.id}`}
+                                className="w-[110px] py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white border border-[#0066cc] text-xs font-bold transition-all cursor-pointer shadow-xs select-none hover:shadow-md inline-flex items-center justify-center gap-1.5"
+                              >
+                                <Video size={12} /> Join Room
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled
+                                title="Room opens 5 minutes before scheduled session time"
+                                className="w-[110px] py-1.5 rounded-xl bg-[#f5f5f7] text-[#a1a1a6] border border-[#e5e5e7] text-[11px] font-semibold transition-all cursor-not-allowed select-none opacity-60 inline-flex items-center justify-center gap-1"
+                              >
+                                <Clock size={11} className="text-[#a1a1a6] shrink-0" />
+                                <span>{joinInfo.statusText}</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setCancellingSession(session)}
+                              className="w-[110px] py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1"
+                            >
+                              <X size={12} /> Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="w-[130px] py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none shrink-0">
+                            <Check size={12} className="text-emerald-600 shrink-0" /> Completed
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <span className="w-[130px] py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none shrink-0">
-                        <Check size={12} className="text-emerald-600 shrink-0" /> Completed
-                      </span>
-                    )}
-                  </div>
+                    )
+                  })()}
                 </div>
               ))
             ) : (

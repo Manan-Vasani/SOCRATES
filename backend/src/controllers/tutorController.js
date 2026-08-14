@@ -246,6 +246,7 @@ exports.createBooking = async (req, res) => {
 
     const booking = await Booking.create({
       tutorId: id,
+      studentId: req.user ? req.user._id : undefined,
       studentName,
       date: cleanDate,
       time: cleanTime,
@@ -253,6 +254,7 @@ exports.createBooking = async (req, res) => {
       duration: duration || 60,
       topic: topic || '',
       fee,
+      meetingId: req.body.meetingId || `sess-${Date.now()}`,
       status: 'confirmed',
     });
 

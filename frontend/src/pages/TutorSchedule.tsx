@@ -401,8 +401,8 @@ export default function TutorSchedule() {
     return found || MOCK_TUTORS[0]
   }, [tutorId, backendTutor])
 
-  // Current Month State
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 6, 1)) // July 2026
+  // Current Month State (starts at actual real-time current date)
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredDay, setHoveredDay] = useState<DaySchedule | null>(null)
   const [selectedDay, setSelectedDay] = useState<DaySchedule | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
@@ -489,8 +489,9 @@ export default function TutorSchedule() {
       days.push(null)
     }
 
-    // Populate month days with deterministic mock schedules
-    const today = new Date(2026, 6, 23) // Current simulated date (July 23, 2026)
+    // Populate month days with actual real-time today check
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
       const dayOfWeek = (firstDayIndex + dayNum - 1) % 7
@@ -717,7 +718,7 @@ export default function TutorSchedule() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="relative z-10 max-w-6xl mx-auto px-6 pt-8 space-y-8"
+          className="relative z-30 max-w-6xl mx-auto px-6 pt-8 space-y-8"
         >
         {/* Back Link & Header */}
         <motion.div variants={cardVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -810,7 +811,7 @@ export default function TutorSchedule() {
         </motion.div>
 
         {/* Monthly Calendar View */}
-        <motion.div variants={cardVariants} className="bg-white rounded-3xl border border-[#e5e5e7] p-6 sm:p-8 shadow-xs space-y-6">
+        <motion.div variants={cardVariants} className="bg-white rounded-3xl border border-[#e5e5e7] p-6 sm:p-8 shadow-xs space-y-6 relative z-30">
           {/* Month Header Controls & Timezone Badge */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#f0f0f2] pb-6 gap-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -950,7 +951,7 @@ export default function TutorSchedule() {
                       onMouseLeave={handlePopoverMouseLeave}
                       className={`absolute top-1/2 -translate-y-1/2 ${
                         day.dayOfWeek >= 5 ? 'right-full mr-3' : 'left-full ml-3'
-                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-50 pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
+                      } w-72 p-3.5 pb-3 flex flex-col gap-2 bg-white text-[#1d1d1f] text-xs rounded-2xl shadow-2xl z-[100] pointer-events-auto border border-[#e5e5e7] animate-in fade-in duration-150`}
                     >
                       <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
                         <span className="font-bold text-[#1d1d1f] text-xs">{day.fullDateStr}</span>

@@ -52,6 +52,7 @@ import {
   voteCommunityThread,
 } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
+import { getUnifiedSubjectList } from '../utils/subjectRegistry'
 
 interface MediaItem {
   url: string
@@ -715,39 +716,23 @@ const FALLBACK_CONTRIBUTORS = [
 export default function CommunityPage() {
   const { user } = useAuthStore()
 
-  // Fetch backend tutor subjects (matches Tutors page subject field)
-  const [tutorSubjects, setTutorSubjects] = useState<string[]>([])
+  // Fetch backend tutor list for unified subject registry
+  const [tutorsList, setTutorsList] = useState<any[]>([])
 
   useEffect(() => {
-    let isMounted = true
-    fetchAllTutors()
-      .then((data) => {
-        if (!isMounted || !data) return
-        const set = new Set<string>()
-        data.forEach((t) => {
-          const subs = (t as any)?.subjects
-          if (Array.isArray(subs)) subs.forEach((s: string) => s && set.add(s.trim()))
-          if ((t as any)?.subject && typeof (t as any).subject === 'string') {
-            ;(t as any).subject.split(',').forEach((s: string) => {
-              const trimmed = s.trim()
-              if (trimmed && !trimmed.includes('&')) set.add(trimmed)
-            })
-          }
-        })
-        setTutorSubjects(Array.from(set))
-      })
-      .catch(() => {})
-    return () => {
-      isMounted = false
-    }
+    fetchAllTutors().then((data) => {
+      if (data && Array.isArray(data)) setTutorsList(data)
+    })
   }, [])
 
-  // Combined set of Tutors-page default subjects + backend tutor subjects
+  // Combined set of Tutors-page default subjects + backend tutor subjects + student enrolled subjects
   const allSubjects = useMemo(() => {
-    const set = new Set<string>(DEFAULT_SUBJECTS)
-    tutorSubjects.forEach((s) => set.add(s))
-    return Array.from(set)
-  }, [tutorSubjects])
+    return getUnifiedSubjectList(tutorsList, user, false)
+  }, [tutorsList, user])
+
+  const communityFilterSubjects = useMemo(() => {
+    return getUnifiedSubjectList(tutorsList, user, true)
+  }, [tutorsList, user])
 
   const [threads, setThreads] = useState<DoubtThread[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -1435,7 +1420,7 @@ export default function CommunityPage() {
 
         {/* Subject Filter Pills (Icon-supported & 100% Immovable on selection - Matches Image 3) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {['All', 'Mathematics', 'Computer Science', 'Physics', 'Chemistry', 'Engineering'].map((subj) => {
+          {communityFilterSubjects.map((subj) => {
             const isActive = activeSubject === subj
             return (
               <button

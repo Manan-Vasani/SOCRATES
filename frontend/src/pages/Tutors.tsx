@@ -37,6 +37,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { fetchAllTutors, TutorItem } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
+import { getUnifiedSubjectList } from '../utils/subjectRegistry'
 
 export interface ExtendedTutor extends Omit<TutorItem, 'reviews'> {
   id: string
@@ -321,24 +322,10 @@ export default function Tutors() {
     []
   )
 
-  // Combined set of default subjects + custom subjects added by user tutors
+  // Combined set of default subjects + tutor subjects + student enrolled subjects
   const allSubjects = useMemo(() => {
-    const set = new Set<string>(DEFAULT_SUBJECTS)
-    tutorsList.forEach((t) => {
-      if (t.subjects && Array.isArray(t.subjects)) {
-        t.subjects.forEach((s) => {
-          if (s && typeof s === 'string' && s.trim()) set.add(s.trim())
-        })
-      }
-      if (t.subject && typeof t.subject === 'string') {
-        t.subject.split(',').forEach((s) => {
-          const trimmed = s.trim()
-          if (trimmed && !trimmed.includes('&')) set.add(trimmed)
-        })
-      }
-    })
-    return Array.from(set)
-  }, [tutorsList, DEFAULT_SUBJECTS])
+    return getUnifiedSubjectList(tutorsList, user, true)
+  }, [tutorsList, user])
 
   // Filtered tutors based on search and dropdown filters
   const filteredTutors = useMemo(() => {

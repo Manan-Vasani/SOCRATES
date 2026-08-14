@@ -3,6 +3,111 @@ const mongoose = require('mongoose');
 const StudyRoom = require('../models/StudyRoom');
 const StudyRoomMessage = require('../models/StudyRoomMessage');
 const DoubtThread = require('../models/DoubtThread');
+const Booking = require('../models/Booking');
+const User = require('../models/User');
+
+/**
+ * Helper to check whether a user is authorized to join a study session / tutoring room.
+ */
+async function verifySessionAuthorization(room, reqUser, roomIdOrMeetingId) {
+  // Try finding associated booking record
+  let booking = null;
+  if (roomIdOrMeetingId) {
+    booking = await Booking.findOne({
+      $or: [
+        { meetingId: roomIdOrMeetingId },
+        ...(mongoose.Types.ObjectId.isValid(roomIdOrMeetingId) ? [{ _id: roomIdOrMeetingId }] : []),
+      ],
+    }).catch(() => null);
+  }
+
+  const isTutoringSession =
+    !!booking ||
+    (roomIdOrMeetingId && roomIdOrMeetingId.startsWith('sess-')) ||
+    (room && (room.subject === '1-on-1 Tutoring' || room.isPrivate));
+
+  // Generic public community rooms are accessible to logged-in or guest users
+  if (!isTutoringSession) {
+    return {
+      isAuthorized: true,
+      isTutoringSession: false,
+      reason: 'PUBLIC_ROOM',
+    };
+  }
+
+  // Tutoring sessions strictly require authentication
+  if (!reqUser) {
+    return {
+      isAuthorized: false,
+      isTutoringSession: true,
+      reason: 'REQUIRES_AUTHENTICATION',
+      message: 'Access restricted. Please sign in with the student account that booked this tutoring session.',
+    };
+  }
+
+  const userIdStr = reqUser._id ? reqUser._id.toString() : '';
+  const userNameStr = (reqUser.fullName || reqUser.name || '').trim().toLowerCase();
+
+  // Check booking ownership if booking record exists
+  if (booking) {
+    const isBookedStudent =
+      (booking.studentId && booking.studentId.toString() === userIdStr) ||
+      (booking.studentName && booking.studentName.trim().toLowerCase() === userNameStr);
+
+    const isAssignedTutor =
+      booking.tutorId === userIdStr ||
+      (room?.host && (room.host._id || room.host).toString() === userIdStr);
+
+    if (isBookedStudent || isAssignedTutor) {
+      return {
+        isAuthorized: true,
+        isTutoringSession: true,
+        role: isAssignedTutor ? 'tutor' : 'student',
+        studentName: booking.studentName,
+      };
+    }
+
+    return {
+      isAuthorized: false,
+      isTutoringSession: true,
+      reason: 'UNAUTHORIZED_STUDENT_ONLY',
+      message: `Access denied. This tutoring session was booked by ${booking.studentName}. Only ${booking.studentName} and their tutor are authorized to join.`,
+    };
+  }
+
+  // Fallback for private / host rooms in StudyRoom collection
+  if (room && room.host) {
+    const isHost = (room.host._id || room.host).toString() === userIdStr;
+    const isParticipant =
+      room.participants &&
+      room.participants.some((p) => (p.user?._id || p.user).toString() === userIdStr);
+
+    if (isHost || isParticipant) {
+      return {
+        isAuthorized: true,
+        isTutoringSession: true,
+        role: isHost ? 'tutor' : 'student',
+      };
+    }
+  }
+
+  // Demo initial sessions support (sess-101, sess-102, sess-103) for logged-in user
+  if (['sess-101', 'sess-102', 'sess-103'].includes(roomIdOrMeetingId)) {
+    return {
+      isAuthorized: true,
+      isTutoringSession: true,
+      role: 'student',
+    };
+  }
+
+  // Default for unrecognized or unauthorized tutoring links: DENY access
+  return {
+    isAuthorized: false,
+    isTutoringSession: true,
+    reason: 'UNAUTHORIZED_SESSION_LINK',
+    message: 'Access denied. You do not have an active booking authorization for this tutoring session.',
+  };
+}
 
 /**
  * GET /api/v1/study-rooms
@@ -118,7 +223,7 @@ exports.createRoom = async (req, res) => {
 
 /**
  * GET /api/v1/study-rooms/:id
- * Get room details + participants (supports Mongo ID, meetingId, or fallback data for shareable links)
+ * Get room details + participants with authorization check
  */
 exports.getRoom = async (req, res) => {
   const roomIdOrMeetingId = req.params.id;
@@ -135,21 +240,30 @@ exports.getRoom = async (req, res) => {
     .populate('participants.user', 'fullName profileImage role')
     .populate('linkedThread', 'title subject');
 
-  // Fallback for custom shareable meeting links (e.g., /meeting/abc123xyz) so guest & direct link entry always works
+  // Fallback for custom shareable meeting links (e.g., /meeting/sess-abc123xyz)
   if (!room) {
     room = {
       _id: roomIdOrMeetingId,
       meetingId: roomIdOrMeetingId,
       title: `Study Session (${roomIdOrMeetingId})`,
-      subject: 'Tutoring Session',
+      subject: roomIdOrMeetingId.startsWith('sess-') ? '1-on-1 Tutoring' : 'Tutoring Session',
       description: 'Live 1-on-1 / Group Tutoring Meeting',
       status: 'active',
       participants: [],
       maxCapacity: 10,
+      isPrivate: roomIdOrMeetingId.startsWith('sess-'),
     };
   }
 
-  res.json({ success: true, data: room });
+  const auth = await verifySessionAuthorization(room, req.user, roomIdOrMeetingId);
+
+  res.json({
+    success: true,
+    data: {
+      ...room.toObject ? room.toObject() : room,
+      authorization: auth,
+    },
+  });
 };
 
 /**
@@ -165,6 +279,16 @@ exports.joinRoom = async (req, res) => {
 
   if (room.status !== 'active') {
     return res.status(400).json({ success: false, message: 'This study room has ended' });
+  }
+
+  // Check user session authorization (booked student & assigned tutor only for tutoring rooms)
+  const auth = await verifySessionAuthorization(room, req.user, req.params.id);
+  if (!auth.isAuthorized) {
+    return res.status(403).json({
+      success: false,
+      message: auth.message || 'Only the student who booked this session and the assigned tutor are authorized to join.',
+      reason: auth.reason,
+    });
   }
 
   // Check capacity

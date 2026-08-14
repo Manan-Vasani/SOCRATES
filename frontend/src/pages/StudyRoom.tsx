@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { X, ChevronsLeftRight } from 'lucide-react'
+import { X, ChevronsLeftRight, ShieldAlert, Lock, ArrowLeft, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import RoomHeader, { type StageMode } from '../components/study/RoomHeader'
 import VideoGrid from '../components/study/VideoGrid'
@@ -22,14 +22,24 @@ export default function StudyRoom() {
   const [hasJoined, setHasJoined] = useState(false)
   const [guestName, setGuestName] = useState('')
   const [sessionDetails, setSessionDetails] = useState<any>(null)
+  const [authorization, setAuthorization] = useState<{
+    isAuthorized?: boolean
+    reason?: string
+    message?: string
+    studentName?: string
+  } | null>(null)
 
-  // Fetch room metadata if available
+  // Fetch room metadata and authorization
   useEffect(() => {
     fetchStudyRoom(activeRoomId).then((res) => {
       if (res?.success && res.data) {
         const rawTitle = res.data.title || res.data.description || ''
         const isGeneric = !rawTitle || rawTitle.includes('sess-') || rawTitle.includes('Study Session (')
         const hostName = res.data.host?.fullName
+
+        if (res.data.authorization) {
+          setAuthorization(res.data.authorization)
+        }
 
         setSessionDetails({
           subject: res.data.subject && res.data.subject !== 'Tutoring Session' ? res.data.subject : '1-on-1 Tutoring',
@@ -166,6 +176,59 @@ export default function StudyRoom() {
     navigate('/profile')
   }
 
+  // Render Access Denied guard if user fails authorization
+  if (authorization && authorization.isAuthorized === false) {
+    return (
+      <div className="min-h-screen w-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-4 select-none">
+        <div className="w-full max-w-md bg-white rounded-3xl border border-[#e5e5e7] p-8 shadow-xl space-y-6 text-center animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
+            <Lock size={32} />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              Authorized Session Only
+            </h2>
+            <p className="text-sm text-[#7a7a7a] leading-relaxed">
+              {authorization.message ||
+                'This session is private. Only the student who booked this appointment and the assigned tutor are authorized to join.'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] text-left text-xs space-y-1.5">
+            <div className="flex items-center gap-2 font-semibold text-[#1d1d1f]">
+              <ShieldAlert size={14} className="text-amber-500 shrink-0" />
+              <span>Security Policy</span>
+            </div>
+            <p className="text-[#7a7a7a]">
+              Session links are restricted to authorized participants to protect student privacy and preserve system integrity.
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-2">
+            {!user ? (
+              <button
+                onClick={() => navigate('/profile')}
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-sm transition-colors duration-150 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserCheck size={16} />
+                <span>Sign in with Student Account</span>
+              </button>
+            ) : null}
+
+            <button
+              onClick={() => navigate('/tutors')}
+              className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] font-semibold text-sm transition-colors duration-150 border border-[#e5e5e7] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Tutors</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Render Meeting Lobby preview if user has not clicked "Join Meeting"
   if (!hasJoined) {
     return (
@@ -283,7 +346,7 @@ export default function StudyRoom() {
             setIsChatOpen(false)
           }
         }}
-        onShareLink={handleShareLink}
+        onShareLink={activeRoomId.startsWith('sess-') ? undefined : handleShareLink}
       />
 
       {/* Main Content */}
