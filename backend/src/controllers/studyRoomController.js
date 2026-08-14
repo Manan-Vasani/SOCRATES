@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose');
 const StudyRoom = require('../models/StudyRoom');
 const StudyRoomMessage = require('../models/StudyRoomMessage');
 const DoubtThread = require('../models/DoubtThread');
@@ -65,8 +66,10 @@ exports.createRoom = async (req, res) => {
     tag,
     isPrivate,
     accessCode,
+    meetingId,
   } = req.body;
 
+  const finalMeetingId = meetingId || `mtg-${uuidv4().slice(0, 8)}`;
   const jitsiRoomName = `socrates-${uuidv4().slice(0, 8)}-${Date.now().toString(36)}`;
 
   const room = await StudyRoom.create({
@@ -81,10 +84,11 @@ exports.createRoom = async (req, res) => {
         joinedAt: new Date(),
       },
     ],
-    maxCapacity: maxCapacity || 8,
+    maxCapacity: maxCapacity || 10,
     tag: tag || 'Public',
-    isPrivate: isPrivate || false,
-    accessCode: isPrivate ? accessCode || null : null,
+    isPrivate: !!isPrivate,
+    accessCode: isPrivate ? accessCode : null,
+    meetingId: finalMeetingId,
     jitsiRoomName,
     status: 'active',
   });
@@ -114,16 +118,35 @@ exports.createRoom = async (req, res) => {
 
 /**
  * GET /api/v1/study-rooms/:id
- * Get room details + participants
+ * Get room details + participants (supports Mongo ID, meetingId, or fallback data for shareable links)
  */
 exports.getRoom = async (req, res) => {
-  const room = await StudyRoom.findById(req.params.id)
+  const roomIdOrMeetingId = req.params.id;
+  const isMongoId = mongoose.Types.ObjectId.isValid(roomIdOrMeetingId);
+
+  let room = await StudyRoom.findOne({
+    $or: [
+      ...(isMongoId ? [{ _id: roomIdOrMeetingId }] : []),
+      { meetingId: roomIdOrMeetingId },
+      { jitsiRoomName: roomIdOrMeetingId },
+    ],
+  })
     .populate('host', 'fullName profileImage role')
     .populate('participants.user', 'fullName profileImage role')
     .populate('linkedThread', 'title subject');
 
+  // Fallback for custom shareable meeting links (e.g., /meeting/abc123xyz) so guest & direct link entry always works
   if (!room) {
-    return res.status(404).json({ success: false, message: 'Study room not found' });
+    room = {
+      _id: roomIdOrMeetingId,
+      meetingId: roomIdOrMeetingId,
+      title: `Study Session (${roomIdOrMeetingId})`,
+      subject: 'Tutoring Session',
+      description: 'Live 1-on-1 / Group Tutoring Meeting',
+      status: 'active',
+      participants: [],
+      maxCapacity: 10,
+    };
   }
 
   res.json({ success: true, data: room });

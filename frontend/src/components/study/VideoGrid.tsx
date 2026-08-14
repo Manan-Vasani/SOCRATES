@@ -1,15 +1,19 @@
-import React from 'react'
-import { MicOff, VideoOff, Pin, Volume2 } from 'lucide-react'
+import React, { useCallback, useEffect } from 'react'
+import { MicOff, VideoOff, Pin, Hand, Monitor } from 'lucide-react'
 
-interface Participant {
+export interface Participant {
   id: string
+  socketId?: string
   name: string
   role: 'tutor' | 'student'
   avatar?: string
+  stream?: MediaStream
   isMuted: boolean
   isCameraOff: boolean
   isSpeaking: boolean
   isPinned: boolean
+  isHandRaised?: boolean
+  isScreenSharing?: boolean
 }
 
 interface VideoGridProps {
@@ -23,13 +27,36 @@ const GRADIENT_AVATARS: Record<string, string> = {
   student: 'from-[#0066cc] to-indigo-600',
 }
 
-export default function VideoGrid({ participants, onPinParticipant, fullStage }: VideoGridProps) {
-  const pinned = participants.find((p) => p.isPinned)
-  const others = participants.filter((p) => !p.isPinned)
+function VideoTile({
+  p,
+  large = false,
+  onPinParticipant,
+}: {
+  p: Participant
+  large?: boolean
+  onPinParticipant: (id: string) => void
+}) {
+  const isSelf = p.name.includes('(You)')
 
-  const renderTile = (p: Participant, large = false) => (
+  // Callback ref guarantees srcObject assignment and .play() immediately upon mounting DOM node
+  const setVideoRef = useCallback(
+    (node: HTMLVideoElement | null) => {
+      if (node && p.stream) {
+        if (node.srcObject !== p.stream) {
+          node.srcObject = p.stream
+        }
+        node
+          .play()
+          .catch((err) => {
+            console.warn('[VideoTile] Video play warning:', err)
+          })
+      }
+    },
+    [p.stream]
+  )
+
+  return (
     <div
-      key={p.id}
       className={`relative w-full h-full rounded-2xl overflow-hidden group transition-all duration-300 ${
         p.isSpeaking
           ? 'ring-[2.5px] ring-emerald-400/50 ring-offset-[3px] ring-offset-[#0a0a0c]'
@@ -40,40 +67,86 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
       <div className="absolute inset-0 bg-gradient-to-br from-[#18181c] via-[#1e1e24] to-[#12121a]" />
 
       {/* Subtle noise texture */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
+        }}
+      />
 
-      {/* Avatar Center */}
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-3">
-          {p.avatar ? (
-            <img
-              src={p.avatar}
-              alt={p.name}
-              className={`rounded-full object-cover border-2 border-white/10 shadow-2xl ${large ? 'w-28 h-28 md:w-36 md:h-36' : 'w-16 h-16 md:w-20 md:h-20'}`}
-            />
-          ) : (
-            <div className={`bg-gradient-to-br ${GRADIENT_AVATARS[p.role]} rounded-full flex items-center justify-center font-bold text-white shadow-2xl ${large ? 'w-28 h-28 text-3xl md:w-36 md:h-36 md:text-4xl' : 'w-16 h-16 text-xl md:w-20 md:h-20 md:text-2xl'}`}>
-              {p.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          {p.isCameraOff && (
+      {/* Video element or Avatar Fallback */}
+      {p.stream && !p.isCameraOff ? (
+        <video
+          ref={setVideoRef}
+          autoPlay
+          playsInline
+          muted={isSelf} // Mute self video feed locally to prevent audio echo loop
+          className={`w-full h-full ${
+            p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
+          } ${isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div className="flex flex-col items-center gap-3">
+            {p.avatar ? (
+              <img
+                src={p.avatar}
+                alt={p.name}
+                className={`rounded-full object-cover border-2 border-white/10 shadow-2xl ${
+                  large ? 'w-28 h-28 md:w-36 md:h-36' : 'w-16 h-16 md:w-20 md:h-20'
+                }`}
+              />
+            ) : (
+              <div
+                className={`bg-gradient-to-br ${
+                  GRADIENT_AVATARS[p.role] || 'from-[#0066cc] to-indigo-600'
+                } rounded-full flex items-center justify-center font-bold text-white shadow-2xl ${
+                  large
+                    ? 'w-28 h-28 text-3xl md:w-36 md:h-36 md:text-4xl'
+                    : 'w-16 h-16 text-xl md:w-20 md:h-20 md:text-2xl'
+                }`}
+              >
+                {p.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8">
               <VideoOff size={12} className="text-white/30" />
               <span className="text-[10px] text-white/30 font-medium">Camera off</span>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Screen Sharing Top Badge */}
+      {p.isScreenSharing && (
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#0066cc]/25 border border-[#0066cc]/40 text-[#4d9fff] backdrop-blur-sm z-20 shadow-md">
+          <Monitor size={12} />
+          <span className="text-[10px] font-bold tracking-wide">Presenting Screen</span>
+        </div>
+      )}
+
+      {/* Hand Raised Top Badge */}
+      {p.isHandRaised && (
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/25 border border-amber-500/40 text-amber-300 backdrop-blur-sm z-20 shadow-md animate-bounce">
+          <Hand size={12} />
+          <span className="text-[10px] font-bold">Hand Raised</span>
+        </div>
+      )}
 
       {/* Speaking audio visualizer */}
-      {p.isSpeaking && (
+      {p.isSpeaking && !p.isMuted && (
         <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 backdrop-blur-sm z-10">
           <div className="flex items-end gap-[2px] h-3">
             {[0.6, 1, 0.75, 0.9, 0.5].map((h, i) => (
               <span
                 key={i}
                 className="w-[2.5px] bg-emerald-400 rounded-full animate-pulse"
-                style={{ height: `${h * 12}px`, animationDelay: `${i * 100}ms`, animationDuration: `${600 + i * 100}ms` }}
+                style={{
+                  height: `${h * 12}px`,
+                  animationDelay: `${i * 100}ms`,
+                  animationDuration: `${600 + i * 100}ms`,
+                }}
               />
             ))}
           </div>
@@ -84,18 +157,20 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
       {/* Bottom info bar */}
       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3.5 py-2.5 flex items-end justify-between z-10">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-white text-xs font-semibold truncate max-w-[120px]">{p.name}</span>
-          <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 ${
-            p.role === 'tutor'
-              ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400'
-              : 'bg-[#0066cc]/15 border-[#0066cc]/25 text-[#4d9fff]'
-          }`}>
+          <span className="text-white text-xs font-semibold truncate max-w-[140px]">{p.name}</span>
+          <span
+            className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 ${
+              p.role === 'tutor'
+                ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400'
+                : 'bg-[#0066cc]/15 border-[#0066cc]/25 text-[#4d9fff]'
+            }`}
+          >
             {p.role}
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {p.isMuted && (
-            <span className="p-1.5 rounded-lg bg-red-500/15 border border-red-500/20">
+            <span className="p-1.5 rounded-lg bg-red-500/15 border border-red-500/20" title="Muted">
               <MicOff size={10} className="text-red-400" />
             </span>
           )}
@@ -114,12 +189,27 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
       </div>
     </div>
   )
+}
+
+export default function VideoGrid({ participants, onPinParticipant, fullStage }: VideoGridProps) {
+  // If someone is screen sharing or pinned, prioritize them in spotlight
+  const screenSharer = participants.find((p) => p.isScreenSharing)
+  const pinned = screenSharer || participants.find((p) => p.isPinned)
+  const others = participants.filter((p) => p.id !== pinned?.id)
 
   if (fullStage) {
-    const cols = participants.length <= 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2'
+    const cols =
+      participants.length <= 1
+        ? 'grid-cols-1'
+        : participants.length <= 2
+        ? 'grid-cols-1 md:grid-cols-2'
+        : 'grid-cols-2'
+
     return (
       <div className={`grid ${cols} gap-3 w-full h-full p-3 bg-[#0a0a0c]`}>
-        {participants.map((p) => renderTile(p))}
+        {participants.map((p) => (
+          <VideoTile key={p.id} p={p} onPinParticipant={onPinParticipant} />
+        ))}
       </div>
     )
   }
@@ -127,11 +217,15 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
   if (pinned) {
     return (
       <div className="flex flex-col gap-2.5 w-full h-full p-2.5 bg-[#0a0a0c]">
-        <div className="flex-1 min-h-0 w-full">{renderTile(pinned, true)}</div>
+        <div className="flex-1 min-h-0 w-full">
+          <VideoTile p={pinned} large onPinParticipant={onPinParticipant} />
+        </div>
         {others.length > 0 && (
-          <div className="flex gap-2.5 h-28 shrink-0 w-full">
+          <div className="flex gap-2.5 h-28 shrink-0 w-full overflow-x-auto">
             {others.map((p) => (
-              <div key={p.id} className="flex-1 min-w-0 h-full">{renderTile(p)}</div>
+              <div key={p.id} className="flex-1 min-w-[140px] h-full">
+                <VideoTile key={p.id} p={p} onPinParticipant={onPinParticipant} />
+              </div>
             ))}
           </div>
         )}
@@ -142,7 +236,9 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
   return (
     <div className="flex flex-col gap-2.5 w-full h-full p-2.5 bg-[#0a0a0c]">
       {participants.map((p) => (
-        <div key={p.id} className="flex-1 min-h-0 w-full">{renderTile(p)}</div>
+        <div key={p.id} className="flex-1 min-h-0 w-full">
+          <VideoTile key={p.id} p={p} onPinParticipant={onPinParticipant} />
+        </div>
       ))}
     </div>
   )

@@ -15,7 +15,6 @@ import {
   Calculator,
   Bug,
   Upload,
-  Eye,
   Download,
   Trash2,
   X,
@@ -24,7 +23,7 @@ import {
 
 type ChatTab = 'chat' | 'ai' | 'participants' | 'resources'
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string
   sender: string
   role: 'tutor' | 'student' | 'system'
@@ -38,13 +37,19 @@ interface AIMessage {
   text: string
 }
 
-interface Participant {
+export interface Participant {
   id: string
+  socketId?: string
   name: string
   role: 'tutor' | 'student'
   avatar?: string
-  isHandRaised: boolean
+  stream?: MediaStream
   isMuted: boolean
+  isCameraOff: boolean
+  isSpeaking: boolean
+  isPinned: boolean
+  isHandRaised?: boolean
+  isScreenSharing?: boolean
 }
 
 interface SharedResource {
@@ -61,6 +66,8 @@ interface StudyRoomChatProps {
   participants: Participant[]
   activeTab?: ChatTab
   onTabChange?: (tab: ChatTab) => void
+  messages?: ChatMessage[]
+  onSendMessage?: (text: string) => void
 }
 
 const QUICK_REACTIONS = ['👍', '👏', '💡', '❓', '🔥', '❤️']
@@ -71,7 +78,13 @@ const QUICK_ACTIONS = [
   { icon: <FileText size={12} />, label: 'Summarize Session', prompt: 'Summarize the main takeaways from our study session so far.' },
 ]
 
-export default function StudyRoomChat({ participants, activeTab = 'chat', onTabChange }: StudyRoomChatProps) {
+export default function StudyRoomChat({
+  participants,
+  activeTab = 'chat',
+  onTabChange,
+  messages: externalMessages,
+  onSendMessage,
+}: StudyRoomChatProps) {
   const [internalTab, setInternalTab] = useState<ChatTab>(activeTab)
   const tab = onTabChange ? activeTab : internalTab
   const setTab = (t: ChatTab) => {
@@ -79,18 +92,18 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
     onTabChange?.(t)
   }
 
-  const [message, setMessage] = useState('')
+  const [messageText, setMessageText] = useState('')
   const [aiInput, setAiInput] = useState('')
   const [isAIThinking, setIsAIThinking] = useState(false)
   const [showReactions, setShowReactions] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const aiEndRef = useRef<HTMLDivElement>(null)
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([
     { id: '1', sender: 'System', role: 'system', text: 'Study session started. Welcome to the room!', time: 'Now' },
-    { id: '2', sender: 'Dr. Alex Vance', role: 'tutor', text: "Welcome everyone! Let's dive into today's topic on derivatives and integrals. Feel free to use the whiteboard.", time: '1m ago' },
-    { id: '3', sender: 'You', role: 'student', text: "Thanks! I have a question about the chain rule — can we start there?", time: 'Just now' },
   ])
+
+  const messages = externalMessages || localMessages
 
   const [aiMessages, setAiMessages] = useState<AIMessage[]>([
     {
@@ -105,7 +118,6 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
   const [resources, setResources] = useState<SharedResource[]>([
     { id: '1', name: 'Calculus_Chapter_4.pdf', type: 'pdf', uploadedBy: 'Dr. Alex Vance', time: '5m ago', size: '2.4 MB' },
     { id: '2', name: 'whiteboard_export.png', type: 'image', uploadedBy: 'You', time: '2m ago', size: '340 KB' },
-    { id: '3', name: 'Practice_Problems.pdf', type: 'pdf', uploadedBy: 'Dr. Alex Vance', time: '1m ago', size: '1.1 MB' },
   ])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,16 +137,21 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
     setResources((prev) => [newResource, ...prev])
 
     // Announce file share in chat
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: String(Date.now() + 1),
-        sender: 'You',
-        role: 'student',
-        text: `📎 Shared file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`,
-        time: 'Just now',
-      },
-    ])
+    const fileShareMsg = `📎 Shared file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`
+    if (onSendMessage) {
+      onSendMessage(fileShareMsg)
+    } else {
+      setLocalMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          sender: 'You',
+          role: 'student',
+          text: fileShareMsg,
+          time: 'Just now',
+        },
+      ])
+    }
 
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -154,13 +171,17 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
     if (tab === 'ai') aiEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, aiMessages, tab])
 
-  const sendMessage = () => {
-    if (!message.trim()) return
-    setMessages((prev) => [
-      ...prev,
-      { id: String(Date.now()), sender: 'You', role: 'student', text: message, time: 'Just now' },
-    ])
-    setMessage('')
+  const handleSend = () => {
+    if (!messageText.trim()) return
+    if (onSendMessage) {
+      onSendMessage(messageText)
+    } else {
+      setLocalMessages((prev) => [
+        ...prev,
+        { id: String(Date.now()), sender: 'You', role: 'student', text: messageText, time: 'Just now' },
+      ])
+    }
+    setMessageText('')
   }
 
   const sendAIMessage = (text: string) => {
@@ -186,10 +207,14 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
   }
 
   const sendReaction = (emoji: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: String(Date.now()), sender: 'You', role: 'student', text: emoji, time: 'Just now' },
-    ])
+    if (onSendMessage) {
+      onSendMessage(emoji)
+    } else {
+      setLocalMessages((prev) => [
+        ...prev,
+        { id: String(Date.now()), sender: 'You', role: 'student', text: emoji, time: 'Just now' },
+      ])
+    }
     setShowReactions(false)
   }
 
@@ -225,9 +250,11 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
             {t.icon}
             {t.label}
             {t.count !== undefined && (
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                tab === t.key ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#f0f0f2] text-[#a1a1a6]'
-              }`}>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  tab === t.key ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#f0f0f2] text-[#a1a1a6]'
+                }`}
+              >
                 {t.count}
               </span>
             )}
@@ -251,25 +278,33 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
                       </span>
                     </div>
                   ) : (
-                    <div className={`flex gap-2.5 ${msg.sender === 'You' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-md ${
-                        msg.role === 'tutor' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
-                      }`}>
+                    <div className={`flex gap-2.5 ${msg.sender.includes('You') ? 'flex-row-reverse' : ''}`}>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-md ${
+                          msg.role === 'tutor'
+                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                            : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
+                        }`}
+                      >
                         {msg.sender.charAt(0)}
                       </div>
-                      <div className={`max-w-[78%] ${msg.sender === 'You' ? 'text-right' : ''}`}>
-                        <div className={`flex items-center gap-1.5 mb-1 ${msg.sender === 'You' ? 'justify-end' : ''}`}>
+                      <div className={`max-w-[78%] ${msg.sender.includes('You') ? 'text-right' : ''}`}>
+                        <div className={`flex items-center gap-1.5 mb-1 ${msg.sender.includes('You') ? 'justify-end' : ''}`}>
                           <span className="text-[11px] font-semibold text-[#1d1d1f]">{msg.sender}</span>
                           {msg.role === 'tutor' && (
-                            <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">TUTOR</span>
+                            <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
+                              TUTOR
+                            </span>
                           )}
                           <span className="text-[9px] text-[#c0c0c4]">{msg.time}</span>
                         </div>
-                        <div className={`inline-block px-3.5 py-2.5 rounded-2xl text-[12.5px] leading-relaxed ${
-                          msg.sender === 'You'
-                            ? 'bg-[#0066cc] text-white rounded-br-md'
-                            : 'bg-[#f0f0f2] text-[#1d1d1f] rounded-bl-md'
-                        }`}>
+                        <div
+                          className={`inline-block px-3.5 py-2.5 rounded-2xl text-[12.5px] leading-relaxed ${
+                            msg.sender.includes('You')
+                              ? 'bg-[#0066cc] text-white rounded-br-md'
+                              : 'bg-[#f0f0f2] text-[#1d1d1f] rounded-bl-md'
+                          }`}
+                        >
                           {msg.text}
                         </div>
                       </div>
@@ -307,10 +342,7 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
             {/* AI Messages Feed */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {aiMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                >
+                <div key={msg.id} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div
                     className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm ${
                       msg.role === 'assistant'
@@ -347,33 +379,42 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
         {tab === 'participants' && (
           <div className="p-3 space-y-2">
             <div className="text-[10px] font-bold text-[#a1a1a6] uppercase tracking-wider px-1 mb-3">
-              In this session
+              In this session ({participants.length})
             </div>
             {participants.map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-colors">
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-colors"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${
-                    p.role === 'tutor' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
-                  }`}>
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${
+                      p.role === 'tutor'
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                        : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
+                    }`}
+                  >
                     {p.name.charAt(0)}
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-[#1d1d1f]">{p.name}</div>
-                    <div className={`text-[9px] font-bold uppercase tracking-wider ${
-                      p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
-                    }`}>
+                    <div
+                      className={`text-[9px] font-bold uppercase tracking-wider ${
+                        p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
+                      }`}
+                    >
                       {p.role}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {p.isHandRaised && (
-                    <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                    <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200" title="Hand Raised">
                       <Hand size={11} className="text-amber-600" />
                     </span>
                   )}
                   {p.isMuted && (
-                    <span className="p-1.5 rounded-lg bg-red-50 border border-red-200">
+                    <span className="p-1.5 rounded-lg bg-red-50 border border-red-200" title="Muted">
                       <MicOff size={11} className="text-red-400" />
                     </span>
                   )}
@@ -408,11 +449,11 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
                 onClick={() => setPreviewFile(r)}
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#0066cc]/30 hover:bg-white transition-all cursor-pointer group shadow-2xs"
               >
-                <div className={`p-2.5 rounded-xl shadow-sm ${
-                  r.type === 'pdf'
-                    ? 'bg-red-50 border border-red-100'
-                    : 'bg-blue-50 border border-blue-100'
-                }`}>
+                <div
+                  className={`p-2.5 rounded-xl shadow-sm ${
+                    r.type === 'pdf' ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'
+                  }`}
+                >
                   {r.type === 'pdf' ? (
                     <FileText size={16} className="text-red-500" />
                   ) : (
@@ -420,7 +461,9 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-[#1d1d1f] truncate group-hover:text-[#0066cc] transition-colors">{r.name}</div>
+                  <div className="text-xs font-semibold text-[#1d1d1f] truncate group-hover:text-[#0066cc] transition-colors">
+                    {r.name}
+                  </div>
                   <div className="text-[10px] text-[#a1a1a6]">
                     {r.uploadedBy} • {r.time} • {r.size}
                   </div>
@@ -475,15 +518,15 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
             </div>
             <input
               type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Type a message..."
               className="flex-1 text-xs bg-transparent outline-none text-[#1d1d1f] placeholder:text-[#c0c0c4] px-1"
             />
             <button
-              onClick={sendMessage}
-              disabled={!message.trim()}
+              onClick={handleSend}
+              disabled={!messageText.trim()}
               className="p-2 rounded-xl bg-[#0066cc] text-white hover:bg-[#0077ed] transition-all cursor-pointer disabled:opacity-25 shadow-sm shadow-[#0066cc]/20"
             >
               <Send size={14} />
@@ -515,88 +558,105 @@ export default function StudyRoomChat({ participants, activeTab = 'chat', onTabC
         </div>
       )}
 
-      {/* File Preview Modal (Portal to Document Body) */}
-      {previewFile && createPortal(
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[999999] flex items-center justify-center p-3 md:p-4 animate-in fade-in duration-200">
-          <div className={`bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-all ${
-            previewFile.type === 'pdf'
-              ? 'w-[75vw] max-w-3xl h-[95vh]'
-              : 'w-[90vw] max-w-4xl h-[88vh]'
-          }`}>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-[#fafafa]">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`p-2.5 rounded-2xl ${previewFile.type === 'pdf' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>
-                  {previewFile.type === 'pdf' ? <FileText size={20} /> : <ImageIcon size={20} />}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-[#1d1d1f] truncate">{previewFile.name}</h4>
-                  <span className="text-xs text-[#7a7a7a]">Uploaded by {previewFile.uploadedBy} • {previewFile.size} • {previewFile.time}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setPreviewFile(null)}
-                className="p-2 rounded-2xl hover:bg-[#f0f0f2] text-[#7a7a7a] hover:text-[#1d1d1f] transition-all cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body / Viewer */}
-            <div className="flex-1 p-0 flex items-center justify-center bg-[#525659] overflow-hidden relative">
-              {previewFile.url ? (
-                previewFile.type === 'image' ? (
-                  <div className="w-full h-full flex items-center justify-center p-6 bg-[#1a1a1e] overflow-auto">
-                    <img src={previewFile.url} alt={previewFile.name} className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" />
+      {/* File Preview Modal */}
+      {previewFile &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[999999] flex items-center justify-center p-3 md:p-4 animate-in fade-in duration-200">
+            <div
+              className={`bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-all ${
+                previewFile.type === 'pdf' ? 'w-[75vw] max-w-3xl h-[95vh]' : 'w-[90vw] max-w-4xl h-[88vh]'
+              }`}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-[#fafafa]">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`p-2.5 rounded-2xl ${
+                      previewFile.type === 'pdf' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
+                    }`}
+                  >
+                    {previewFile.type === 'pdf' ? <FileText size={20} /> : <ImageIcon size={20} />}
                   </div>
-                ) : (
-                  <iframe src={`${previewFile.url}#toolbar=1&navpanes=0`} title={previewFile.name} className="w-full h-full border-0 bg-white" />
-                )
-              ) : (
-                <div className="text-center py-12 space-y-4">
-                  <div className="w-20 h-20 rounded-3xl bg-white shadow-lg flex items-center justify-center mx-auto text-[#0066cc]">
-                    {previewFile.type === 'pdf' ? <FileText size={36} /> : <ImageIcon size={36} />}
-                  </div>
-                  <div>
-                    <p className="text-base font-bold text-white">{previewFile.name}</p>
-                    <p className="text-xs text-white/70 mt-1">Shared by {previewFile.uploadedBy} • {previewFile.size}</p>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold text-[#1d1d1f] truncate">{previewFile.name}</h4>
+                    <span className="text-xs text-[#7a7a7a]">
+                      Uploaded by {previewFile.uploadedBy} • {previewFile.size} • {previewFile.time}
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[#e5e5e7] bg-white flex items-center justify-between">
-              <span className="text-xs text-[#a1a1a6]">SOCRATES Study Session File Viewer</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => deleteResource(previewFile.id, e)}
-                  className="px-4 py-2.5 rounded-2xl text-xs font-semibold text-red-500 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer flex items-center gap-1.5"
-                  title="Delete File"
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
                 <button
                   onClick={() => setPreviewFile(null)}
-                  className="px-5 py-2.5 rounded-2xl text-xs font-semibold text-[#525252] hover:bg-[#f0f0f2] transition-colors cursor-pointer"
+                  className="p-2 rounded-2xl hover:bg-[#f0f0f2] text-[#7a7a7a] hover:text-[#1d1d1f] transition-all cursor-pointer"
                 >
-                  Close
+                  <X size={18} />
                 </button>
-                {previewFile.url && (
-                  <a
-                    href={previewFile.url}
-                    download={previewFile.name}
-                    className="px-5 py-2.5 rounded-2xl text-xs font-semibold bg-[#0066cc] text-white hover:bg-[#0077ed] flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-[#0066cc]/20"
-                  >
-                    <Download size={15} /> Download File
-                  </a>
+              </div>
+
+              {/* Modal Body / Viewer */}
+              <div className="flex-1 p-0 flex items-center justify-center bg-[#525659] overflow-hidden relative">
+                {previewFile.url ? (
+                  previewFile.type === 'image' ? (
+                    <div className="w-full h-full flex items-center justify-center p-6 bg-[#1a1a1e] overflow-auto">
+                      <img
+                        src={previewFile.url}
+                        alt={previewFile.name}
+                        className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
+                      />
+                    </div>
+                  ) : (
+                    <iframe
+                      src={`${previewFile.url}#toolbar=1&navpanes=0`}
+                      title={previewFile.name}
+                      className="w-full h-full border-0 bg-white"
+                    />
+                  )
+                ) : (
+                  <div className="text-center py-12 space-y-4">
+                    <div className="w-20 h-20 rounded-3xl bg-white shadow-lg flex items-center justify-center mx-auto text-[#0066cc]">
+                      {previewFile.type === 'pdf' ? <FileText size={36} /> : <ImageIcon size={36} />}
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-white">{previewFile.name}</p>
+                      <p className="text-xs text-white/70 mt-1">
+                        Shared by {previewFile.uploadedBy} • {previewFile.size}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-[#e5e5e7] bg-white flex items-center justify-between">
+                <span className="text-xs text-[#a1a1a6]">SOCRATES Study Session File Viewer</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => deleteResource(previewFile.id, e)}
+                    className="px-4 py-2.5 rounded-2xl text-xs font-semibold text-red-500 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer flex items-center gap-1.5"
+                    title="Delete File"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                  <button
+                    onClick={() => setPreviewFile(null)}
+                    className="px-5 py-2.5 rounded-2xl text-xs font-semibold text-[#525252] hover:bg-[#f0f0f2] transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  {previewFile.url && (
+                    <a
+                      href={previewFile.url}
+                      download={previewFile.name}
+                      className="px-5 py-2.5 rounded-2xl text-xs font-semibold bg-[#0066cc] text-white hover:bg-[#0077ed] flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-[#0066cc]/20"
+                    >
+                      <Download size={15} /> Download File
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

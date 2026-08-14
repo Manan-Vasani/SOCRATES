@@ -32,6 +32,7 @@ const studyRoomSchema = new mongoose.Schema(
     isPrivate: { type: Boolean, default: false },
     accessCode: { type: String, default: null },
 
+    meetingId: { type: String, unique: true, sparse: true, index: true },
     linkedThread: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'DoubtThread',
@@ -53,5 +54,6 @@ const studyRoomSchema = new mongoose.Schema(
 studyRoomSchema.index({ status: 1, subject: 1, createdAt: -1 });
 studyRoomSchema.index({ host: 1, status: 1 });
 studyRoomSchema.index({ linkedThread: 1 });
+studyRoomSchema.index({ meetingId: 1 });
 
 module.exports = mongoose.model('StudyRoom', studyRoomSchema);

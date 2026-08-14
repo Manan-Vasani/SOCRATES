@@ -1,49 +1,96 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { X, ChevronsLeftRight } from 'lucide-react'
+import { toast } from 'sonner'
 import RoomHeader, { type StageMode } from '../components/study/RoomHeader'
 import VideoGrid from '../components/study/VideoGrid'
 import Whiteboard from '../components/study/Whiteboard'
 import CodeSandbox from '../components/study/CodeSandbox'
 import StudyRoomChat from '../components/study/StudyRoomChat'
 import AIAssistantDrawer from '../components/study/AIAssistantDrawer'
-
-const DEMO_PARTICIPANTS = [
-  {
-    id: 'tutor-1',
-    name: 'Dr. Alex Vance',
-    role: 'tutor' as const,
-    isMuted: false,
-    isCameraOff: false,
-    isSpeaking: true,
-    isPinned: false,
-    isHandRaised: false,
-  },
-  {
-    id: 'student-1',
-    name: 'You',
-    role: 'student' as const,
-    isMuted: false,
-    isCameraOff: true,
-    isSpeaking: false,
-    isPinned: false,
-    isHandRaised: false,
-  },
-]
+import MeetingLobby from '../components/study/MeetingLobby'
+import { useWebRTC } from '../hooks/useWebRTC'
+import { useAuthStore } from '../store/useAuthStore'
+import { fetchStudyRoom } from '../services/api'
 
 export default function StudyRoom() {
-  const { roomId } = useParams<{ roomId: string }>()
+  const { roomId, meetingId } = useParams<{ roomId?: string; meetingId?: string }>()
+  const activeRoomId = meetingId || roomId || 'demo-101'
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+
+  const [hasJoined, setHasJoined] = useState(false)
+  const [guestName, setGuestName] = useState('')
+  const [sessionDetails, setSessionDetails] = useState<any>(null)
+
+  // Fetch room metadata if available
+  useEffect(() => {
+    fetchStudyRoom(activeRoomId).then((res) => {
+      if (res?.success && res.data) {
+        setSessionDetails({
+          subject: res.data.subject,
+          topic: res.data.title || res.data.description,
+          tutorName: res.data.host?.fullName || 'Tutor',
+        })
+      }
+    })
+  }, [activeRoomId])
+
+  const initialName = useMemo(() => {
+    if (user) return user.fullName || user.name || 'User'
+    return guestName || `Guest ${Math.floor(1000 + Math.random() * 9000)}`
+  }, [user, guestName])
+
+  const [displayName, setDisplayName] = useState(initialName)
+
+  useEffect(() => {
+    if (user && !displayName) {
+      setDisplayName(user.fullName || user.name || 'User')
+    }
+  }, [user, displayName])
+
+  const currentUser = useMemo(() => {
+    const finalName = displayName.trim() || initialName
+    if (user) {
+      return {
+        id: user._id,
+        name: finalName,
+        role: (user.role === 'tutor' ? 'tutor' : 'student') as 'tutor' | 'student',
+        avatar: user.profileImage || user.avatar,
+      }
+    }
+    return {
+      id: `guest-${finalName.replace(/\s+/g, '-').toLowerCase()}`,
+      name: finalName,
+      role: 'student' as const,
+    }
+  }, [user, displayName, initialName])
+
+  const {
+    localStream,
+    participants,
+    messages,
+    isMicOn,
+    isCameraOn,
+    isScreenSharing,
+    isHandRaised,
+    connectionStatus,
+    toggleMic,
+    toggleCamera,
+    toggleHandRaise,
+    toggleScreenShare,
+    sendMessage,
+    leaveRoom,
+    setParticipants,
+  } = useWebRTC({
+    roomId: activeRoomId,
+    currentUser,
+  })
 
   const [stageMode, setStageMode] = useState<StageMode>('split')
-  const [isMicOn, setIsMicOn] = useState(true)
-  const [isCameraOn, setIsCameraOn] = useState(true)
-  const [isScreenSharing, setIsScreenSharing] = useState(false)
-  const [isHandRaised, setIsHandRaised] = useState(false)
   const [isAIOpen, setIsAIOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(true)
   const [showLeaveModal, setShowLeaveModal] = useState(false)
-  const [participants, setParticipants] = useState(DEMO_PARTICIPANTS)
 
   const [leftPanelWidth, setLeftPanelWidth] = useState(340)
   const [rightPanelWidth, setRightPanelWidth] = useState(340)
@@ -91,16 +138,44 @@ export default function StudyRoom() {
     }
   }, [])
 
-  const handlePinParticipant = useCallback((id: string) => {
-    setParticipants((prev) =>
-      prev.map((p) => ({ ...p, isPinned: p.id === id ? !p.isPinned : false }))
-    )
-  }, [])
+  const handlePinParticipant = useCallback(
+    (id: string) => {
+      setParticipants((prev) =>
+        prev.map((p) => ({ ...p, isPinned: p.id === id ? !p.isPinned : false }))
+      )
+    },
+    [setParticipants]
+  )
+
+  const handleShareLink = () => {
+    const meetingUrl = `${window.location.origin}/meeting/${activeRoomId}`
+    navigator.clipboard.writeText(meetingUrl)
+    toast.success('Meeting link copied to clipboard!')
+  }
 
   const handleLeave = () => setShowLeaveModal(true)
   const confirmLeave = () => {
+    leaveRoom()
     setShowLeaveModal(false)
     navigate('/profile')
+  }
+
+  // Render Meeting Lobby preview if user has not clicked "Join Meeting"
+  if (!hasJoined) {
+    return (
+      <MeetingLobby
+        meetingId={activeRoomId}
+        sessionDetails={sessionDetails}
+        displayName={displayName}
+        onNameChange={setDisplayName}
+        isMicOn={isMicOn}
+        onMicToggle={toggleMic}
+        isCameraOn={isCameraOn}
+        onCameraToggle={toggleCamera}
+        localStream={localStream}
+        onJoinMeeting={() => setHasJoined(true)}
+      />
+    )
   }
 
   const renderStage = () => {
@@ -135,10 +210,14 @@ export default function StudyRoom() {
               <div className="flex-1 min-h-0">
                 <VideoGrid participants={participants} onPinParticipant={handlePinParticipant} />
               </div>
-              {/* Bottom mini controls for video section */}
-              <div className="h-9 bg-[#0e0e12] border-t border-white/5 flex items-center justify-center">
-                <span className="text-[10px] text-white/20 font-medium tracking-wide uppercase">
-                  {participants.length} participant{participants.length > 1 ? 's' : ''} connected
+              {/* Bottom mini status bar */}
+              <div className="h-9 bg-[#0e0e12] border-t border-white/5 flex items-center justify-between px-3">
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">
+                  {participants.length} participant{participants.length !== 1 ? 's' : ''} connected
+                </span>
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  {connectionStatus}
                 </span>
               </div>
             </div>
@@ -167,19 +246,19 @@ export default function StudyRoom() {
     <div className="h-screen w-screen flex flex-col bg-[#0a0a0c] overflow-hidden select-none">
       {/* Top Header Bar */}
       <RoomHeader
-        roomTitle={`Study Room — ${roomId || 'demo-101'}`}
-        subject="Mathematics"
+        roomTitle={sessionDetails?.topic || `Study Room — ${activeRoomId}`}
+        subject={sessionDetails?.subject || 'Mathematics'}
         participantCount={participants.length}
         stageMode={stageMode}
         onStageModeChange={setStageMode}
         isMicOn={isMicOn}
-        onMicToggle={() => setIsMicOn(!isMicOn)}
+        onMicToggle={toggleMic}
         isCameraOn={isCameraOn}
-        onCameraToggle={() => setIsCameraOn(!isCameraOn)}
+        onCameraToggle={toggleCamera}
         isScreenSharing={isScreenSharing}
-        onScreenShareToggle={() => setIsScreenSharing(!isScreenSharing)}
+        onScreenShareToggle={toggleScreenShare}
         isHandRaised={isHandRaised}
-        onHandRaise={() => setIsHandRaised(!isHandRaised)}
+        onHandRaise={toggleHandRaise}
         onAIToggle={() => {
           if (!isAIOpen) {
             setIsAIOpen(true)
@@ -198,6 +277,7 @@ export default function StudyRoom() {
             setIsChatOpen(false)
           }
         }}
+        onShareLink={handleShareLink}
       />
 
       {/* Main Content */}
@@ -227,7 +307,11 @@ export default function StudyRoom() {
             {isAIOpen ? (
               <AIAssistantDrawer isOpen={true} onClose={() => setIsAIOpen(false)} />
             ) : (
-              <StudyRoomChat participants={participants} />
+              <StudyRoomChat
+                participants={participants}
+                messages={messages}
+                onSendMessage={sendMessage}
+              />
             )}
           </div>
         )}
