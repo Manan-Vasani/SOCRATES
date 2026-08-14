@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { toast } from 'sonner'
 
 export interface Participant {
   id: string
@@ -91,11 +92,24 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     let isMounted = true
 
     async function initLocalStream() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('[WebRTC] mediaDevices API is not available on this browser/insecure context.')
+        return
+      }
+
       try {
         console.log('[WebRTC] Requesting local camera & microphone access...')
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user',
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
         })
 
         if (!isMounted) {
@@ -132,17 +146,16 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           }
           return prev.map((p) =>
             p.id === currentUser.id || p.name.includes('(You)')
-              ? { ...p, stream: stream, isCameraOff: false }
+              ? { ...p, stream: stream, isCameraOff: false, isMuted: false }
               : p
           )
         })
       } catch (err: any) {
-        console.warn('[WebRTC] Could not access full media (video+audio). Attempting fallback...', err)
+        console.warn('[WebRTC] Full media acquisition (video+audio) failed. Attempting fallback...', err)
         try {
-          // Fallback to audio only if camera is unavailable or denied
+          // Fallback 1: Audio-only if camera is occupied or denied
           const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
-            video: false,
-            audio: true,
+            audio: { echoCancellation: true, noiseSuppression: true },
           })
           if (!isMounted) {
             audioOnlyStream.getTracks().forEach((t) => t.stop())
@@ -156,22 +169,45 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           setParticipants((prev) =>
             prev.map((p) =>
               p.id === currentUser.id || p.name.includes('(You)')
-                ? { ...p, stream: audioOnlyStream, isCameraOff: true }
+                ? { ...p, stream: audioOnlyStream, isCameraOff: true, isMuted: false }
                 : p
             )
           )
         } catch (audioErr) {
-          console.error('[WebRTC] Media access completely denied or unavailable.', audioErr)
-          if (isMounted) {
-            setIsCameraOn(false)
+          // Fallback 2: Video-only if microphone was denied
+          try {
+            const videoOnlyStream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+            })
+            if (!isMounted) {
+              videoOnlyStream.getTracks().forEach((t) => t.stop())
+              return
+            }
+            localStreamRef.current = videoOnlyStream
+            setLocalStream(videoOnlyStream)
+            setIsCameraOn(true)
             setIsMicOn(false)
+
             setParticipants((prev) =>
               prev.map((p) =>
                 p.id === currentUser.id || p.name.includes('(You)')
-                  ? { ...p, isCameraOff: true, isMuted: true }
+                  ? { ...p, stream: videoOnlyStream, isCameraOff: false, isMuted: true }
                   : p
               )
             )
+          } catch (videoErr) {
+            console.warn('[WebRTC] Both camera and microphone initial access denied or unavailable.', videoErr)
+            if (isMounted) {
+              setIsCameraOn(false)
+              setIsMicOn(false)
+              setParticipants((prev) =>
+                prev.map((p) =>
+                  p.id === currentUser.id || p.name.includes('(You)')
+                    ? { ...p, isCameraOff: true, isMuted: true }
+                    : p
+                )
+              )
+            }
           }
         }
       }
@@ -186,7 +222,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         localStreamRef.current = null
       }
     }
-  }, [currentUser.id, currentUser.name, currentUser.role, currentUser.avatar])
+  }, [currentUser.id])
 
   // Helper to create RTCPeerConnection for a remote peer
   const createPeerConnection = useCallback(
@@ -474,54 +510,166 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     }
   }, [localStream, currentUser.id])
 
-  // Media Controls Actions
-  const toggleMic = useCallback(() => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0]
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled
-        const newMicState = audioTrack.enabled
-        setIsMicOn(newMicState)
+  // Media Controls Actions (with on-demand dynamic device acquisition)
+  const toggleMic = useCallback(async () => {
+    try {
+      if (localStreamRef.current) {
+        const audioTrack = localStreamRef.current.getAudioTracks()[0]
+        if (audioTrack && audioTrack.readyState === 'live') {
+          audioTrack.enabled = !audioTrack.enabled
+          const newMicState = audioTrack.enabled
+          setIsMicOn(newMicState)
+
+          if (socketRef.current) {
+            socketRef.current.emit('participant-state-change', {
+              roomId,
+              state: { isMuted: !newMicState },
+            })
+          }
+          setParticipants((prev) =>
+            prev.map((p) =>
+              p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socketRef.current?.id
+                ? { ...p, isMuted: !newMicState }
+                : p
+            )
+          )
+          toast.success(newMicState ? 'Microphone unmuted' : 'Microphone muted')
+          return
+        }
+      }
+
+      // If no active audio track exists, dynamically acquire microphone access
+      console.log('[WebRTC] Requesting microphone access on toggle...')
+      const newAudioStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      })
+      const newAudioTrack = newAudioStream.getAudioTracks()[0]
+
+      if (newAudioTrack) {
+        let combinedStream: MediaStream
+        if (localStreamRef.current) {
+          localStreamRef.current.addTrack(newAudioTrack)
+          combinedStream = new MediaStream(localStreamRef.current.getTracks())
+        } else {
+          combinedStream = new MediaStream([newAudioTrack])
+        }
+
+        localStreamRef.current = combinedStream
+        setLocalStream(combinedStream)
+        setIsMicOn(true)
+
+        // Replace or add audio track to all active peer connections
+        peerConnectionsRef.current.forEach((pc) => {
+          const senders = pc.getSenders()
+          const audioSender = senders.find((s) => s.track && s.track.kind === 'audio')
+          if (audioSender) {
+            audioSender.replaceTrack(newAudioTrack).catch(() => {})
+          } else {
+            pc.addTrack(newAudioTrack, combinedStream)
+          }
+        })
 
         if (socketRef.current) {
           socketRef.current.emit('participant-state-change', {
             roomId,
-            state: { isMuted: !newMicState },
+            state: { isMuted: false },
           })
         }
+
         setParticipants((prev) =>
           prev.map((p) =>
             p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socketRef.current?.id
-              ? { ...p, isMuted: !newMicState }
+              ? { ...p, stream: combinedStream, isMuted: false }
               : p
           )
         )
+        toast.success('Microphone enabled')
       }
+    } catch (err: any) {
+      console.error('[WebRTC] Microphone access error:', err)
+      toast.error(err.message?.includes('Permission') ? 'Microphone permission denied' : 'Could not access microphone')
+      setIsMicOn(false)
     }
   }, [roomId, currentUser.id])
 
-  const toggleCamera = useCallback(() => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0]
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled
-        const newCamState = videoTrack.enabled
-        setIsCameraOn(newCamState)
+  const toggleCamera = useCallback(async () => {
+    try {
+      if (localStreamRef.current) {
+        const videoTrack = localStreamRef.current.getVideoTracks()[0]
+        if (videoTrack && videoTrack.readyState === 'live') {
+          videoTrack.enabled = !videoTrack.enabled
+          const newCamState = videoTrack.enabled
+          setIsCameraOn(newCamState)
+
+          if (socketRef.current) {
+            socketRef.current.emit('participant-state-change', {
+              roomId,
+              state: { isCameraOff: !newCamState },
+            })
+          }
+          setParticipants((prev) =>
+            prev.map((p) =>
+              p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socketRef.current?.id
+                ? { ...p, isCameraOff: !newCamState }
+                : p
+            )
+          )
+          toast.success(newCamState ? 'Camera turned on' : 'Camera turned off')
+          return
+        }
+      }
+
+      // If no active video track exists, dynamically acquire camera stream
+      console.log('[WebRTC] Requesting camera access on toggle...')
+      const newVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      })
+      const newVideoTrack = newVideoStream.getVideoTracks()[0]
+
+      if (newVideoTrack) {
+        let combinedStream: MediaStream
+        if (localStreamRef.current) {
+          localStreamRef.current.addTrack(newVideoTrack)
+          combinedStream = new MediaStream(localStreamRef.current.getTracks())
+        } else {
+          combinedStream = new MediaStream([newVideoTrack])
+        }
+
+        localStreamRef.current = combinedStream
+        setLocalStream(combinedStream)
+        setIsCameraOn(true)
+
+        // Replace or add video track to all active peer connections
+        peerConnectionsRef.current.forEach((pc) => {
+          const senders = pc.getSenders()
+          const videoSender = senders.find((s) => s.track && s.track.kind === 'video')
+          if (videoSender) {
+            videoSender.replaceTrack(newVideoTrack).catch(() => {})
+          } else {
+            pc.addTrack(newVideoTrack, combinedStream)
+          }
+        })
 
         if (socketRef.current) {
           socketRef.current.emit('participant-state-change', {
             roomId,
-            state: { isCameraOff: !newCamState },
+            state: { isCameraOff: false },
           })
         }
+
         setParticipants((prev) =>
           prev.map((p) =>
             p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socketRef.current?.id
-              ? { ...p, isCameraOff: !newCamState }
+              ? { ...p, stream: combinedStream, isCameraOff: false }
               : p
           )
         )
+        toast.success('Camera enabled')
       }
+    } catch (err: any) {
+      console.error('[WebRTC] Camera access error:', err)
+      toast.error(err.message?.includes('Permission') ? 'Camera permission denied' : 'Could not access camera')
+      setIsCameraOn(false)
     }
   }, [roomId, currentUser.id])
 

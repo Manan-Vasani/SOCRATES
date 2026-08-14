@@ -27,30 +27,36 @@ export default function StudyRoom() {
   useEffect(() => {
     fetchStudyRoom(activeRoomId).then((res) => {
       if (res?.success && res.data) {
+        const rawTitle = res.data.title || res.data.description || ''
+        const isGeneric = !rawTitle || rawTitle.includes('sess-') || rawTitle.includes('Study Session (')
+        const hostName = res.data.host?.fullName
+
         setSessionDetails({
-          subject: res.data.subject,
-          topic: res.data.title || res.data.description,
-          tutorName: res.data.host?.fullName || 'Tutor',
+          subject: res.data.subject && res.data.subject !== 'Tutoring Session' ? res.data.subject : '1-on-1 Tutoring',
+          topic: isGeneric ? undefined : rawTitle,
+          tutorName: hostName && hostName !== 'Tutor' ? hostName : undefined,
         })
       }
     })
   }, [activeRoomId])
 
-  const initialName = useMemo(() => {
-    if (user) return user.fullName || user.name || 'User'
-    return guestName || `Guest ${Math.floor(1000 + Math.random() * 9000)}`
-  }, [user, guestName])
+  const hasInitializedName = useRef(false)
 
-  const [displayName, setDisplayName] = useState(initialName)
+  const [displayName, setDisplayName] = useState(() => {
+    if (user?.fullName || user?.name) return user.fullName || user.name
+    return ''
+  })
 
   useEffect(() => {
-    if (user && !displayName) {
+    if (user && !hasInitializedName.current) {
       setDisplayName(user.fullName || user.name || 'User')
+      hasInitializedName.current = true
     }
-  }, [user, displayName])
+  }, [user])
 
   const currentUser = useMemo(() => {
-    const finalName = displayName.trim() || initialName
+    const fallbackName = user?.fullName || user?.name || guestName || 'Guest User'
+    const finalName = displayName.trim() || fallbackName
     if (user) {
       return {
         id: user._id,
@@ -64,7 +70,7 @@ export default function StudyRoom() {
       name: finalName,
       role: 'student' as const,
     }
-  }, [user, displayName, initialName])
+  }, [user, displayName, guestName])
 
   const {
     localStream,

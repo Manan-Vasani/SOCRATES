@@ -118,41 +118,45 @@ function VideoTile({
         </div>
       )}
 
-      {/* Screen Sharing Top Badge */}
-      {p.isScreenSharing && (
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#0066cc]/25 border border-[#0066cc]/40 text-[#4d9fff] backdrop-blur-sm z-20 shadow-md">
-          <Monitor size={12} />
-          <span className="text-[10px] font-bold tracking-wide">Presenting Screen</span>
-        </div>
-      )}
+      {/* Top Status Badges Row - Unified container preventing any overlapping */}
+      <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none z-20">
+        <div className="flex items-center gap-2">
+          {p.isScreenSharing && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#0066cc]/30 border border-[#0066cc]/45 text-[#4d9fff] backdrop-blur-md shadow-md">
+              <Monitor size={12} />
+              <span className="text-[10px] font-bold tracking-wide">Presenting</span>
+            </div>
+          )}
 
-      {/* Hand Raised Top Badge */}
-      {p.isHandRaised && (
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/25 border border-amber-500/40 text-amber-300 backdrop-blur-sm z-20 shadow-md animate-bounce">
-          <Hand size={12} />
-          <span className="text-[10px] font-bold">Hand Raised</span>
+          {p.isSpeaking && !p.isMuted && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/30 backdrop-blur-md shadow-md">
+              <div className="flex items-end gap-[2px] h-3">
+                {[0.6, 1, 0.75, 0.9, 0.5].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-[2px] bg-emerald-400 rounded-full animate-pulse"
+                    style={{
+                      height: `${h * 12}px`,
+                      animationDelay: `${i * 100}ms`,
+                      animationDuration: `${600 + i * 100}ms`,
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="text-[9px] text-emerald-400 font-bold">Speaking</span>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Speaking audio visualizer */}
-      {p.isSpeaking && !p.isMuted && (
-        <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 backdrop-blur-sm z-10">
-          <div className="flex items-end gap-[2px] h-3">
-            {[0.6, 1, 0.75, 0.9, 0.5].map((h, i) => (
-              <span
-                key={i}
-                className="w-[2.5px] bg-emerald-400 rounded-full animate-pulse"
-                style={{
-                  height: `${h * 12}px`,
-                  animationDelay: `${i * 100}ms`,
-                  animationDuration: `${600 + i * 100}ms`,
-                }}
-              />
-            ))}
-          </div>
-          <span className="text-[9px] text-emerald-400 font-bold ml-0.5">Speaking</span>
+        <div className="flex items-center gap-2">
+          {p.isHandRaised && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/25 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-md animate-bounce">
+              <Hand size={12} />
+              <span className="text-[10px] font-bold">Hand Raised</span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Bottom info bar */}
       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3.5 py-2.5 flex items-end justify-between z-10">
