@@ -264,17 +264,17 @@ export default function RecordingsPage() {
                 <button
                   type="button"
                   onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                  className={`w-full sm:w-[210px] min-w-[210px] px-4 py-2.5 rounded-2xl border text-xs font-bold font-display flex items-center justify-between transition-colors cursor-pointer select-none shadow-2xs shrink-0 whitespace-nowrap ${
+                  className={`w-full sm:w-[210px] min-w-[210px] px-4 py-2.5 rounded-2xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer select-none shadow-2xs shrink-0 whitespace-nowrap group ${
                     selectedDateFilter !== 'All'
                       ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
                       : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] border-[#e0e0e4] hover:border-[#0066cc]/40 text-[#1d1d1f]'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <Calendar size={15} className="text-[#0066cc] shrink-0" />
+                    <Calendar size={15} className={`text-[#0066cc] shrink-0 transition-transform duration-200 group-hover:scale-110 ${isCalendarOpen ? 'scale-110' : ''}`} />
                     <span className="truncate">{selectedDateFilter === 'All' ? 'Filter by Session Date' : selectedDateFilter}</span>
                   </div>
-                  <ChevronDown size={14} className="text-[#6e6e73] shrink-0 ml-1" />
+                  <ChevronDown size={14} className={`text-[#6e6e73] shrink-0 ml-1 transition-transform duration-200 group-hover:text-[#0066cc] ${isCalendarOpen ? 'rotate-180 text-[#0066cc]' : ''}`} />
                 </button>
 
                 {/* Custom Interactive Calendar Popover Box */}
@@ -308,14 +308,14 @@ export default function RecordingsPage() {
                     </div>
 
                     {/* Day of Week Labels */}
-                    <div className="grid grid-cols-7 text-center font-display text-[11px] font-bold text-[#86868b]">
+                    <div className="grid grid-cols-7 text-center text-[11px] font-bold text-[#86868b]">
                       {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
                         <div key={d}>{d}</div>
                       ))}
                     </div>
 
                     {/* Date Grid */}
-                    <div className="grid grid-cols-7 gap-1 text-center font-display text-xs">
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
                       {/* Empty filler cells for start of month */}
                       {Array.from({ length: getFirstDayOfWeek(calendarYear, calendarMonth) }).map((_, i) => (
                         <div key={`empty-${i}`} className="h-8" />
@@ -363,7 +363,7 @@ export default function RecordingsPage() {
                     </div>
 
                     {/* Calendar Status Legend */}
-                    <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold font-display text-[#6e6e73]">
+                    <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold text-[#6e6e73]">
                       <div className="flex items-center gap-1.5">
                         <span className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-400 inline-block shrink-0 shadow-2xs" />
                         <span>Past Session</span>
@@ -386,13 +386,13 @@ export default function RecordingsPage() {
                 <button
                   type="button"
                   onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="w-full sm:w-[185px] min-w-[185px] px-4 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-bold font-display text-[#1d1d1f] flex items-center justify-between transition-colors cursor-pointer select-none shadow-2xs shrink-0 whitespace-nowrap"
+                  className="w-full sm:w-[185px] min-w-[185px] px-4 py-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e0e0e4] hover:border-[#0066cc]/40 text-xs font-semibold text-[#1d1d1f] flex items-center justify-between transition-all cursor-pointer select-none shadow-2xs shrink-0 whitespace-nowrap group"
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <Filter size={14} className="text-[#0066cc] shrink-0" />
+                    <Filter size={14} className={`text-[#0066cc] shrink-0 transition-transform duration-200 group-hover:scale-110 ${isSortOpen ? 'scale-110' : ''}`} />
                     <span className="truncate">{sortOrder === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}</span>
                   </div>
-                  <ChevronDown size={14} className="text-[#6e6e73] shrink-0 ml-1" />
+                  <ChevronDown size={14} className={`text-[#6e6e73] shrink-0 ml-1 transition-transform duration-200 group-hover:text-[#0066cc] ${isSortOpen ? 'rotate-180 text-[#0066cc]' : ''}`} />
                 </button>
 
                 {/* Custom Sort Options Popover Menu */}
@@ -404,7 +404,7 @@ export default function RecordingsPage() {
                         setSortOrder('newest')
                         setIsSortOpen(false)
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold font-display flex items-center justify-between transition-colors cursor-pointer ${
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
                         sortOrder === 'newest'
                           ? 'bg-[#0066cc]/10 text-[#0066cc]'
                           : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
@@ -423,7 +423,7 @@ export default function RecordingsPage() {
                         setSortOrder('oldest')
                         setIsSortOpen(false)
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold font-display flex items-center justify-between transition-colors cursor-pointer ${
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
                         sortOrder === 'oldest'
                           ? 'bg-[#0066cc]/10 text-[#0066cc]'
                           : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'

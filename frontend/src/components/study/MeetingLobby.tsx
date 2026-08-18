@@ -14,6 +14,7 @@ import {
   Lock,
   Sparkles,
   Clock,
+  Tag,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Navbar from '../Navbar'
@@ -24,8 +25,11 @@ interface MeetingLobbyProps {
     subject?: string
     topic?: string
     tutorName?: string
+    studentName?: string
     dateStr?: string
     timeStr?: string
+    duration?: number
+    fee?: number
   }
   displayName: string
   onNameChange: (name: string) => void
@@ -290,37 +294,49 @@ export default function MeetingLobby({
               )}
             </div>
 
-            {/* Session Overview Details Card */}
-            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] space-y-2.5 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0066cc] flex items-center gap-1.5">
-                  <Sparkles size={13} />
-                  {sessionDetails?.subject || '1-on-1 Tutoring'}
+            {/* Dynamic Session Overview Details Card */}
+            <div className="p-4 rounded-2xl bg-white border border-[#e5e5e7] space-y-3 shadow-2xs text-left">
+              {/* Top Row: Subject Pill Tag + Time Badge */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-extrabold text-xs">
+                  {sessionDetails?.subject || 'Linear Algebra'}
                 </span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1">
-                  <ShieldCheck size={11} /> Verified Private
-                </span>
-              </div>
-
-              <p className="text-xs font-semibold text-[#1d1d1f] leading-snug">
-                {sessionDetails?.topic || 'Interactive Tutoring, Whiteboard & Code Sandbox'}
-              </p>
-
-              <div className="pt-1.5 border-t border-[#e5e5e7]/60 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-[#7a7a7a]">
-                {sessionDetails?.tutorName && (
-                  <span className="flex items-center gap-1 font-medium text-[#1d1d1f]">
-                    <User size={12} className="text-[#0066cc]" />
-                    {sessionDetails.tutorName}
+                {sessionDetails?.timeStr && (
+                  <span className="text-xs font-bold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5e7] px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                    <Clock size={12} className="text-[#0066cc]" />
+                    {sessionDetails.timeStr}
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <Clock size={12} className="text-[#7a7a7a]" />
-                  60 Minutes
-                </span>
-                <span className="flex items-center gap-1 font-medium text-[#34c759]">
-                  HD Video & Audio
-                </span>
               </div>
+
+              {/* Topic Heading & Date Subtext */}
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-[#1d1d1f] leading-snug">
+                  {sessionDetails?.topic || 'Interactive Whiteboard, Video & Code Sandbox'}
+                </h4>
+                {sessionDetails?.dateStr && (
+                  <p className="text-[11px] font-medium text-[#7a7a7a] flex items-center gap-2 pt-0.5">
+                    <span>{sessionDetails.dateStr}</span>
+                    <span>•</span>
+                    <span>{sessionDetails?.duration || 60} Min Session</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Footer: Host Tutor & Fee */}
+              {(sessionDetails?.tutorName || sessionDetails?.fee !== undefined) && (
+                <div className="pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between text-xs text-[#525252]">
+                  <div className="flex items-center gap-1.5 text-[#525252]">
+                    <User size={13} className="text-[#0066cc] shrink-0" />
+                    <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{sessionDetails?.tutorName || 'Marcus Chen'}</strong></span>
+                  </div>
+                  {sessionDetails?.fee !== undefined ? (
+                    <span className="font-bold text-[#34c759]">${sessionDetails.fee}</span>
+                  ) : (
+                    <span className="text-[11px] font-bold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-md">Free Demo</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Display Name Input with 100% Fixed Dimensions */}
@@ -363,50 +379,7 @@ export default function MeetingLobby({
               <span>Join now</span>
             </button>
 
-            {/* Public Group Study Room Share Strip Only */}
-            {!(meetingId.startsWith('sess-') || sessionDetails?.subject === '1-on-1 Tutoring') && (
-              <div className="pt-4 border-t border-[#f0f0f0] space-y-2.5">
-                <div className="flex items-center justify-between text-xs text-[#7a7a7a] select-none h-4">
-                  <span className="font-semibold text-[#1d1d1f] flex items-center gap-1.5">
-                    Invite link
-                  </span>
-                  <span className="text-[11px] text-[#7a7a7a]">Public Group Room</span>
-                </div>
 
-                {/* Full-width Meeting URL Box */}
-                <div className="w-full px-3.5 h-9 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-mono text-[#1d1d1f] truncate select-all flex items-center">
-                  {shareUrl}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2 pt-0.5">
-                  <button
-                    onClick={handleCopyLink}
-                    className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 border border-[#e5e5e7] select-none"
-                  >
-                    {copied ? (
-                      <>
-                        <Check size={14} className="text-[#34c759] shrink-0" />
-                        <span className="text-[#34c759]">Link Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} className="shrink-0" />
-                        <span>Copy link</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleShare}
-                    className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 border border-[#e5e5e7] select-none"
-                  >
-                    <Share2 size={14} className="shrink-0" />
-                    <span>Share invite</span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </main>

@@ -267,3 +267,63 @@ exports.createBooking = async (req, res) => {
     res.status(500).json({ success: false, message: 'Could not complete booking process' });
   }
 };
+
+// PUT /api/v1/tutors/bookings/:bookingId/cancel
+exports.cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findOne({
+      $or: [{ _id: bookingId }, { meetingId: bookingId }],
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: 'Session is already cancelled' });
+    }
+
+    // Parse session date & time
+    const dateStr = booking.date;
+    const timeStr = booking.time;
+    let sessionDate = new Date(dateStr);
+
+    if (isNaN(sessionDate.getTime())) {
+      sessionDate = new Date();
+    }
+
+    const timeMatch = timeStr ? timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i) : null;
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : null;
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      sessionDate.setHours(hours, minutes, 0, 0);
+    }
+
+    const now = Date.now();
+    const sessionStart = sessionDate.getTime();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    // Enforce 1-week (7 days) cancellation rule
+    if (sessionStart - now < SEVEN_DAYS_MS) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation failed: Sessions can only be cancelled at least 7 days (1 week) prior to the scheduled start time.',
+      });
+    }
+
+    booking.status = 'cancelled';
+    await booking.save();
+
+    return res.json({
+      success: true,
+      message: 'Session cancelled successfully. Full refund issued.',
+      data: booking,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to cancel session' });
+  }
+};

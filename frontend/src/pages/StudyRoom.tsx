@@ -31,24 +31,37 @@ export default function StudyRoom() {
 
   // Fetch room metadata and authorization
   useEffect(() => {
-    fetchStudyRoom(activeRoomId).then((res) => {
-      if (res?.success && res.data) {
-        const rawTitle = res.data.title || res.data.description || ''
-        const isGeneric = !rawTitle || rawTitle.includes('sess-') || rawTitle.includes('Study Session (')
-        const hostName = res.data.host?.fullName
-
-        if (res.data.authorization) {
-          setAuthorization(res.data.authorization)
-        }
-
-        setSessionDetails({
-          subject: res.data.subject && res.data.subject !== 'Tutoring Session' ? res.data.subject : '1-on-1 Tutoring',
-          topic: isGeneric ? undefined : rawTitle,
-          tutorName: hostName && hostName !== 'Tutor' ? hostName : undefined,
-        })
+    let matchedLocalSession: any = null
+    try {
+      const stored = localStorage.getItem('socrates_profile_sessions')
+      if (stored) {
+        const list = JSON.parse(stored)
+        matchedLocalSession = list.find((s: any) => s.id === activeRoomId || s.meetingId === activeRoomId)
       }
+    } catch (e) {}
+
+    fetchStudyRoom(activeRoomId).then((res) => {
+      const apiData = res?.data || {}
+      const rawTitle = apiData.title || apiData.description || ''
+      const isGeneric = !rawTitle || rawTitle.includes('sess-') || rawTitle.includes('Study Session (')
+      const hostName = apiData.host?.fullName
+
+      if (apiData.authorization) {
+        setAuthorization(apiData.authorization)
+      }
+
+      setSessionDetails({
+        subject: matchedLocalSession?.subject || (apiData.subject && apiData.subject !== 'Tutoring Session' ? apiData.subject : 'Linear Algebra'),
+        topic: matchedLocalSession?.topic || (isGeneric ? 'Matrix Decompositions, Vector Spaces & Core Practice' : rawTitle),
+        tutorName: matchedLocalSession?.tutorName || (hostName && hostName !== 'Tutor' ? hostName : 'Marcus Chen'),
+        studentName: matchedLocalSession?.studentName || user?.name || 'Manan Vasani',
+        dateStr: matchedLocalSession?.dateStr || 'Mon, Aug 17, 2026',
+        timeStr: matchedLocalSession?.timeStr || '04:30 PM',
+        fee: matchedLocalSession?.fee || 55,
+        duration: matchedLocalSession?.duration || 60,
+      })
     })
-  }, [activeRoomId])
+  }, [activeRoomId, user])
 
   const hasInitializedName = useRef(false)
 

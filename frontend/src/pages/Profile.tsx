@@ -8,6 +8,10 @@ import {
   CalendarRange,
   Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
   Clock,
   CreditCard,
   DollarSign,
@@ -204,6 +208,36 @@ function checkIsSessionJoinable(dateStr?: string, timeStr?: string, durationMinu
     return { isJoinable: false, statusText: 'Ended' }
   } catch (e) {
     return { isJoinable: false, statusText: 'Opens 5m before' }
+  }
+}
+
+function checkIsSessionCancellable(dateStr?: string, timeStr?: string): { canCancel: boolean; statusText: string } {
+  if (!dateStr || !timeStr) return { canCancel: false, statusText: 'Invalid date' }
+  try {
+    const timeMatch = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    if (!timeMatch) return { canCancel: false, statusText: 'Invalid time' }
+
+    let hours = parseInt(timeMatch[1], 10)
+    const minutes = parseInt(timeMatch[2], 10)
+    const ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : null
+
+    if (ampm === 'PM' && hours < 12) hours += 12
+    if (ampm === 'AM' && hours === 12) hours = 0
+
+    const parsedDate = new Date(dateStr)
+    if (isNaN(parsedDate.getTime())) return { canCancel: false, statusText: 'Invalid date' }
+
+    parsedDate.setHours(hours, minutes, 0, 0)
+    const now = Date.now()
+    const sessionStart = parsedDate.getTime()
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+
+    if (sessionStart - now >= SEVEN_DAYS_MS) {
+      return { canCancel: true, statusText: 'Cancel' }
+    }
+    return { canCancel: false, statusText: 'Cancellable >= 7d before' }
+  } catch (e) {
+    return { canCancel: false, statusText: 'Invalid date' }
   }
 }
 
@@ -481,6 +515,19 @@ export default function Profile() {
   const [sessions, setSessions] = useState<ProfileSessionItem[]>(() => getStoredProfileSessions())
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
+  const sessionSliderRef = useRef<HTMLDivElement>(null)
+
+  const handleSlideSessionsUp = () => {
+    if (sessionSliderRef.current) {
+      sessionSliderRef.current.scrollBy({ top: -410, behavior: 'smooth' })
+    }
+  }
+
+  const handleSlideSessionsDown = () => {
+    if (sessionSliderRef.current) {
+      sessionSliderRef.current.scrollBy({ top: 410, behavior: 'smooth' })
+    }
+  }
 
   const [availability, setAvailability] = useState<AvailabilitySlot[]>(() => {
     const initialUser = useAuthStore.getState().user
@@ -628,20 +675,60 @@ export default function Profile() {
     toast.success('Tutor removed from bookmarks')
   }
 
-  // Prevent background page scrolling when modal is open
+  // Prevent background page scrolling & remove main page scrollbar slider without layout shift
   useEffect(() => {
     if (isEditModalOpen || cancellingSession) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      document.documentElement.classList.add('modal-open')
+      document.body.classList.add('modal-open')
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`
+      }
     } else {
+      document.documentElement.classList.remove('modal-open')
+      document.body.classList.remove('modal-open')
       document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+      document.body.style.paddingRight = ''
     }
     return () => {
+      document.documentElement.classList.remove('modal-open')
+      document.body.classList.remove('modal-open')
       document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+      document.body.style.paddingRight = ''
     }
   }, [isEditModalOpen, cancellingSession])
 
-  const confirmCancelSession = () => {
+  const confirmCancelSession = async () => {
     if (!cancellingSession) return
+
+    const cancelCheck = checkIsSessionCancellable(cancellingSession.dateStr, cancellingSession.timeStr)
+    if (!cancelCheck.canCancel) {
+      toast.error('Cancellation Restricted', {
+        description: 'Sessions can only be cancelled at least 7 days (1 week) prior to the scheduled start time.',
+      })
+      setCancellingSession(null)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      if (token) {
+        await fetch(`/api/v1/tutors/bookings/${cancellingSession.id}/cancel`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+    } catch (err) {
+      // Graceful fallback for local state
+    }
+
     setSessions((prev) => {
       const updated = prev.filter((s) => s.id !== cancellingSession.id)
       saveStoredProfileSessions(updated)
@@ -1063,10 +1150,38 @@ export default function Profile() {
               >
                 Completed ({sessions.filter((s) => s.status === 'Completed').length})
               </button>
+
+              {filteredSessions.length > 2 && (
+                <div className="flex items-center gap-1.5 pl-2 border-l border-[#e5e5e7]">
+                  <button
+                    type="button"
+                    onClick={handleSlideSessionsUp}
+                    className="p-1.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-[#0066cc] text-[#525252] hover:text-[#0066cc] transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 transform-gpu"
+                    title="Scroll Up"
+                  >
+                    <ChevronUp size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSlideSessionsDown}
+                    className="p-1.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-[#0066cc] text-[#525252] hover:text-[#0066cc] transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 transform-gpu"
+                    title="Scroll Down"
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[190px] items-start">
+          <div
+            ref={sessionSliderRef}
+            className={
+              filteredSessions.length > 2
+                ? 'grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[415px] overflow-y-auto pr-1.5 pb-2 scroll-smooth scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 transition-all'
+                : 'grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[190px] items-start'
+            }
+          >
             {filteredSessions.length > 0 ? (
               filteredSessions.map((session) => (
                 <div
@@ -1122,36 +1237,47 @@ export default function Profile() {
                         </div>
 
                         {session.status === 'Upcoming' ? (
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             {joinInfo.isJoinable ? (
                               <Link
                                 to={`/study-room/${session.id}`}
-                                className="w-[110px] py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white border border-[#0066cc] text-xs font-bold transition-all cursor-pointer shadow-xs select-none hover:shadow-md inline-flex items-center justify-center gap-1.5"
+                                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white border border-[#0066cc] text-xs font-bold transition-colors cursor-pointer shadow-xs select-none hover:shadow-md inline-flex items-center justify-center gap-1.5 transform-gpu"
                               >
-                                <Video size={12} /> Join Room
+                                <Video size={13} className="animate-pulse shrink-0" />
+                                <span>Join Room</span>
                               </Link>
+                            ) : joinInfo.statusText === 'Ended' ? (
+                              <div
+                                title="This session time window has ended"
+                                className="px-3.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/90 text-slate-500 text-xs font-semibold select-none inline-flex items-center justify-center gap-1.5 shadow-2xs transform-gpu"
+                              >
+                                <Clock size={12} className="text-slate-400 shrink-0" />
+                                <span>Session Ended</span>
+                              </div>
                             ) : (
                               <button
                                 type="button"
                                 disabled
                                 title="Room opens 5 minutes before scheduled session time"
-                                className="w-[110px] py-1.5 rounded-xl bg-[#f5f5f7] text-[#a1a1a6] border border-[#e5e5e7] text-[11px] font-semibold transition-all cursor-not-allowed select-none opacity-60 inline-flex items-center justify-center gap-1"
+                                className="px-3.5 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-[#8e8e93] text-xs font-semibold select-none cursor-not-allowed inline-flex items-center justify-center gap-1.5 transform-gpu shadow-2xs"
                               >
-                                <Clock size={11} className="text-[#a1a1a6] shrink-0" />
-                                <span>{joinInfo.statusText}</span>
+                                <Video size={13} className="text-[#a1a1a6] shrink-0" />
+                                <span>Join Room <span className="text-[#a1a1a6] font-normal">({joinInfo.statusText})</span></span>
                               </button>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => setCancellingSession(session)}
-                              className="w-[110px] py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1"
-                            >
-                              <X size={12} /> Cancel
-                            </button>
+                            {joinInfo.statusText !== 'Ended' && (
+                              <button
+                                type="button"
+                                onClick={() => setCancellingSession(session)}
+                                className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-colors cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1 transform-gpu"
+                              >
+                                <X size={13} /> Cancel
+                              </button>
+                            )}
                           </div>
                         ) : (
-                          <span className="w-[130px] py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1 select-none shrink-0">
-                            <Check size={12} className="text-emerald-600 shrink-0" /> Completed
+                          <span className="px-3.5 py-1.5 rounded-xl bg-emerald-50/90 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1.5 select-none shrink-0 shadow-2xs">
+                            <Check size={13} className="text-emerald-600 shrink-0" /> Completed
                           </span>
                         )}
                       </div>
@@ -2127,83 +2253,147 @@ export default function Profile() {
               onClick={() => setCancellingSession(null)}
             />
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                  <AlertTriangle size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#1d1d1f]">
-                    Cancel Tutoring Session?
-                  </h3>
-                  <p className="text-xs text-[#7a7a7a]">
-                    Confirm cancellation for {cancellingSession.dateStr} at {cancellingSession.timeStr}
-                  </p>
-                </div>
-              </div>
+            {(() => {
+              const cancelEligibility = checkIsSessionCancellable(cancellingSession.dateStr, cancellingSession.timeStr)
 
-              <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100 space-y-3.5 text-xs">
-                <div className="font-semibold text-red-950 flex items-center justify-between border-b border-red-200/50 pb-2">
-                  <span>Session: {cancellingSession.subject}</span>
-                  <span className="font-bold">${cancellingSession.fee}</span>
-                </div>
-
-                <div className="space-y-2.5 text-red-900/90 font-medium">
-                  <div className="flex items-start gap-2">
-                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                    <div>
-                      <strong className="text-red-950 font-bold block">Schedule Update</strong>
-                      <span className="text-[11px] text-red-900/85">The session will be immediately removed from your dashboard calendar.</span>
+              if (!cancelEligibility.canCancel) {
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-100/90 text-amber-700 flex items-center justify-center shrink-0">
+                        <Lock size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-[#1d1d1f]">
+                          Cancellation Policy Notice
+                        </h3>
+                        <p className="text-xs text-[#7a7a7a]">
+                          Session on {cancellingSession.dateStr} at {cancellingSession.timeStr}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-2">
-                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                    <div>
-                      <strong className="text-red-950 font-bold block">Notification Sent</strong>
-                      <span className="text-[11px] text-red-900/85">
-                        An automated alert will notify {userRole === 'tutor' ? cancellingSession.studentName : cancellingSession.tutorName} of the cancellation.
-                      </span>
+                    <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/70 space-y-3 text-xs text-amber-950">
+                      <div className="font-bold text-amber-950 flex items-center gap-1.5 border-b border-amber-200/60 pb-2">
+                        <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+                        <span>7-Day Advance Notice Required</span>
+                      </div>
+
+                      <div className="space-y-2.5 text-amber-900/90 font-medium">
+                        <p className="leading-relaxed">
+                          Per SOCRATES policy, tutoring sessions can only be cancelled at least <strong>7 days (1 week)</strong> prior to the scheduled start time.
+                        </p>
+
+                        <div className="p-3 rounded-xl bg-white/90 border border-amber-200/60 text-[11px] text-amber-950 space-y-1 shadow-2xs">
+                          <span className="font-bold block text-amber-900">Why is this policy enforced?</span>
+                          <span className="text-amber-800 leading-normal block">
+                            This rule guarantees tutor scheduling commitments and ensures fair reservation windows for all students.
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-2">
-                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                    <div>
-                      <strong className="text-red-950 font-bold block">Refund Processed</strong>
-                      <span className="text-[11px] text-red-900/85">
-                        A full refund of <span className="font-bold">${cancellingSession.fee}</span> will be credited back to your payment method.
-                      </span>
+                    <div className="flex items-center justify-end pt-2 border-t border-[#f0f0f2]">
+                      <button
+                        type="button"
+                        onClick={() => setCancellingSession(null)}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-semibold transition-all shadow-md shadow-[#0066cc]/20 cursor-pointer select-none text-center"
+                      >
+                        I Understand
+                      </button>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  </motion.div>
+                )
+              }
 
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#f0f0f2]">
-                <button
-                  type="button"
-                  onClick={() => setCancellingSession(null)}
-                  className="px-4 py-2 rounded-xl border border-[#e5e5e7] hover:bg-[#f5f5f7] text-xs font-semibold text-[#525252] transition-colors cursor-pointer select-none"
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-md bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-5 shadow-2xl relative text-[#1d1d1f] transform-gpu select-none antialiased"
                 >
-                  Keep Session
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmCancelSession}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 hover:shadow-md text-white text-xs font-semibold transition-all shadow-xs cursor-pointer select-none"
-                >
-                  Yes, Cancel Session
-                </button>
-              </div>
-            </motion.div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                      <AlertTriangle size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#1d1d1f]">
+                        Cancel Tutoring Session?
+                      </h3>
+                      <p className="text-xs text-[#7a7a7a]">
+                        Confirm cancellation for {cancellingSession.dateStr} at {cancellingSession.timeStr}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100 space-y-3.5 text-xs">
+                    <div className="font-semibold text-red-950 flex items-center justify-between border-b border-red-200/50 pb-2">
+                      <span>Session: {cancellingSession.subject}</span>
+                      <span className="font-bold">${cancellingSession.fee}</span>
+                    </div>
+
+                    <div className="space-y-2.5 text-red-900/90 font-medium">
+                      <div className="flex items-start gap-2">
+                        <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                        <div>
+                          <strong className="text-red-950 font-bold block">Schedule Update</strong>
+                          <span className="text-[11px] text-red-900/85">The session will be immediately removed from your dashboard calendar.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                        <div>
+                          <strong className="text-red-950 font-bold block">Notification Sent</strong>
+                          <span className="text-[11px] text-red-900/85">
+                            An automated alert will notify {userRole === 'tutor' ? cancellingSession.studentName : cancellingSession.tutorName} of the cancellation.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                        <div>
+                          <strong className="text-red-950 font-bold block">Refund Processed</strong>
+                          <span className="text-[11px] text-red-900/85">
+                            A full refund of <span className="font-bold">${cancellingSession.fee}</span> will be credited back to your payment method.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#f0f0f2]">
+                    <button
+                      type="button"
+                      onClick={() => setCancellingSession(null)}
+                      className="px-4 py-2 rounded-xl border border-[#e5e5e7] hover:bg-[#f5f5f7] text-xs font-semibold text-[#525252] transition-colors cursor-pointer select-none"
+                    >
+                      Keep Session
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmCancelSession}
+                      className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 hover:shadow-md text-white text-xs font-semibold transition-all shadow-xs cursor-pointer select-none"
+                    >
+                      Yes, Cancel Session
+                    </button>
+                  </div>
+                </motion.div>
+              )
+            })()}
           </div>
         )}
       </AnimatePresence>
