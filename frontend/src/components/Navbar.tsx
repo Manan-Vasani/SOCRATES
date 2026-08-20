@@ -21,7 +21,7 @@ export default function Navbar() {
   const isProfileActive = location.pathname === '/profile' || location.pathname === '/dashboard'
 
   return (
-    <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-[#e0e0e0]/60 transition-all select-none">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#e0e0e0]/60 select-none transform-gpu translate-z-0">
       <nav 
         className="max-w-6xl mx-auto px-6 h-13 flex items-center justify-between text-xs font-normal text-[#1d1d1f]"
         aria-label="Global navigation"

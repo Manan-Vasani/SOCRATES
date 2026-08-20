@@ -15,9 +15,11 @@ import {
   Sparkles,
   Clock,
   Tag,
+  Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Navbar from '../Navbar'
+import { useAuthStore } from '../../store/useAuthStore'
 
 interface MeetingLobbyProps {
   meetingId: string
@@ -31,6 +33,7 @@ interface MeetingLobbyProps {
     duration?: number
     fee?: number
   }
+  isDetailsLoading?: boolean
   displayName: string
   onNameChange: (name: string) => void
   isMicOn: boolean
@@ -61,6 +64,7 @@ function getCleanInitials(name: string): string {
 export default function MeetingLobby({
   meetingId,
   sessionDetails,
+  isDetailsLoading = false,
   displayName,
   onNameChange,
   isMicOn,
@@ -170,6 +174,15 @@ export default function MeetingLobby({
     }
   }
 
+  const { user } = useAuthStore()
+  const [isAvatarLoading, setIsAvatarLoading] = useState(true)
+  const [avatarFailed, setAvatarFailed] = useState(false)
+
+  const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+  const userAvatarSrc = avatarFailed
+    ? DEFAULT_AVATAR_URL
+    : (user?.avatar || DEFAULT_AVATAR_URL)
+
   const initials = getCleanInitials(displayName)
   const isCustomTopic = sessionDetails?.topic && !sessionDetails.topic.includes('sess-')
   const heroTitle = isCustomTopic ? sessionDetails.topic : 'Ready to join?'
@@ -204,12 +217,29 @@ export default function MeetingLobby({
                   className="w-full h-full object-cover scale-x-[-1] absolute inset-0"
                 />
               ) : (
-                /* Camera Off State */
+                /* Camera Off State with Profile Avatar & Image Loading State */
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 bg-gradient-to-b from-[#252528] to-[#1a1a1d]">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#0066cc] to-[#147efb] flex items-center justify-center text-3xl font-semibold text-white shadow-xl shadow-black/20 tracking-wide">
-                    {initials}
+                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl shadow-black/40 flex items-center justify-center bg-[#252528] shrink-0">
+                    {/* Loading spinner while profile avatar is loading */}
+                    {isAvatarLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#252528] z-10">
+                        <Loader2 size={26} className="animate-spin text-[#0066cc]" />
+                      </div>
+                    )}
+                    <img
+                      src={userAvatarSrc}
+                      alt={displayName || 'User Avatar'}
+                      onLoad={() => setIsAvatarLoading(false)}
+                      onError={() => {
+                        setIsAvatarLoading(false)
+                        setAvatarFailed(true)
+                      }}
+                      className={`w-full h-full object-cover transition-opacity duration-300 ${
+                        isAvatarLoading ? 'opacity-0' : 'opacity-100'
+                      }`}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-medium text-white/80">
+                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-medium text-white/80">
                     <VideoOff size={13} className="text-white/60" />
                     <span>Camera is off</span>
                   </div>
@@ -294,50 +324,70 @@ export default function MeetingLobby({
               )}
             </div>
 
-            {/* Dynamic Session Overview Details Card */}
-            <div className="p-4 rounded-2xl bg-white border border-[#e5e5e7] space-y-3 shadow-2xs text-left">
-              {/* Top Row: Subject Pill Tag + Time Badge */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-extrabold text-xs">
-                  {sessionDetails?.subject || 'Linear Algebra'}
-                </span>
-                {sessionDetails?.timeStr && (
-                  <span className="text-xs font-bold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5e7] px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
-                    <Clock size={12} className="text-[#0066cc]" />
-                    {sessionDetails.timeStr}
+            {/* Dynamic Session Overview Details Card / Loader Skeleton */}
+            {isDetailsLoading ? (
+              <div className="p-4 rounded-2xl bg-white border border-[#e5e5e7] h-[164px] min-h-[164px] max-h-[164px] box-border flex flex-col justify-between shadow-2xs text-left animate-pulse">
+                {/* Top Row matching h-7 (28px) */}
+                <div className="flex items-center justify-between gap-2 h-7">
+                  <div className="w-28 h-6 rounded-full bg-[#f0f0f2]" />
+                  <div className="w-20 h-6 rounded-full bg-[#f0f0f2]" />
+                </div>
+
+                {/* Topic Heading & Date Subtext */}
+                <div className="space-y-1 py-0.5">
+                  <div className="w-3/4 h-4 rounded-md bg-[#e5e5e7]/80" />
+                  <div className="w-1/2 h-3.5 rounded-md bg-[#f0f0f2] mt-1" />
+                </div>
+
+                {/* Footer matching pt-2.5 border-t h-6 (34px) */}
+                <div className="pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between h-6">
+                  <div className="w-28 h-3.5 rounded-md bg-[#f0f0f2]" />
+                  <div className="w-8 h-3.5 rounded-md bg-[#f0f0f2]" />
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-white border border-[#e5e5e7] h-[164px] min-h-[164px] max-h-[164px] box-border flex flex-col justify-between shadow-2xs text-left">
+                {/* Top Row: Subject Pill Tag + Time Badge */}
+                <div className="flex items-center justify-between gap-2 h-7">
+                  <span className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-extrabold text-xs leading-none flex items-center justify-center">
+                    {sessionDetails?.subject || 'Linear Algebra'}
                   </span>
-                )}
-              </div>
-
-              {/* Topic Heading & Date Subtext */}
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold text-[#1d1d1f] leading-snug">
-                  {sessionDetails?.topic || 'Interactive Whiteboard, Video & Code Sandbox'}
-                </h4>
-                {sessionDetails?.dateStr && (
-                  <p className="text-[11px] font-medium text-[#7a7a7a] flex items-center gap-2 pt-0.5">
-                    <span>{sessionDetails.dateStr}</span>
-                    <span>•</span>
-                    <span>{sessionDetails?.duration || 60} Min Session</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Footer: Host Tutor & Fee */}
-              {(sessionDetails?.tutorName || sessionDetails?.fee !== undefined) && (
-                <div className="pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between text-xs text-[#525252]">
-                  <div className="flex items-center gap-1.5 text-[#525252]">
-                    <User size={13} className="text-[#0066cc] shrink-0" />
-                    <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{sessionDetails?.tutorName || 'Marcus Chen'}</strong></span>
-                  </div>
-                  {sessionDetails?.fee !== undefined ? (
-                    <span className="font-bold text-[#34c759]">${sessionDetails.fee}</span>
-                  ) : (
-                    <span className="text-[11px] font-bold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-md">Free Demo</span>
+                  {sessionDetails?.timeStr && (
+                    <span className="text-xs font-bold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5e7] px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs leading-none">
+                      <Clock size={12} className="text-[#0066cc]" />
+                      {sessionDetails.timeStr}
+                    </span>
                   )}
                 </div>
-              )}
-            </div>
+
+                {/* Topic Heading & Date Subtext */}
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-[#1d1d1f] leading-snug line-clamp-1">
+                    {sessionDetails?.topic || 'Interactive Whiteboard, Video & Code Sandbox'}
+                  </h4>
+                  {sessionDetails?.dateStr && (
+                    <p className="text-[11px] font-medium text-[#7a7a7a] flex items-center gap-2 pt-0.5 leading-none">
+                      <span>{sessionDetails.dateStr}</span>
+                      <span>•</span>
+                      <span>{sessionDetails?.duration || 60} Min Session</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Footer: Host Tutor & Fee */}
+                <div className="pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between text-xs text-[#525252] h-6">
+                  <div className="flex items-center gap-1.5 text-[#525252] truncate">
+                    <User size={13} className="text-[#0066cc] shrink-0" />
+                    <span className="truncate">Tutor: <strong className="text-[#1d1d1f] font-semibold">{sessionDetails?.tutorName || 'Marcus Chen'}</strong></span>
+                  </div>
+                  {sessionDetails?.fee !== undefined ? (
+                    <span className="font-bold text-[#34c759] shrink-0">${sessionDetails.fee}</span>
+                  ) : (
+                    <span className="text-[11px] font-bold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-md shrink-0">Free Demo</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Display Name Input with 100% Fixed Dimensions */}
             <div className="space-y-2">

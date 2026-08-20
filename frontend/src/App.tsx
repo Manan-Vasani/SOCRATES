@@ -20,25 +20,30 @@ import { fetchAuthenticatedUser } from './services/authService'
 import './App.css'
 
 function AuthSync() {
-  const { token, setAuth } = useAuthStore()
+  const { token, setAuth, user } = useAuthStore()
   const hasSyncedRef = useRef(false)
 
   useEffect(() => {
     if (token && !hasSyncedRef.current) {
       hasSyncedRef.current = true
-      fetchAuthenticatedUser().then((user) => {
-        if (user) {
-          setAuth(user, token)
+      fetchAuthenticatedUser().then((newUser) => {
+        if (newUser) {
+          // Avoid re-rendering Navbar if cached user matches fetched user
+          const hasDiff = !user || newUser._id !== user._id || newUser.avatar !== user.avatar || newUser.fullName !== user.fullName
+          if (hasDiff) {
+            setAuth(newUser, token)
+          }
         }
       })
     }
-  }, [token, setAuth])
+  }, [token, setAuth, user])
 
   return null
 }
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
+  const prevPathname = useRef(pathname)
 
   useLayoutEffect(() => {
     // Prevent dragging images globally across the entire app
@@ -49,21 +54,20 @@ function ScrollToTop() {
     }
     document.addEventListener('dragstart', handleDragStart)
 
-    // Force manual scroll restoration so page refresh always renders from top
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual'
+    // Only force scroll to top when navigating to a DIFFERENT route, NOT on page refresh (F5)
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname
+      if (!hash) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      }
     }
 
     if (hash) {
       const element = document.getElementById(hash.replace('#', ''))
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' })
-        return
       }
     }
-
-    // Instantly scroll to top on page mount, refresh, and route change
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
 
     return () => {
       document.removeEventListener('dragstart', handleDragStart)
@@ -73,6 +77,22 @@ function ScrollToTop() {
   return null
 }
 
+import { Outlet } from 'react-router-dom'
+import Navbar from './components/Navbar'
+import Footer from './components/Footer'
+
+function RootLayout() {
+  return (
+    <div className="min-h-screen flex flex-col bg-[#fafafc] selection:bg-[#0066cc]/10 transform-gpu overflow-x-hidden">
+      <Navbar />
+      <main className="flex-1 w-full flex flex-col min-h-[calc(100vh-180px)]">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -80,18 +100,23 @@ function App() {
       <AuthSync />
       <Toaster position="top-right" richColors duration={1800} closeButton />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/tutors" element={<Tutors />} />
-        <Route path="/tutors/:tutorId/schedule" element={<TutorSchedule />} />
+        {/* Main pages wrapped in persistent RootLayout — Navbar and Footer NEVER refresh or unmount */}
+        <Route element={<RootLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/tutors" element={<Tutors />} />
+          <Route path="/tutors/:tutorId/schedule" element={<TutorSchedule />} />
+          <Route path="/practice" element={<PracticePage />} />
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/recordings" element={<RecordingsPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
+
+        {/* Standalone full-viewport pages */}
         <Route path="/study-room/:roomId" element={<StudyRoom />} />
         <Route path="/meeting/:meetingId" element={<StudyRoom />} />
-        <Route path="/practice" element={<PracticePage />} />
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/recordings" element={<RecordingsPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-otp" element={<VerifyOTP />} />
         <Route path="/reset-password" element={<ResetPassword />} />

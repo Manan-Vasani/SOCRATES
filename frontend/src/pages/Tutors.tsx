@@ -38,6 +38,7 @@ import Footer from '../components/Footer'
 import { fetchAllTutors, TutorItem } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
 import { getUnifiedSubjectList } from '../utils/subjectRegistry'
+import { getInitialsAvatar } from '../services/authService'
 
 export interface ExtendedTutor extends Omit<TutorItem, 'reviews'> {
   id: string
@@ -513,12 +514,9 @@ export default function Tutors() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc]">
+    <div className="w-full bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-16">
       {/* Background Subtle Gradient */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,102,204,0.035)_0%,_transparent_60%)] pointer-events-none z-0" />
-
-      {/* Global Navbar */}
-      <Navbar />
 
       {/* Hero Header Section */}
       <motion.section
@@ -619,16 +617,21 @@ export default function Tutors() {
         </section>
 
         {/* Tutors Grid Section */}
-        <section className="relative z-10 max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-6 px-3 sm:px-4 h-8 min-h-[32px]">
-            <div className="text-xs font-semibold text-[#7a7a7a] flex items-center gap-1.5 select-none h-full">
-              <span>Showing</span>
-              <span className="font-bold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5e7] px-2 py-0.5 rounded-md text-[11px] leading-none">
-                {filteredTutors.length}
+        <section className="relative z-10 max-w-6xl mx-auto px-6 pb-12">
+          <div className="flex items-center justify-between mb-6 px-1 sm:px-2">
+            <div className="flex items-center gap-2.5 select-none">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse shrink-0" />
+                <h2 className="text-sm sm:text-base font-bold text-[#1d1d1f] tracking-tight">
+                  Verified Educators
+                </h2>
+              </div>
+              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 font-extrabold text-xs">
+                {filteredTutors.length} Available
               </span>
-              <span>Verified Tutors</span>
             </div>
-            <div className="h-full flex items-center shrink-0">
+
+            <div className="flex items-center shrink-0">
               {(selectedSubject !== 'All' || searchQuery || minRating > 0 || maxPrice < 300) && (
                 <button
                   type="button"
@@ -638,29 +641,30 @@ export default function Tutors() {
                     setMinRating(0)
                     setMaxPrice(300)
                   }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f5f5f7] border border-[#e5e5e7] text-[11px] font-semibold text-[#525252] hover:text-[#1d1d1f] hover:bg-[#e8e8ed] active:bg-[#dcdce0] transition-colors duration-150 cursor-pointer select-none shrink-0 transform-gpu leading-none"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/40 text-xs font-semibold text-[#525252] hover:text-[#0066cc] transition-all duration-150 shadow-2xs hover:shadow-xs cursor-pointer select-none shrink-0 transform-gpu leading-none"
                 >
-                  <RotateCcw size={11} className="text-[#6e6e73]" />
-                  <span>Reset All Filters</span>
+                  <RotateCcw size={12} className="text-[#0066cc]" />
+                  <span>Reset Filters</span>
                 </button>
               )}
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <TutorCardSkeleton key={n} />
-              ))}
-            </div>
-          ) : filteredTutors.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-[#e5e5e7] space-y-3">
-              <UserX size={36} className="mx-auto text-[#7a7a7a]" />
-              <h3 className="text-lg font-display font-semibold text-[#1d1d1f]">No tutors matched your criteria</h3>
-              <p className="text-xs text-[#7a7a7a]">Try adjusting your search query or subject filters.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="w-full">
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <TutorCardSkeleton key={n} />
+                ))}
+              </div>
+            ) : filteredTutors.length === 0 ? (
+              <div className="p-12 text-center bg-white rounded-3xl border border-[#e5e5e7] space-y-3">
+                <UserX size={36} className="mx-auto text-[#7a7a7a]" />
+                <h3 className="text-lg font-display font-semibold text-[#1d1d1f]">No tutors matched your criteria</h3>
+                <p className="text-xs text-[#7a7a7a]">Try adjusting your search query or subject filters.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTutors.map((tutor) => (
                 <div
                   key={tutor.id}
@@ -684,9 +688,12 @@ export default function Tutors() {
                     <div className="flex items-start gap-4">
                       <div className="relative shrink-0">
                         <img
-                          src={tutor.image}
+                          src={tutor.image || getInitialsAvatar(tutor.name)}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = getInitialsAvatar(tutor.name)
+                          }}
                           alt={tutor.name}
-                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0 transform-gpu"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-[#0066cc]/25 border-2 border-white shadow-md shrink-0 transform-gpu antialiased"
                         />
                       </div>
 
@@ -794,11 +801,9 @@ export default function Tutors() {
             ))}
           </div>
         )}
+        </div>
       </section>
       </motion.div>
-
-      {/* Homepage Matching Footer */}
-      <Footer />
 
       {/* BOOKING MODAL */}
       {selectedTutorForBooking && (

@@ -171,8 +171,6 @@ export default function PracticePage() {
 
   return (
     <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10">
-      <Navbar />
-
       {/* Hero / Header Section */}
       <section className="bg-white border-b border-[#e5e5e7] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -543,7 +541,6 @@ export default function PracticePage() {
           </div>
         )}
       </main>
-      <Footer />
     </div>
   )
 }

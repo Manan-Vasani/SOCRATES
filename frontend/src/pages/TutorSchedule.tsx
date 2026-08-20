@@ -625,9 +625,10 @@ export default function TutorSchedule() {
       ? ((tutor as any).rate30Min || 25)
       : tutor.hourlyRate;
     const activeSubject = selectedSubject || tutor.subjects[0] || 'General Session'
+    const studentDisplayName = user?.fullName || user?.name || 'Alex Mercer'
 
     const res = await createTutorBookingApi(tutor.id, {
-      studentName: 'Alex Mercer',
+      studentName: studentDisplayName,
       date: selectedDay.fullDateStr,
       time: selectedSlot.time,
       subject: activeSubject,
@@ -638,7 +639,7 @@ export default function TutorSchedule() {
 
     setIsSubmitting(false)
     selectedSlot.isBooked = true
-    selectedSlot.bookedBy = 'Alex Mercer'
+    selectedSlot.bookedBy = studentDisplayName
     selectedSlot.subject = activeSubject
     selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
     selectedSlot.allowGroupSplit = allowGroupSplitBooking
@@ -650,7 +651,7 @@ export default function TutorSchedule() {
     if (res?.success) {
       setBackendBookings(prev => [...prev, {
         tutorId: tutor.id,
-        studentName: 'Alex Mercer',
+        studentName: studentDisplayName,
         date: selectedDay.fullDateStr,
         time: selectedSlot.time,
         subject: selectedSlot.subject,
@@ -663,7 +664,9 @@ export default function TutorSchedule() {
     const newProfileSession: ProfileSessionItem = {
       id: `sess-${Date.now()}`,
       tutorName: tutor.name,
-      studentName: 'Alex Mercer',
+      tutorId: tutor.id,
+      studentName: studentDisplayName,
+      studentId: user?._id || '',
       subject: selectedSlot.subject,
       topic: bookingTopic ? bookingTopic.trim() : undefined,
       dateStr: selectedDay.fullDateStr,
@@ -707,9 +710,6 @@ export default function TutorSchedule() {
     <div className="min-h-dvh bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-24" style={{ minHeight: '100dvh' }}>
       {/* Background Subtle Gradient */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,102,204,0.035)_0%,_transparent_60%)] pointer-events-none z-0" />
-
-      {/* Global Navbar */}
-      <Navbar />
 
       {isLoading ? (
         <TutorScheduleSkeleton />
@@ -1143,9 +1143,6 @@ export default function TutorSchedule() {
         </motion.div>
       </motion.main>
       )}
-
-      {/* Homepage Matching Footer */}
-      <Footer />
 
       {/* BOOKING CONFIRMATION MODAL */}
       <AnimatePresence>

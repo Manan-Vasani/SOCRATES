@@ -22,6 +22,7 @@ export default function StudyRoom() {
   const [hasJoined, setHasJoined] = useState(false)
   const [guestName, setGuestName] = useState('')
   const [sessionDetails, setSessionDetails] = useState<any>(null)
+  const [isDetailsLoading, setIsDetailsLoading] = useState(true)
   const [authorization, setAuthorization] = useState<{
     isAuthorized?: boolean
     reason?: string
@@ -31,6 +32,7 @@ export default function StudyRoom() {
 
   // Fetch room metadata and authorization
   useEffect(() => {
+    setIsDetailsLoading(true)
     let matchedLocalSession: any = null
     try {
       const stored = localStorage.getItem('socrates_profile_sessions')
@@ -60,6 +62,9 @@ export default function StudyRoom() {
         fee: matchedLocalSession?.fee || 55,
         duration: matchedLocalSession?.duration || 60,
       })
+      setIsDetailsLoading(false)
+    }).catch(() => {
+      setIsDetailsLoading(false)
     })
   }, [activeRoomId, user])
 
@@ -248,6 +253,7 @@ export default function StudyRoom() {
       <MeetingLobby
         meetingId={activeRoomId}
         sessionDetails={sessionDetails}
+        isDetailsLoading={isDetailsLoading}
         displayName={displayName}
         onNameChange={setDisplayName}
         isMicOn={isMicOn}

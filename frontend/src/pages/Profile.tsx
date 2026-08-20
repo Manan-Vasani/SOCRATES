@@ -37,6 +37,7 @@ import {
 
 // React profile component for managing role-specific dashboards.
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
@@ -49,7 +50,9 @@ import { ProfilePerspective, useAuthStore } from '../store/useAuthStore'
 export interface ProfileSessionItem {
   id: string
   tutorName: string
+  tutorId?: string
   studentName: string
+  studentId?: string
   subject: string
   topic?: string
   dateStr: string
@@ -519,13 +522,13 @@ export default function Profile() {
 
   const handleSlideSessionsUp = () => {
     if (sessionSliderRef.current) {
-      sessionSliderRef.current.scrollBy({ top: -410, behavior: 'smooth' })
+      sessionSliderRef.current.scrollBy({ top: -390, behavior: 'smooth' })
     }
   }
 
   const handleSlideSessionsDown = () => {
     if (sessionSliderRef.current) {
-      sessionSliderRef.current.scrollBy({ top: 410, behavior: 'smooth' })
+      sessionSliderRef.current.scrollBy({ top: 390, behavior: 'smooth' })
     }
   }
 
@@ -740,6 +743,19 @@ export default function Profile() {
     setCancellingSession(null)
   }
 
+  useEffect(() => {
+    const syncProfileSessions = () => {
+      setSessions(getStoredProfileSessions())
+    }
+    syncProfileSessions()
+    window.addEventListener('focus', syncProfileSessions)
+    window.addEventListener('storage', syncProfileSessions)
+    return () => {
+      window.removeEventListener('focus', syncProfileSessions)
+      window.removeEventListener('storage', syncProfileSessions)
+    }
+  }, [])
+
   const filteredSessions = sessions.filter((s) => s.status === sessionFilter)
 
   useEffect(() => {
@@ -882,14 +898,11 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc] pb-20">
+    <div className="w-full bg-[#fafafc] text-[#1d1d1f] font-sans selection:bg-[#0066cc]/10 selection:text-[#0066cc]">
       {/* Background Subtle Gradient */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,102,204,0.04)_0%,_transparent_60%)] pointer-events-none z-0" />
 
-      {/* Global Navbar */}
-      <Navbar />
-
-      <main className="max-w-6xl mx-auto px-6 pt-10 relative z-10 space-y-8">
+      <main className="max-w-6xl mx-auto px-6 pt-10 pb-16 relative z-10 space-y-8 min-h-[75vh] w-full">
         {isProfileLoading ? (
           <div className="space-y-8 animate-pulse select-none transform-gpu">
             {/* Profile Hero Card Skeleton */}
@@ -1013,790 +1026,841 @@ export default function Profile() {
             {/* Profile Hero Card */}
             <div className="relative rounded-3xl bg-white border border-[#e5e5e7] p-8 overflow-hidden shadow-sm">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-            {/* User Details Left */}
-            <div className="flex items-center gap-6">
-              <div className="relative group shrink-0">
-                <img
-                  src={user?.profileImage || user?.avatar || ''}
-                  alt={user?.fullName || user?.name || 'User Profile'}
-                  className="w-32 h-32 rounded-full object-cover border border-[#e5e5e7] shadow-xs antialiased"
-                />
-              </div>
+                {/* User Details Left */}
+                <div className="flex items-center gap-6">
+                  <div className="relative group shrink-0">
+                    <img
+                      src={user?.profileImage || user?.avatar || ''}
+                      alt={user?.fullName || user?.name || 'User Profile'}
+                      className="w-32 h-32 rounded-full object-cover border border-[#e5e5e7] shadow-xs antialiased"
+                    />
+                  </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-display font-bold tracking-tight text-[#1d1d1f]">
-                    {user?.fullName || user?.name || 'Scholar'}
-                  </h1>
-                  {user?.isVerified && (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/30 text-[#0066cc]"
-                      title="Verified Educator & Scholar"
-                    >
-                      <ShieldCheck size={14} /> Verified
-                    </span>
-                  )}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-3xl font-display font-bold tracking-tight text-[#1d1d1f]">
+                        {user?.fullName || user?.name || 'Scholar'}
+                      </h1>
+                      {user?.isVerified && (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/30 text-[#0066cc]"
+                          title="Verified Educator & Scholar"
+                        >
+                          <ShieldCheck size={14} /> Verified
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      <span className="text-[#7a7a7a]">
+                        {user?.email}
+                      </span>
+                      <span className="text-[#e0e0e0]">•</span>
+                      {userRole === 'student' && (
+                        <span className="px-2.5 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-[#0066cc] font-semibold">
+                          Student Account
+                        </span>
+                      )}
+                      {userRole === 'tutor' && (
+                        <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+                          Tutor Account
+                        </span>
+                      )}
+                      {userRole === 'both' && (
+                        <span className="px-2.5 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-purple-700 font-semibold flex items-center gap-1">
+                          <Repeat size={11} /> Peer-to-Peer Account (Both)
+                        </span>
+                      )}
+                    </div>
+
+                    {user?.bio ? (
+                      <p className="text-xs sm:text-sm text-[#48484a] max-w-2xl leading-relaxed break-words font-normal">
+                        {user.bio}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[#86868b] italic">
+                        No bio added yet. Click Edit Profile to add one.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-medium">
-                  <span className="text-[#7a7a7a]">
-                    {user?.email}
-                  </span>
-                  <span className="text-[#e0e0e0]">•</span>
-                  {userRole === 'student' && (
-                    <span className="px-2.5 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-[#0066cc] font-semibold">
-                      Student Account
-                    </span>
-                  )}
-                  {userRole === 'tutor' && (
-                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
-                      Tutor Account
-                    </span>
-                  )}
+                {/* Account Role Selector / Edit Trigger Right */}
+                <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium text-xs transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit3 size={14} /> Edit Profile
+                  </button>
+
+                  <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
+                    <Clock size={12} /> Member since{' '}
+                    {new Date(user?.createdAt || Date.now()).toLocaleDateString(
+                      'en-US',
+                      { month: 'short', year: 'numeric' }
+                    )}
+                  </div>
+
+                  {/* View Perspective Toggles (For Hybrid Users - Tight right under Member Since) */}
                   {userRole === 'both' && (
-                    <span className="px-2.5 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-purple-700 font-semibold flex items-center gap-1">
-                      <Repeat size={11} /> Peer-to-Peer Account (Both)
-                    </span>
-                  )}
-                </div>
-
-                {user?.bio ? (
-                  <p className="text-xs sm:text-sm text-[#48484a] max-w-2xl leading-relaxed break-words font-normal">
-                    {user.bio}
-                  </p>
-                ) : (
-                  <p className="text-xs text-[#86868b] italic">
-                    No bio added yet. Click Edit Profile to add one.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Account Role Selector / Edit Trigger Right */}
-            <div className="flex flex-col items-end gap-2 w-full md:w-auto">
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white font-medium text-xs transition-all shadow-md shadow-[#0066cc]/20 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Edit3 size={14} /> Edit Profile
-              </button>
-
-              <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
-                <Clock size={12} /> Member since{' '}
-                {new Date(user?.createdAt || Date.now()).toLocaleDateString(
-                  'en-US',
-                  { month: 'short', year: 'numeric' }
-                )}
-              </div>
-
-              {/* View Perspective Toggles (For Hybrid Users - Tight right under Member Since) */}
-              {userRole === 'both' && (
-                <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] rounded-xl border border-[#e0e0e0] transform-gpu mt-1">
-                  <button
-                    onClick={() => setViewPerspective('student')}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
-                      viewPerspective === 'student'
-                        ? 'bg-[#0066cc] text-white shadow-xs'
-                        : 'text-[#525252] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Student View
-                  </button>
-                  <button
-                    onClick={() => setViewPerspective('tutor')}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
-                      viewPerspective === 'tutor'
-                        ? 'bg-[#0066cc] text-white shadow-xs'
-                        : 'text-[#525252] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Tutor View
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* BOOKED SESSIONS & SCHEDULE MANAGEMENT SECTION */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
-            <div>
-              <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                <Calendar className="text-[#0066cc]" size={22} />{' '}
-                {viewPerspective === 'tutor' ? 'My Upcoming Teaching Sessions' : 'My Booked Tutoring Sessions'}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSessionFilter('Upcoming')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer select-none transform-gpu ${
-                  sessionFilter === 'Upcoming'
-                    ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
-                    : 'bg-white border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
-                }`}
-              >
-                Upcoming ({sessions.filter((s) => s.status === 'Upcoming').length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSessionFilter('Completed')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer select-none transform-gpu ${
-                  sessionFilter === 'Completed'
-                    ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
-                    : 'bg-white border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
-                }`}
-              >
-                Completed ({sessions.filter((s) => s.status === 'Completed').length})
-              </button>
-
-              {filteredSessions.length > 2 && (
-                <div className="flex items-center gap-1.5 pl-2 border-l border-[#e5e5e7]">
-                  <button
-                    type="button"
-                    onClick={handleSlideSessionsUp}
-                    className="p-1.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-[#0066cc] text-[#525252] hover:text-[#0066cc] transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 transform-gpu"
-                    title="Scroll Up"
-                  >
-                    <ChevronUp size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSlideSessionsDown}
-                    className="p-1.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-[#0066cc] text-[#525252] hover:text-[#0066cc] transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 transform-gpu"
-                    title="Scroll Down"
-                  >
-                    <ChevronDown size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div
-            ref={sessionSliderRef}
-            className={
-              filteredSessions.length > 2
-                ? 'grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[415px] overflow-y-auto pr-1.5 pb-2 scroll-smooth scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 transition-all'
-                : 'grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[190px] items-start'
-            }
-          >
-            {filteredSessions.length > 0 ? (
-              filteredSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className={`p-5 rounded-2xl bg-white border space-y-3.5 transition-all shadow-xs relative overflow-hidden ${
-                    session.isGroupSplit
-                      ? 'border-amber-200 hover:border-amber-300'
-                      : 'border-[#e5e5e7] hover:border-[#0066cc]/40'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-display font-bold text-sm text-[#1d1d1f]">
-                          {session.dateStr}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs">
-                          {session.timeStr}
-                        </span>
-                      </div>
-                      <div className="text-xs font-medium text-[#525252] flex items-center gap-1.5 pt-0.5">
-                        <BookOpen size={13} className="text-[#0066cc]" />
-                        <span>Subject: <strong className="text-[#1d1d1f] font-semibold">{session.subject}</strong></span>
-                      </div>
-                    </div>
-
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 ${
-                      session.isGroupSplit
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : 'bg-red-50 text-red-700 border-red-200'
-                    }`}>
-                      {session.isGroupSplit ? <Users size={11} /> : <Lock size={11} />}
-                      {session.isGroupSplit ? 'Group Split (50% Off)' : 'Private 1-on-1'}
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-[#fafafc] border border-[#f0f0f2] text-xs text-[#525252] flex items-start gap-1.5">
-                    <Tag size={12} className="text-[#0066cc] shrink-0 mt-0.5" />
-                    <span>Topic: <strong className="text-[#1d1d1f] font-medium">{session.topic || 'None'}</strong></span>
-                  </div>
-
-                  {(() => {
-                    const joinInfo = checkIsSessionJoinable(session.dateStr, session.timeStr, session.duration)
-                    return (
-                      <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
-                        <div className="text-[#7a7a7a]">
-                          {viewPerspective === 'tutor' ? (
-                            <span>Student: <strong className="text-[#1d1d1f] font-semibold">{session.studentName}</strong></span>
-                          ) : (
-                            <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{session.tutorName}</strong></span>
-                          )}
-                          <span className="ml-2 text-[#a1a1a6]">({session.duration} min • ${session.fee})</span>
-                        </div>
-
-                        {session.status === 'Upcoming' ? (
-                          <div className="flex items-center gap-2 shrink-0">
-                            {joinInfo.isJoinable ? (
-                              <Link
-                                to={`/study-room/${session.id}`}
-                                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white border border-[#0066cc] text-xs font-bold transition-colors cursor-pointer shadow-xs select-none hover:shadow-md inline-flex items-center justify-center gap-1.5 transform-gpu"
-                              >
-                                <Video size={13} className="animate-pulse shrink-0" />
-                                <span>Join Room</span>
-                              </Link>
-                            ) : joinInfo.statusText === 'Ended' ? (
-                              <div
-                                title="This session time window has ended"
-                                className="px-3.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/90 text-slate-500 text-xs font-semibold select-none inline-flex items-center justify-center gap-1.5 shadow-2xs transform-gpu"
-                              >
-                                <Clock size={12} className="text-slate-400 shrink-0" />
-                                <span>Session Ended</span>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled
-                                title="Room opens 5 minutes before scheduled session time"
-                                className="px-3.5 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-[#8e8e93] text-xs font-semibold select-none cursor-not-allowed inline-flex items-center justify-center gap-1.5 transform-gpu shadow-2xs"
-                              >
-                                <Video size={13} className="text-[#a1a1a6] shrink-0" />
-                                <span>Join Room <span className="text-[#a1a1a6] font-normal">({joinInfo.statusText})</span></span>
-                              </button>
-                            )}
-                            {joinInfo.statusText !== 'Ended' && (
-                              <button
-                                type="button"
-                                onClick={() => setCancellingSession(session)}
-                                className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold transition-colors cursor-pointer shadow-2xs select-none hover:shadow-xs inline-flex items-center justify-center gap-1 transform-gpu"
-                              >
-                                <X size={13} /> Cancel
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="px-3.5 py-1.5 rounded-xl bg-emerald-50/90 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1.5 select-none shrink-0 shadow-2xs">
-                            <Check size={13} className="text-emerald-600 shrink-0" /> Completed
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full p-8 rounded-2xl bg-white border border-[#e5e5e7] text-center space-y-2">
-                <Calendar className="mx-auto text-[#a1a1a6]" size={32} />
-                <h4 className="text-sm font-bold text-[#1d1d1f]">No {sessionFilter.toLowerCase()} sessions found</h4>
-                <p className="text-xs text-[#7a7a7a]">
-                  {sessionFilter === 'Upcoming' ? 'You have no active tutoring reservations.' : 'No completed tutoring session history.'}
-                </p>
-                {sessionFilter === 'Upcoming' && (
-                  <Link
-                    to="/tutors"
-                    className="inline-block mt-2 px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-semibold transition-all"
-                  >
-                    Browse Tutors & Book Session
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* PERSPECTIVE SECTION 1: STUDENT VIEW */}
-        {viewPerspective === 'student' && (
-          <section className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
-              <div>
-                <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                  <GraduationCap className="text-[#0066cc]" size={22} /> Student Dashboard
-                </h2>
-              </div>
-            </div>
-
-            {/* Student HUD Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Sessions Completed</span>
-                  <BookOpen size={16} className="text-[#0066cc]" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">28</div>
-                <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                  <TrendingUp size={12} /> +4 this week
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>AI Questions Asked</span>
-                  <Sparkles size={16} className="text-purple-600" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">142</div>
-                <div className="text-xs text-[#7a7a7a] font-medium">98.2% Socratic resolution</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Hours Consumed</span>
-                  <Clock size={16} className="text-amber-600" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">42.5 hrs</div>
-                <div className="text-xs text-[#7a7a7a] font-medium">Across 4 core domains</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Bookmarked Tutors</span>
-                  <Bookmark size={16} className="text-[#0066cc]" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">{bookmarkedTutors.length}</div>
-                <div className="text-xs text-[#0066cc] font-medium">{bookmarkedTutors.filter(t => t.online).length} online now</div>
-              </div>
-            </div>
-
-            {/* Enrolled Subjects & Bookmarked Tutors & Study History Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Left Column: Enrolled Subjects & Study Rooms (7 cols) */}
-              <div className="md:col-span-7 space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
-                    <span>Enrolled Learning Subjects</span>
-                    <span className="text-xs text-[#7a7a7a] font-normal">{getLearningSubjects().length} Active</span>
-                  </h3>
-
-                  {/* Inline Form to Add Learning Subject */}
-                  <form onSubmit={handleAddSubject} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newSubject}
-                      onChange={(e) => setNewSubject(e.target.value)}
-                      placeholder="Add a subject (e.g. Chemistry)"
-                      className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-colors cursor-pointer select-none"
-                    >
-                      Add
-                    </button>
-                  </form>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {getLearningSubjects().length > 0 ? (
-                      getLearningSubjects().map((sub, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5"
-                        >
-                          <CheckCircle2 size={12} className="text-[#0066cc]" />
-                          <span>{sub}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSubject(sub)}
-                            className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
-                            title="Remove Subject"
-                          >
-                            <X size={11} />
-                          </button>
-                        </span>
-                      ))
-                    ) : (
-                      <span className="px-3 py-1.5 border border-transparent text-xs text-[#86868b] italic">No learning subjects added yet.</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f]">Recent Study Room History</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
-                      <div>
-                        <div className="font-bold text-[#1d1d1f]">Algorithms & Data Structures Lounge</div>
-                        <div className="text-[#7a7a7a] font-medium">Host: Dr. Evelyn Reed • Yesterday</div>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shrink-0">Completed</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
-                      <div>
-                        <div className="font-bold text-[#1d1d1f]">Linear Algebra Foundations</div>
-                        <div className="text-[#7a7a7a] font-medium">Host: Marcus Chen • 3 days ago</div>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shrink-0">Completed</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Bookmarked Tutors (5 cols) */}
-              <div className="md:col-span-5 relative min-h-[300px] md:min-h-0">
-                <div className="md:absolute md:inset-0 p-6 rounded-2xl bg-white border border-[#e5e5e7] shadow-xs flex flex-col overflow-hidden">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between shrink-0 mb-4">
-                    <span>Bookmarked Tutors</span>
-                    <span className="text-xs text-[#7a7a7a] font-normal">{bookmarkedTutors.length} Saved</span>
-                  </h3>
-                  <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1.5 custom-scrollbar">
-                    {bookmarkedTutors.length > 0 ? (
-                      bookmarkedTutors.map((tutor) => (
-                        <div key={tutor.id} className="flex items-center justify-between p-3 rounded-xl bg-[#fafafc] border border-[#e5e5e7] hover:border-[#0066cc]/30 transition-colors gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative shrink-0">
-                              <img src={tutor.avatar} alt={tutor.name} className="w-10 h-10 rounded-full object-cover border border-[#e5e5e7] antialiased" />
-                              {tutor.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-xs text-[#1d1d1f] truncate">{tutor.name}</div>
-                              <div className="text-[10px] text-[#7a7a7a] truncate font-medium">{tutor.subject}</div>
-                              <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold pt-0.5">
-                                <Star size={10} className="fill-amber-500" />
-                                <span>{tutor.rating}</span>
-                                <span className="text-[#a1a1a6] font-normal">•</span>
-                                <span className="text-[#0066cc] font-extrabold">${tutor.hourlyRate}/hr</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Link to={`/tutors/${tutor.id}/schedule`} className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-[#0066cc] transition-colors" title="Schedule Session">
-                              <CalendarRange size={13} />
-                            </Link>
-                            <button type="button" onClick={() => handleRemoveBookmark(tutor.id)} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors cursor-pointer" title="Remove Bookmark">
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-8 text-center text-[#86868b] text-xs italic">
-                        No bookmarked tutors. Browse and bookmark tutors from the main directory!
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Billing & Split Payments History logs */}
-            <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-              <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                <CreditCard className="text-[#0066cc]" size={18} /> Billing & Split Payments Logs
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#e5e5e7] text-[#7a7a7a] font-bold">
-                      <th className="pb-3 pr-4 font-semibold">Transaction ID</th>
-                      <th className="pb-3 px-4 font-semibold">Date</th>
-                      <th className="pb-3 px-4 font-semibold">Description</th>
-                      <th className="pb-3 px-4 font-semibold">Session Type</th>
-                      <th className="pb-3 px-4 font-semibold">Amount</th>
-                      <th className="pb-3 pl-4 font-semibold text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOCK_BILLING_LOGS.map((log) => (
-                      <tr key={log.id} className="border-b border-[#f0f0f2]/80 hover:bg-[#fafafc] transition-colors">
-                        <td className="py-3.5 pr-4 font-bold text-[#1d1d1f]">{log.id}</td>
-                        <td className="py-3.5 px-4 text-[#525252] font-medium">{log.date}</td>
-                        <td className="py-3.5 px-4 text-[#1d1d1f] font-medium">{log.description}</td>
-                        <td className="py-3.5 px-4 text-[#525252] font-medium">{log.sessionType}</td>
-                        <td className="py-3.5 px-4 text-[#0066cc] font-extrabold">${log.amount.toFixed(2)}</td>
-                        <td className="py-3.5 pl-4 text-right">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px]">
-                            {log.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* PERSPECTIVE SECTION 2: TUTOR VIEW */}
-        {viewPerspective === 'tutor' && (
-          <section className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
-              <div>
-                <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                  <UserCheck className="text-emerald-600" size={22} /> Tutor Dashboard
-                </h2>
-              </div>
-            </div>
-
-            {/* Tutor HUD Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Hourly Rate</span>
-                  <DollarSign size={16} className="text-emerald-600" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">
-                  ${user?.hourlyRate || 45}
-                  <span className="text-xs font-normal text-[#7a7a7a]">/hr</span>
-                </div>
-                <div className="text-xs text-[#7a7a7a] font-medium">Standard Tutoring Rate</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Average Rating</span>
-                  <Star size={16} className="text-amber-500 fill-amber-500" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">4.96</div>
-                <div className="text-xs text-[#7a7a7a] font-medium">From 54 student reviews</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Students Taught</span>
-                  <UserCheck size={16} className="text-[#0066cc]" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">86</div>
-                <div className="text-xs text-emerald-600 font-medium">100% On-time attendance</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
-                <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
-                  <span>Tutoring Earnings</span>
-                  <Award size={16} className="text-purple-600" />
-                </div>
-                <div className="text-3xl font-display font-bold text-[#1d1d1f]">$3,840</div>
-                <div className="text-xs text-[#7a7a7a] font-medium">Escrow released cleanly</div>
-              </div>
-            </div>
-
-            {/* Teaching Domains, Credentials, and Availability Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Left Column: Teaching Expertise & verified badges (6 cols) */}
-              <div className="md:col-span-6 space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
-                    <span>Teaching Expertise Domains</span>
-                    <span className="text-xs text-[#7a7a7a] font-normal">{(user?.subjects || []).length} Active</span>
-                  </h3>
-
-                  {/* Inline Form to Add Teaching Subject */}
-                  <form onSubmit={handleAddTeachingSubject} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newTeachingSubject}
-                      onChange={(e) => setNewTeachingSubject(e.target.value)}
-                      placeholder="Add a subject (e.g. Chemistry)"
-                      className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-colors cursor-pointer select-none"
-                    >
-                      Add
-                    </button>
-                  </form>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {user?.subjects && user.subjects.length > 0 ? (
-                      user.subjects.map((sub, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1.5 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-bold text-[#0066cc] flex items-center gap-1.5"
-                        >
-                          <Sparkles size={12} />
-                          <span>{sub}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTeachingSubject(sub)}
-                            className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
-                            title="Remove Subject"
-                          >
-                            <X size={11} />
-                          </button>
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-[#86868b] italic">No subjects configured.</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-                  <h3 className="text-base font-display font-bold text-[#1d1d1f]">Verified Instructor Badges</h3>
-                  <div className="space-y-3 text-xs">
-                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
-                      <ShieldCheck className="text-emerald-600 shrink-0" size={20} />
-                      <div>
-                        <div className="font-bold text-[#1d1d1f]">Stanford CS Academic Credential Verified</div>
-                        <div className="text-[#7a7a7a] font-medium">Official Transcripts & Degree Audit Confirmed</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
-                      <Star className="text-amber-500 shrink-0" size={20} />
-                      <div>
-                        <div className="font-bold text-[#1d1d1f]">Top 5% Rated Peer Instructor</div>
-                        <div className="text-[#7a7a7a] font-medium">Maintained &gt;4.9 Rating for 6+ Months</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Availability Scheduler (6 cols) */}
-              <div className="md:col-span-6 flex">
-                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between min-h-[364px]">
-                  <div className="space-y-4">
-                    <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                      <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours
-                    </h3>
-                    
-                    {/* Availability Creator Form */}
-                    <div className="p-3.5 rounded-xl bg-[#fafafc] border border-[#e5e5e7] space-y-3">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div>
-                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
-                          <CustomDropdown<string>
-                            options={DAY_OPTIONS}
-                            value={newSlot.dayOfWeek}
-                            onChange={(val: string) => setNewSlot(prev => ({ ...prev, dayOfWeek: val }))}
-                            className="w-full"
-                            buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                            align="center"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
-                          <CustomDropdown<string>
-                            options={getAvailabilityTimeOptions()}
-                            value={newSlot.timeStart}
-                            onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeStart: val }))}
-                            className="w-full"
-                            buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                            align="center"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
-                          <div className="w-full py-2 px-3.5 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg text-xs font-bold text-[#7a7a7a] h-[34px] flex items-center select-none">
-                            {calculateEndTime(newSlot.timeStart, selectedDuration)}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Session</label>
-                          <CustomDropdown<number>
-                            options={DURATION_OPTIONS}
-                            value={selectedDuration}
-                            onChange={(val: number) => setSelectedDuration(val)}
-                            className="w-full"
-                            buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
-                            align="center"
-                          />
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] rounded-xl border border-[#e0e0e0] transform-gpu mt-1">
                       <button
-                        type="button"
-                        onClick={handleAddAvailability}
-                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer select-none"
+                        onClick={() => setViewPerspective('student')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${viewPerspective === 'student'
+                            ? 'bg-[#0066cc] text-white shadow-xs'
+                            : 'text-[#525252] hover:text-[#1d1d1f]'
+                          }`}
                       >
-                        Add Availability Slot
+                        Student View
+                      </button>
+                      <button
+                        onClick={() => setViewPerspective('tutor')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer select-none ${viewPerspective === 'tutor'
+                            ? 'bg-[#0066cc] text-white shadow-xs'
+                            : 'text-[#525252] hover:text-[#1d1d1f]'
+                          }`}
+                      >
+                        Tutor View
                       </button>
                     </div>
-                  </div>
-
-                  {/* Active Slots list */}
-                  <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-2">
-                    <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
-                    {availability.length > 0 ? (
-                      <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[160px]">
-                        {availability.map((av) => (
-                          <div key={av.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-emerald-500/25 transition-colors gap-3 text-xs font-bold">
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px]">
-                                {av.dayOfWeek.slice(0, 3)}
-                              </span>
-                              <span className="text-[#1d1d1f] font-mono font-medium">{av.timeStart} - {av.timeEnd}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAvailability(av.id)}
-                              className="p-1 rounded-lg hover:bg-red-50 text-[#7a7a7a] hover:text-red-600 transition-colors cursor-pointer"
-                              title="Delete Slot"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-[#86868b] italic">No active availability slots configured.</span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Earnings & Payout logs */}
-            <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
-              <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
-                <DollarSign className="text-emerald-600" size={18} /> Tutor Earnings & Payout Records
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#e5e5e7] text-[#7a7a7a] font-bold">
-                      <th className="pb-3 pr-4 font-semibold">Reference ID</th>
-                      <th className="pb-3 px-4 font-semibold">Payout Date</th>
-                      <th className="pb-3 px-4 font-semibold">Destination Account</th>
-                      <th className="pb-3 px-4 font-semibold">Amount</th>
-                      <th className="pb-3 pl-4 font-semibold text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOCK_PAYOUT_LOGS.map((log) => (
-                      <tr key={log.id} className="border-b border-[#f0f0f2]/80 hover:bg-[#fafafc] transition-colors">
-                        <td className="py-3.5 pr-4 font-bold text-[#1d1d1f]">{log.id}</td>
-                        <td className="py-3.5 px-4 text-[#525252] font-medium">{log.date}</td>
-                        <td className="py-3.5 px-4 text-[#1d1d1f] font-medium">{log.account}</td>
-                        <td className="py-3.5 px-4 text-emerald-600 font-extrabold">${log.amount.toFixed(2)}</td>
-                        <td className="py-3.5 pl-4 text-right">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px]">
-                            {log.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        )}
+            {/* BOOKED SESSIONS & SCHEDULE MANAGEMENT SECTION */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
+                <div>
+                  <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                    <Calendar className="text-[#0066cc]" size={22} />{' '}
+                    {viewPerspective === 'tutor' ? 'My Upcoming Teaching Sessions' : 'My Booked Tutoring Sessions'}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSessionFilter('Upcoming')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer select-none transform-gpu ${sessionFilter === 'Upcoming'
+                        ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
+                        : 'bg-white border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
+                      }`}
+                  >
+                    Upcoming ({sessions.filter((s) => s.status === 'Upcoming').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSessionFilter('Completed')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer select-none transform-gpu ${sessionFilter === 'Completed'
+                        ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
+                        : 'bg-white border-[#e5e5e7] text-[#525252] hover:bg-[#f5f5f7]'
+                      }`}
+                  >
+                    Completed ({sessions.filter((s) => s.status === 'Completed').length})
+                  </button>
 
-        {/* Sign Out Action Section at the bottom of the page */}
-        <section className="pt-8 mb-12 border-t border-[#e5e5e7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h4 className="text-sm font-display font-semibold text-[#1d1d1f]">Account Session</h4>
-            <p className="text-xs text-[#7a7a7a]">Sign out of your active SOCRATES session on this browser.</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold text-xs transition-all cursor-pointer shadow-xs hover:shadow-md"
-          >
-            <LogOut size={15} />
-            Sign Out of Account
-          </button>
-        </section>
+                  {filteredSessions.length > 2 && (
+                    <div className="flex items-center gap-1.5 pl-2 border-l border-[#e5e5e7]">
+                      <button
+                        type="button"
+                        onClick={handleSlideSessionsUp}
+                        className="p-1.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-[#0066cc] text-[#525252] hover:text-[#0066cc] transition-colors cursor-pointer select-none"
+                        title="Scroll Up"
+                      >
+                        <ChevronUp size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSlideSessionsDown}
+                        className="p-1.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-[#0066cc] text-[#525252] hover:text-[#0066cc] transition-colors cursor-pointer select-none"
+                        title="Scroll Down"
+                      >
+                        <ChevronDown size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                ref={sessionSliderRef}
+                className={
+                  filteredSessions.length > 2
+                    ? 'grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[396px] overflow-y-auto content-start items-start pr-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 transition-all'
+                    : 'grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[190px] items-start'
+                }
+              >
+                {filteredSessions.length > 0 ? (
+                  filteredSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className={`p-5 rounded-2xl bg-white border space-y-3.5 transition-all shadow-xs relative overflow-hidden ${session.isGroupSplit
+                          ? 'border-amber-200 hover:border-amber-300'
+                          : 'border-[#e5e5e7] hover:border-[#0066cc]/40'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-display font-bold text-sm text-[#1d1d1f]">
+                              {session.dateStr}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs">
+                              {session.timeStr}
+                            </span>
+                          </div>
+                          <div className="text-xs font-medium text-[#525252] flex items-center gap-1.5 pt-0.5">
+                            <BookOpen size={13} className="text-[#0066cc]" />
+                            <span>Subject: <strong className="text-[#1d1d1f] font-semibold">{session.subject}</strong></span>
+                          </div>
+                        </div>
+
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 ${session.isGroupSplit
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-red-50 text-red-700 border-red-200'
+                          }`}>
+                          {session.isGroupSplit ? <Users size={11} /> : <Lock size={11} />}
+                          {session.isGroupSplit ? 'Group Split (50% Off)' : 'Private 1-on-1'}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-[#fafafc] border border-[#f0f0f2] text-xs text-[#525252] flex items-start gap-1.5">
+                        <Tag size={12} className="text-[#0066cc] shrink-0 mt-0.5" />
+                        <span>Topic: <strong className="text-[#1d1d1f] font-medium">{session.topic || 'None'}</strong></span>
+                      </div>
+
+                      {(() => {
+                        const joinInfo = checkIsSessionJoinable(session.dateStr, session.timeStr, session.duration)
+                        return (
+                          <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f2] text-xs">
+                            <div className="text-[#7a7a7a]">
+                              {viewPerspective === 'tutor' ? (
+                                <span>Student: <strong className="text-[#1d1d1f] font-semibold">{session.studentName}</strong></span>
+                              ) : (
+                                <span>Tutor: <strong className="text-[#1d1d1f] font-semibold">{session.tutorName}</strong></span>
+                              )}
+                              <span className="ml-2 text-[#a1a1a6]">({session.duration} min • ${session.fee})</span>
+                            </div>
+
+                            {session.status === 'Upcoming' ? (
+                              <div className="flex items-center gap-2 shrink-0">
+                                {joinInfo.isJoinable ? (
+                                  <Link
+                                    to={`/study-room/${session.id}`}
+                                    className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white border border-[#0066cc] text-xs font-bold transition-colors cursor-pointer shadow-xs select-none hover:shadow-md inline-flex items-center justify-center gap-1.5 transform-gpu"
+                                  >
+                                    <Video size={13} className="animate-pulse shrink-0" />
+                                    <span>Join Room</span>
+                                  </Link>
+                                ) : joinInfo.statusText === 'Ended' ? (
+                                  <div
+                                    title="This session time window has ended"
+                                    className="px-3.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/90 text-slate-500 text-xs font-semibold select-none inline-flex items-center justify-center gap-1.5 shadow-2xs transform-gpu"
+                                  >
+                                    <Clock size={12} className="text-slate-400 shrink-0" />
+                                    <span>Session Ended</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    title="Room opens 5 minutes before scheduled session time"
+                                    className="px-3.5 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-[#8e8e93] text-xs font-semibold select-none cursor-not-allowed inline-flex items-center justify-center gap-1.5 transform-gpu shadow-2xs"
+                                  >
+                                    <Video size={13} className="text-[#a1a1a6] shrink-0" />
+                                    <span>Join Room <span className="text-[#a1a1a6] font-normal">({joinInfo.statusText})</span></span>
+                                  </button>
+                                )}
+                                {joinInfo.statusText !== 'Ended' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setCancellingSession(session)}
+                                    className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100/90 active:bg-red-200/80 text-red-600 border border-red-200 text-xs font-semibold transition-colors cursor-pointer select-none inline-flex items-center justify-center gap-1"
+                                  >
+                                    <X size={13} /> Cancel
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="px-3.5 py-1.5 rounded-xl bg-emerald-50/90 text-emerald-700 font-semibold border border-emerald-200 text-xs inline-flex items-center justify-center gap-1.5 select-none shrink-0 shadow-2xs">
+                                <Check size={13} className="text-emerald-600 shrink-0" /> Completed
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full p-10 sm:p-12 rounded-3xl bg-white border border-[#e5e5e7] text-center space-y-4 shadow-2xs select-none">
+                    <div className="w-14 h-14 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto ring-4 ring-[#0066cc]/5">
+                      <Calendar size={28} className="text-[#0066cc]" />
+                    </div>
+                    <div className="space-y-1.5 max-w-sm mx-auto">
+                      <h4 className="text-base font-extrabold text-[#1d1d1f] tracking-tight">
+                        No {sessionFilter.toLowerCase()} sessions found
+                      </h4>
+                      <p className="text-xs text-[#6e6e73] leading-relaxed">
+                        {sessionFilter === 'Upcoming'
+                          ? 'You have no active tutoring reservations. Explore top-rated tutors and book a 1-on-1 Socratic session.'
+                          : 'No completed tutoring session history yet.'}
+                      </p>
+                    </div>
+                    {sessionFilter === 'Upcoming' && (
+                      <Link
+                        to="/tutors"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-all shadow-md shadow-[#0066cc]/20 cursor-pointer"
+                      >
+                        <span>Browse Tutors & Book Session</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* PERSPECTIVE SECTION 1: STUDENT VIEW */}
+            {viewPerspective === 'student' && (
+              <section className="space-y-6">
+                <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
+                  <div>
+                    <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                      <GraduationCap className="text-[#0066cc]" size={22} /> Student Dashboard
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Student HUD Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Sessions Completed</span>
+                      <BookOpen size={16} className="text-[#0066cc]" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">28</div>
+                    <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                      <TrendingUp size={12} /> +4 this week
+                    </div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>AI Questions Asked</span>
+                      <Sparkles size={16} className="text-purple-600" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">142</div>
+                    <div className="text-xs text-[#7a7a7a] font-medium">98.2% Socratic resolution</div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Hours Consumed</span>
+                      <Clock size={16} className="text-amber-600" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">42.5 hrs</div>
+                    <div className="text-xs text-[#7a7a7a] font-medium">Across 4 core domains</div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-[#0066cc]/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Bookmarked Tutors</span>
+                      <Bookmark size={16} className="text-[#0066cc]" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">{bookmarkedTutors.length}</div>
+                    <div className="text-xs text-[#0066cc] font-medium">{bookmarkedTutors.filter(t => t.online).length} online now</div>
+                  </div>
+                </div>
+
+                {/* Enrolled Subjects & Bookmarked Tutors & Study History Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                  {/* Left Column: Enrolled Subjects & Study Rooms (7 cols) */}
+                  <div className="md:col-span-7 space-y-6">
+                    <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                      <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
+                        <span>Enrolled Learning Subjects</span>
+                        <span className="text-xs text-[#7a7a7a] font-normal">{getLearningSubjects().length} Active</span>
+                      </h3>
+
+                      {/* Inline Form to Add Learning Subject */}
+                      <form onSubmit={handleAddSubject} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newSubject}
+                          onChange={(e) => setNewSubject(e.target.value)}
+                          placeholder="Add a subject (e.g. Chemistry)"
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-colors cursor-pointer select-none"
+                        >
+                          Add
+                        </button>
+                      </form>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {getLearningSubjects().length > 0 ? (
+                          getLearningSubjects().map((sub, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-bold text-[#1d1d1f] flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 size={12} className="text-[#0066cc]" />
+                              <span>{sub}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSubject(sub)}
+                                className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
+                                title="Remove Subject"
+                              >
+                                <X size={11} />
+                              </button>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="px-3 py-1.5 border border-transparent text-xs text-[#86868b] italic">No learning subjects added yet.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                      <h3 className="text-base font-display font-bold text-[#1d1d1f]">Recent Study Room History</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
+                          <div>
+                            <div className="font-bold text-[#1d1d1f]">Algorithms & Data Structures Lounge</div>
+                            <div className="text-[#7a7a7a] font-medium">Host: Dr. Evelyn Reed • Yesterday</div>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shrink-0">Completed</span>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs">
+                          <div>
+                            <div className="font-bold text-[#1d1d1f]">Linear Algebra Foundations</div>
+                            <div className="text-[#7a7a7a] font-medium">Host: Marcus Chen • 3 days ago</div>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shrink-0">Completed</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Bookmarked Tutors (5 cols) */}
+                  <div className="md:col-span-5 relative min-h-[300px] md:min-h-0">
+                    <div className="md:absolute md:inset-0 p-6 rounded-2xl bg-white border border-[#e5e5e7] shadow-xs flex flex-col overflow-hidden">
+                      <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between shrink-0 mb-4">
+                        <span>Bookmarked Tutors</span>
+                        <span className="text-xs text-[#7a7a7a] font-normal">{bookmarkedTutors.length} Saved</span>
+                      </h3>
+                      <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1.5 custom-scrollbar">
+                        {bookmarkedTutors.length > 0 ? (
+                          bookmarkedTutors.map((tutor) => (
+                            <div key={tutor.id} className="flex items-center justify-between p-3 rounded-xl bg-[#fafafc] border border-[#e5e5e7] hover:border-[#0066cc]/30 transition-colors gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="relative shrink-0">
+                                  <img src={tutor.avatar} alt={tutor.name} className="w-10 h-10 rounded-full object-cover border border-[#e5e5e7] antialiased" />
+                                  {tutor.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-bold text-xs text-[#1d1d1f] truncate">{tutor.name}</div>
+                                  <div className="text-[10px] text-[#7a7a7a] truncate font-medium">{tutor.subject}</div>
+                                  <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold pt-0.5">
+                                    <Star size={10} className="fill-amber-500" />
+                                    <span>{tutor.rating}</span>
+                                    <span className="text-[#a1a1a6] font-normal">•</span>
+                                    <span className="text-[#0066cc] font-extrabold">${tutor.hourlyRate}/hr</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Link to={`/tutors/${tutor.id}/schedule`} className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-[#0066cc] transition-colors" title="Schedule Session">
+                                  <CalendarRange size={13} />
+                                </Link>
+                                <button type="button" onClick={() => handleRemoveBookmark(tutor.id)} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors cursor-pointer" title="Remove Bookmark">
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="h-full flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3.5 select-none transform-gpu animate-in fade-in duration-150">
+                            {/* Static Bookmark Icon Ring */}
+                            <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto ring-4 ring-[#0066cc]/5">
+                              <Bookmark size={22} className="text-[#0066cc] fill-[#0066cc]/20" />
+                            </div>
+
+                            <div className="space-y-1 max-w-[240px] mx-auto">
+                              <h4 className="text-xs font-extrabold text-[#1d1d1f] tracking-tight">
+                                No Bookmarked Tutors Yet
+                              </h4>
+                              <p className="text-[11px] text-[#6e6e73] leading-relaxed font-medium">
+                                Bookmark your favorite top-rated tutors from the directory for instant 1-click scheduling!
+                              </p>
+                            </div>
+
+                            <Link
+                              to="/tutors"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-[11px] font-extrabold cursor-pointer select-none"
+                            >
+                              <Sparkles size={13} className="text-white/90" />
+                              <span>Explore Tutors</span>
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Billing & Split Payments History logs */}
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                    <CreditCard className="text-[#0066cc]" size={18} /> Billing & Split Payments Logs
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#e5e5e7] text-[#7a7a7a] font-bold">
+                          <th className="pb-3 pr-4 font-semibold">Transaction ID</th>
+                          <th className="pb-3 px-4 font-semibold">Date</th>
+                          <th className="pb-3 px-4 font-semibold">Description</th>
+                          <th className="pb-3 px-4 font-semibold">Session Type</th>
+                          <th className="pb-3 px-4 font-semibold">Amount</th>
+                          <th className="pb-3 pl-4 font-semibold text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {MOCK_BILLING_LOGS.map((log) => (
+                          <tr key={log.id} className="border-b border-[#f0f0f2]/80 hover:bg-[#fafafc] transition-colors">
+                            <td className="py-3.5 pr-4 font-bold text-[#1d1d1f]">{log.id}</td>
+                            <td className="py-3.5 px-4 text-[#525252] font-medium">{log.date}</td>
+                            <td className="py-3.5 px-4 text-[#1d1d1f] font-medium">{log.description}</td>
+                            <td className="py-3.5 px-4 text-[#525252] font-medium">{log.sessionType}</td>
+                            <td className="py-3.5 px-4 text-[#0066cc] font-extrabold">${log.amount.toFixed(2)}</td>
+                            <td className="py-3.5 pl-4 text-right">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px]">
+                                {log.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* PERSPECTIVE SECTION 2: TUTOR VIEW */}
+            {viewPerspective === 'tutor' && (
+              <section className="space-y-6">
+                <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
+                  <div>
+                    <h2 className="text-xl font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                      <UserCheck className="text-emerald-600" size={22} /> Tutor Dashboard
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Tutor HUD Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Hourly Rate</span>
+                      <DollarSign size={16} className="text-emerald-600" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">
+                      ${user?.hourlyRate || 45}
+                      <span className="text-xs font-normal text-[#7a7a7a]">/hr</span>
+                    </div>
+                    <div className="text-xs text-[#7a7a7a] font-medium">Standard Tutoring Rate</div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Average Rating</span>
+                      <Star size={16} className="text-amber-500 fill-amber-500" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">4.96</div>
+                    <div className="text-xs text-[#7a7a7a] font-medium">From 54 student reviews</div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Students Taught</span>
+                      <UserCheck size={16} className="text-[#0066cc]" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">86</div>
+                    <div className="text-xs text-emerald-600 font-medium">100% On-time attendance</div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-[#e5e5e7] space-y-2 hover:border-emerald-500/40 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between text-[#7a7a7a] text-xs font-bold uppercase tracking-wider">
+                      <span>Tutoring Earnings</span>
+                      <Award size={16} className="text-purple-600" />
+                    </div>
+                    <div className="text-3xl font-display font-bold text-[#1d1d1f]">$3,840</div>
+                    <div className="text-xs text-[#7a7a7a] font-medium">Escrow released cleanly</div>
+                  </div>
+                </div>
+
+                {/* Teaching Domains, Credentials, and Availability Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                  {/* Left Column: Teaching Expertise & verified badges (6 cols) */}
+                  <div className="md:col-span-6 space-y-6">
+                    <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                      <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center justify-between">
+                        <span>Teaching Expertise Domains</span>
+                        <span className="text-xs text-[#7a7a7a] font-normal">{(user?.subjects || []).length} Active</span>
+                      </h3>
+
+                      {/* Inline Form to Add Teaching Subject */}
+                      <form onSubmit={handleAddTeachingSubject} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newTeachingSubject}
+                          onChange={(e) => setNewTeachingSubject(e.target.value)}
+                          placeholder="Add a subject (e.g. Chemistry)"
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] placeholder-[#86868b]"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] text-white text-xs font-bold transition-colors cursor-pointer select-none"
+                        >
+                          Add
+                        </button>
+                      </form>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {user?.subjects && user.subjects.length > 0 ? (
+                          user.subjects.map((sub, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1.5 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-bold text-[#0066cc] flex items-center gap-1.5"
+                            >
+                              <Sparkles size={12} />
+                              <span>{sub}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTeachingSubject(sub)}
+                                className="text-[#7a7a7a] hover:text-red-600 transition-colors ml-1 cursor-pointer"
+                                title="Remove Subject"
+                              >
+                                <X size={11} />
+                              </button>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[#86868b] italic">No subjects configured.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                      <h3 className="text-base font-display font-bold text-[#1d1d1f]">Verified Instructor Badges</h3>
+                      <div className="space-y-3 text-xs">
+                        <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
+                          <ShieldCheck className="text-emerald-600 shrink-0" size={20} />
+                          <div>
+                            <div className="font-bold text-[#1d1d1f]">Stanford CS Academic Credential Verified</div>
+                            <div className="text-[#7a7a7a] font-medium">Official Transcripts & Degree Audit Confirmed</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7]">
+                          <Star className="text-amber-500 shrink-0" size={20} />
+                          <div>
+                            <div className="font-bold text-[#1d1d1f]">Top 5% Rated Peer Instructor</div>
+                            <div className="text-[#7a7a7a] font-medium">Maintained &gt;4.9 Rating for 6+ Months</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Availability Scheduler (6 cols) */}
+                  <div className="md:col-span-6 flex">
+                    <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs w-full flex flex-col justify-between min-h-[364px]">
+                      <div className="space-y-4">
+                        <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                          <Clock className="text-[#0066cc]" size={18} /> Manage Availability Hours
+                        </h3>
+
+                        {/* Availability Creator Form */}
+                        <div className="p-3.5 rounded-xl bg-[#fafafc] border border-[#e5e5e7] space-y-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Day</label>
+                              <CustomDropdown<string>
+                                options={DAY_OPTIONS}
+                                value={newSlot.dayOfWeek}
+                                onChange={(val: string) => setNewSlot(prev => ({ ...prev, dayOfWeek: val }))}
+                                className="w-full"
+                                buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                                align="center"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Start Time</label>
+                              <CustomDropdown<string>
+                                options={getAvailabilityTimeOptions()}
+                                value={newSlot.timeStart}
+                                onChange={(val: string) => setNewSlot(prev => ({ ...prev, timeStart: val }))}
+                                className="w-full"
+                                buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                                align="center"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">End Time</label>
+                              <div className="w-full py-2 px-3.5 bg-[#f5f5f7] border border-[#e0e0e0] rounded-lg text-xs font-bold text-[#7a7a7a] h-[34px] flex items-center select-none">
+                                {calculateEndTime(newSlot.timeStart, selectedDuration)}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#7a7a7a] uppercase mb-1">Session</label>
+                              <CustomDropdown<number>
+                                options={DURATION_OPTIONS}
+                                value={selectedDuration}
+                                onChange={(val: number) => setSelectedDuration(val)}
+                                className="w-full"
+                                buttonClassName="!py-2 !px-2.5 w-full justify-between bg-white text-xs font-bold border border-[#e5e5e7] !rounded-lg"
+                                align="center"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleAddAvailability}
+                            className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer select-none"
+                          >
+                            Add Availability Slot
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Active Slots list */}
+                      <div className="space-y-2 flex-1 flex flex-col min-h-0 pt-2">
+                        <span className="text-[10px] font-bold text-[#7a7a7a] uppercase tracking-wider block">Active Configured Slots</span>
+                        {availability.length > 0 ? (
+                          <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[160px]">
+                            {availability.map((av) => (
+                              <div key={av.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#e5e5e7] hover:border-emerald-500/25 transition-colors gap-3 text-xs font-bold">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px]">
+                                    {av.dayOfWeek.slice(0, 3)}
+                                  </span>
+                                  <span className="text-[#1d1d1f] font-mono font-medium">{av.timeStart} - {av.timeEnd}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAvailability(av.id)}
+                                  className="p-1 rounded-lg hover:bg-red-50 text-[#7a7a7a] hover:text-red-600 transition-colors cursor-pointer"
+                                  title="Delete Slot"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-5 px-4 rounded-xl flex flex-col items-center justify-center text-center space-y-2 select-none">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 ring-2 ring-emerald-500/10">
+                              <Clock size={18} className="text-emerald-600" />
+                            </div>
+                            <div className="space-y-0.5 max-w-xs">
+                              <h4 className="text-xs font-bold text-[#1d1d1f]">No Active Hours Configured</h4>
+                              <p className="text-[11px] text-[#6e6e73] leading-relaxed font-medium">
+                                Add weekly recurring availability slots above to receive instant tutoring reservations from students.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Earnings & Payout logs */}
+                <div className="p-6 rounded-2xl bg-white border border-[#e5e5e7] space-y-4 shadow-xs">
+                  <h3 className="text-base font-display font-bold text-[#1d1d1f] flex items-center gap-2">
+                    <DollarSign className="text-emerald-600" size={18} /> Tutor Earnings & Payout Records
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#e5e5e7] text-[#7a7a7a] font-bold">
+                          <th className="pb-3 pr-4 font-semibold">Reference ID</th>
+                          <th className="pb-3 px-4 font-semibold">Payout Date</th>
+                          <th className="pb-3 px-4 font-semibold">Destination Account</th>
+                          <th className="pb-3 px-4 font-semibold">Amount</th>
+                          <th className="pb-3 pl-4 font-semibold text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {MOCK_PAYOUT_LOGS.map((log) => (
+                          <tr key={log.id} className="border-b border-[#f0f0f2]/80 hover:bg-[#fafafc] transition-colors">
+                            <td className="py-3.5 pr-4 font-bold text-[#1d1d1f]">{log.id}</td>
+                            <td className="py-3.5 px-4 text-[#525252] font-medium">{log.date}</td>
+                            <td className="py-3.5 px-4 text-[#1d1d1f] font-medium">{log.account}</td>
+                            <td className="py-3.5 px-4 text-emerald-600 font-extrabold">${log.amount.toFixed(2)}</td>
+                            <td className="py-3.5 pl-4 text-right">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px]">
+                                {log.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Sign Out Action Section at the bottom of the page */}
+            <section className="pt-8 mb-12 border-t border-[#e5e5e7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-display font-semibold text-[#1d1d1f]">Account Session</h4>
+                <p className="text-xs text-[#7a7a7a]">Sign out of your active SOCRATES session on this browser.</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold text-xs transition-all cursor-pointer shadow-xs hover:shadow-md"
+              >
+                <LogOut size={15} />
+                Sign Out of Account
+              </button>
+            </section>
           </>
         )}
       </main>
 
       {/* EDIT PROFILE LIGHT MODAL */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-white border border-[#e0e0e0] rounded-3xl p-6 space-y-4 relative shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#1d1d1f] transform-gpu antialiased">
+      {createPortal(
+        <AnimatePresence>
+          {isEditModalOpen && (
+            <div className="fixed inset-0 z-[9999] overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+              {/* Modal Backdrop Overlay */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+                onClick={() => setIsEditModalOpen(false)}
+              />
+
+              {/* Modal Dialog Box */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="relative z-[10000] w-full max-w-2xl sm:w-[672px] shrink-0 h-auto bg-white border border-[#e0e0e0] rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl text-[#1d1d1f] transform-gpu my-auto"
+              >
             <div className="flex items-center justify-between border-b border-[#e5e5e7] pb-3">
               <h3 className="text-lg font-display font-bold text-[#1d1d1f] flex items-center gap-2">
                 <Edit3 size={18} className="text-[#0066cc]" /> Edit Profile
@@ -1847,7 +1911,7 @@ export default function Profile() {
                 <label className="text-[#1d1d1f] font-semibold block text-xs">
                   Profile Photo
                 </label>
-                
+
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <div className="relative group shrink-0">
                     <img
@@ -1868,7 +1932,7 @@ export default function Profile() {
                       accept="image/*"
                       className="hidden"
                     />
-                    
+
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -1928,11 +1992,10 @@ export default function Profile() {
                               key={opt.value}
                               type="button"
                               onClick={() => setFormData({ ...formData, academicLevel: opt.value })}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${
-                                isSel
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${isSel
                                   ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
                                   : 'bg-[#f5f5f7] border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#e5e5e7]'
-                              }`}
+                                }`}
                             >
                               {opt.label}
                             </button>
@@ -1946,11 +2009,10 @@ export default function Profile() {
                           Learning Goals / Bio
                         </label>
                         <span
-                          className={`text-[10px] transition-colors ${
-                            formData.bio.length >= 250
+                          className={`text-[10px] transition-colors ${formData.bio.length >= 250
                               ? 'text-red-500 font-bold'
                               : 'text-[#7a7a7a] font-medium'
-                          }`}
+                            }`}
                         >
                           {formData.bio.length}/250 chars
                         </span>
@@ -2056,11 +2118,10 @@ export default function Profile() {
                           Tutor Bio / Statement
                         </label>
                         <span
-                          className={`text-[10px] transition-colors ${
-                            formData.bio.length >= 250
+                          className={`text-[10px] transition-colors ${formData.bio.length >= 250
                               ? 'text-red-500 font-bold'
                               : 'text-[#7a7a7a] font-medium'
-                          }`}
+                            }`}
                         >
                           {formData.bio.length}/250 chars
                         </span>
@@ -2158,11 +2219,10 @@ export default function Profile() {
                               key={opt.value}
                               type="button"
                               onClick={() => setFormData({ ...formData, academicLevel: opt.value })}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${
-                                isSel
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none border ${isSel
                                   ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc]'
                                   : 'bg-[#f5f5f7] border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#e5e5e7]'
-                              }`}
+                                }`}
                             >
                               {opt.label}
                             </button>
@@ -2190,11 +2250,10 @@ export default function Profile() {
                           Bio / Statement
                         </label>
                         <span
-                          className={`text-[10px] transition-colors ${
-                            formData.bio.length >= 250
+                          className={`text-[10px] transition-colors ${formData.bio.length >= 250
                               ? 'text-red-500 font-bold'
                               : 'text-[#7a7a7a] font-medium'
-                          }`}
+                            }`}
                         >
                           {formData.bio.length}/250 chars
                         </span>
@@ -2233,25 +2292,26 @@ export default function Profile() {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
-
-      {/* Homepage Matching Footer */}
-      <Footer />
+      </AnimatePresence>,
+      document.body
+    )}
 
       {/* CANCEL SESSION CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {cancellingSession && (
-          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-center">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs -z-10 transform-gpu"
-              onClick={() => setCancellingSession(null)}
-            />
+      {createPortal(
+        <AnimatePresence>
+          {cancellingSession && (
+            <div className="fixed inset-0 z-[9999] overflow-y-auto p-4 sm:p-6 py-8 sm:py-12 flex justify-center items-center">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+                onClick={() => setCancellingSession(null)}
+              />
 
             {(() => {
               const cancelEligibility = checkIsSessionCancellable(cancellingSession.dateStr, cancellingSession.timeStr)
@@ -2396,7 +2456,9 @@ export default function Profile() {
             })()}
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
     </div>
   )
 }

@@ -311,9 +311,20 @@ function CommentItem({
       {/* Header */}
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="w-6 h-6 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center text-[10px] font-bold shrink-0 z-10">
-            {comment.author.charAt(0)}
-          </div>
+          {comment.avatar || (user && (comment.author === (user.fullName || user.name) || comment.author === 'You') && user.avatar) ? (
+            <img
+              src={comment.avatar || user?.avatar}
+              alt={comment.author}
+              className="w-6 h-6 rounded-full object-cover shrink-0 z-10 border border-[#e5e5e7] shadow-2xs"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+              }}
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center text-[10px] font-bold shrink-0 z-10">
+              {comment.author.charAt(0)}
+            </div>
+          )}
           <span className="font-extrabold text-[#1d1d1f] flex items-center">{comment.author}</span>
           {isOP && (
             <span className="px-2 py-0.5 rounded-full bg-[#0066cc] text-white text-[10px] font-semibold flex items-center">
@@ -1277,8 +1288,6 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10">
-      <Navbar />
-
       {/* Header Banner - Big, Informative & Apple-Grade */}
       <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#f4f8fc] to-white border-b border-[#e5e5e7] py-12 md:py-16 px-6 select-none">
         {/* Radial Background Accent */}
@@ -1454,9 +1463,20 @@ export default function CommunityPage() {
                     >
                       <ArrowLeft size={16} />
                     </button>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0066cc] to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {activeThread.author.charAt(0)}
-                    </div>
+                    {activeThread.authorAvatar || (user && (activeThread.author === (user.fullName || user.name) || activeThread.author === 'You') && user.avatar) ? (
+                      <img
+                        src={activeThread.authorAvatar || user?.avatar}
+                        alt={activeThread.author}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-[#e5e5e7] shadow-2xs"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+                        }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0066cc] to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {activeThread.author.charAt(0)}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-bold text-[#1d1d1f]">
                         {activeThread.author}
@@ -1867,8 +1887,26 @@ export default function CommunityPage() {
                   )}
                 </div>
 
-                {/* Doubts Feed - Expanded & Spacious Empty State */}
-                {filteredThreads.length === 0 ? (
+                {/* Doubts Feed - Loading Skeleton or Feed */}
+                {isLoading ? (
+                  <div className="space-y-4 min-h-[500px]">
+                    {[1, 2, 3].map((n) => (
+                      <div key={n} className="bg-white rounded-3xl border border-[#e5e5e7] p-6 space-y-4 shadow-2xs animate-pulse">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-[#f0f0f2]" />
+                            <div className="w-32 h-4 rounded-md bg-[#e5e5e7]" />
+                          </div>
+                          <div className="w-20 h-5 rounded-full bg-[#f0f0f2]" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="w-3/4 h-5 rounded-md bg-[#e5e5e7]" />
+                          <div className="w-full h-4 rounded-md bg-[#f0f0f2]" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredThreads.length === 0 ? (
                   <div className="bg-gradient-to-b from-white via-[#fafafc] to-white rounded-3xl border border-[#e5e5e7] p-12 sm:p-16 md:p-20 text-center space-y-6 shadow-xs select-none">
                     <div className="w-20 h-20 rounded-3xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto ring-8 ring-[#0066cc]/5 shadow-xs transform-gpu">
                       <MessageSquare size={38} className="text-[#0066cc]" />
@@ -1906,9 +1944,20 @@ export default function CommunityPage() {
                   {/* Thread Header */}
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0066cc] to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {thread.author.charAt(0)}
-                      </div>
+                      {thread.authorAvatar || (user && (thread.author === (user.fullName || user.name) || thread.author === 'You') && user.avatar) ? (
+                        <img
+                          src={thread.authorAvatar || user?.avatar}
+                          alt={thread.author}
+                          className="w-7 h-7 rounded-full object-cover shrink-0 border border-[#e5e5e7] shadow-2xs"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0066cc] to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {thread.author.charAt(0)}
+                        </div>
+                      )}
                       <span className="text-xs font-semibold text-[#1d1d1f] truncate">{thread.author}</span>
                       <span className="text-xs text-[#86868b]">• {thread.time}</span>
                     </div>
@@ -1982,9 +2031,6 @@ export default function CommunityPage() {
         )}
       </div>
     </main>
-
-    {/* Homepage Matching Footer */}
-    <Footer />
 
     {/* Lightbox / Fullscreen Media Viewer Modal */}
       {lightbox && (
