@@ -91,8 +91,8 @@ async function verifySessionAuthorization(room, reqUser, roomIdOrMeetingId) {
     }
   }
 
-  // Demo initial sessions support (sess-101, sess-102, sess-103) for logged-in user
-  if (['sess-101', 'sess-102', 'sess-103'].includes(roomIdOrMeetingId)) {
+  // Demo initial sessions support (sess-101, sess-102, sess-103, demo-101) for logged-in or guest users
+  if (['sess-101', 'sess-102', 'sess-103', 'demo-101'].includes(roomIdOrMeetingId)) {
     return {
       isAuthorized: true,
       isTutoringSession: true,

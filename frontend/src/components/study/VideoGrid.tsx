@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react'
-import { MicOff, VideoOff, Pin, Hand, Monitor } from 'lucide-react'
+import { Mic, MicOff, VideoOff, Pin, Hand, Monitor } from 'lucide-react'
 
 export interface Participant {
   id: string
@@ -19,6 +19,8 @@ export interface Participant {
 interface VideoGridProps {
   participants: Participant[]
   onPinParticipant: (id: string) => void
+  onMuteParticipant?: (id: string) => void
+  currentUserRole?: 'tutor' | 'student'
   fullStage?: boolean
 }
 
@@ -31,10 +33,14 @@ function VideoTile({
   p,
   large = false,
   onPinParticipant,
+  onMuteParticipant,
+  currentUserRole,
 }: {
   p: Participant
   large?: boolean
   onPinParticipant: (id: string) => void
+  onMuteParticipant?: (id: string) => void
+  currentUserRole?: 'tutor' | 'student'
 }) {
   const isSelf = p.name.includes('(You)')
 
@@ -99,51 +105,41 @@ function VideoTile({
               />
             ) : (
               <div
-                className={`bg-gradient-to-br ${
-                  GRADIENT_AVATARS[p.role] || 'from-[#0066cc] to-indigo-600'
-                } rounded-full flex items-center justify-center font-bold text-white shadow-2xl ${
-                  large
-                    ? 'w-28 h-28 text-3xl md:w-36 md:h-36 md:text-4xl'
-                    : 'w-16 h-16 text-xl md:w-20 md:h-20 md:text-2xl'
+                className={`rounded-full bg-gradient-to-br ${
+                  GRADIENT_AVATARS[p.role] || GRADIENT_AVATARS.student
+                } flex items-center justify-center font-bold text-white shadow-2xl border-2 border-white/10 ${
+                  large ? 'w-28 h-28 md:w-36 md:h-36 text-3xl md:text-4xl' : 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl'
                 }`}
               >
-                {p.name.charAt(0).toUpperCase()}
+                {p.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .substring(0, 2)
+                  .toUpperCase()}
               </div>
             )}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8">
-              <VideoOff size={12} className="text-white/30" />
-              <span className="text-[10px] text-white/30 font-medium">Camera off</span>
+            <div className="flex items-center gap-2">
+              <span className="text-white/80 font-medium text-xs sm:text-sm">{p.name}</span>
+              {p.isMuted && <MicOff size={13} className="text-red-400" />}
             </div>
           </div>
         </div>
       )}
 
-      {/* Top Status Badges Row - Unified container preventing any overlapping */}
-      <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none z-20">
+      {/* Top badges bar */}
+      <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10 pointer-events-none">
         <div className="flex items-center gap-2">
-          {p.isScreenSharing && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#0066cc]/30 border border-[#0066cc]/45 text-[#4d9fff] backdrop-blur-md shadow-md">
-              <Monitor size={12} />
-              <span className="text-[10px] font-bold tracking-wide">Presenting</span>
+          {p.isSpeaking && (
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 backdrop-blur-md shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">Speaking</span>
             </div>
           )}
-
-          {p.isSpeaking && !p.isMuted && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/30 backdrop-blur-md shadow-md">
-              <div className="flex items-end gap-[2px] h-3">
-                {[0.6, 1, 0.75, 0.9, 0.5].map((h, i) => (
-                  <span
-                    key={i}
-                    className="w-[2px] bg-emerald-400 rounded-full animate-pulse"
-                    style={{
-                      height: `${h * 12}px`,
-                      animationDelay: `${i * 100}ms`,
-                      animationDuration: `${600 + i * 100}ms`,
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="text-[9px] text-emerald-400 font-bold">Speaking</span>
+          {p.isScreenSharing && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0066cc]/25 border border-[#0066cc]/40 text-[#4d9fff] backdrop-blur-md shadow-md">
+              <Monitor size={11} />
+              <span className="text-[10px] font-bold">Presenting</span>
             </div>
           )}
         </div>
@@ -173,9 +169,25 @@ function VideoTile({
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {p.isMuted && (
+          {currentUserRole === 'tutor' && !isSelf && !p.isMuted && onMuteParticipant && (
+            <button
+              type="button"
+              onClick={() => onMuteParticipant(p.socketId || p.id)}
+              className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500 border border-red-500/30 text-red-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer select-none flex items-center gap-1 shadow-sm transform-gpu active:scale-95"
+              title="Remote Mute Student"
+            >
+              <MicOff size={10} />
+              <span>Mute</span>
+            </button>
+          )}
+
+          {p.isMuted ? (
             <span className="p-1.5 rounded-lg bg-red-500/15 border border-red-500/20" title="Muted">
               <MicOff size={10} className="text-red-400" />
+            </span>
+          ) : (
+            <span className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/20" title="Unmuted">
+              <Mic size={10} className="text-emerald-400" />
             </span>
           )}
           <button
@@ -195,24 +207,37 @@ function VideoTile({
   )
 }
 
-export default function VideoGrid({ participants, onPinParticipant, fullStage }: VideoGridProps) {
+export default function VideoGrid({
+  participants,
+  onPinParticipant,
+  onMuteParticipant,
+  currentUserRole,
+  fullStage,
+}: VideoGridProps) {
   // If someone is screen sharing or pinned, prioritize them in spotlight
   const screenSharer = participants.find((p) => p.isScreenSharing)
   const pinned = screenSharer || participants.find((p) => p.isPinned)
   const others = participants.filter((p) => p.id !== pinned?.id)
 
+  const count = participants.length
+
   if (fullStage) {
-    const cols =
-      participants.length <= 1
-        ? 'grid-cols-1'
-        : participants.length <= 2
-        ? 'grid-cols-1 md:grid-cols-2'
-        : 'grid-cols-2'
+    let gridLayoutClass = 'grid-cols-1 grid-rows-1'
+    if (count === 2) gridLayoutClass = 'grid-cols-1 sm:grid-cols-2 grid-rows-1'
+    else if (count === 3) gridLayoutClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+    else if (count === 4) gridLayoutClass = 'grid-cols-2 grid-rows-2'
+    else if (count >= 5) gridLayoutClass = 'grid-cols-2 md:grid-cols-3'
 
     return (
-      <div className={`grid ${cols} gap-3 w-full h-full p-3 bg-[#0a0a0c]`}>
+      <div className={`grid ${gridLayoutClass} gap-3 w-full h-full p-3 bg-[#0a0a0c] content-center`}>
         {participants.map((p) => (
-          <VideoTile key={p.id} p={p} onPinParticipant={onPinParticipant} />
+          <VideoTile
+            key={p.id}
+            p={p}
+            onPinParticipant={onPinParticipant}
+            onMuteParticipant={onMuteParticipant}
+            currentUserRole={currentUserRole}
+          />
         ))}
       </div>
     )
@@ -222,13 +247,25 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
     return (
       <div className="flex flex-col gap-2.5 w-full h-full p-2.5 bg-[#0a0a0c]">
         <div className="flex-1 min-h-0 w-full">
-          <VideoTile p={pinned} large onPinParticipant={onPinParticipant} />
+          <VideoTile
+            p={pinned}
+            large
+            onPinParticipant={onPinParticipant}
+            onMuteParticipant={onMuteParticipant}
+            currentUserRole={currentUserRole}
+          />
         </div>
         {others.length > 0 && (
-          <div className="flex gap-2.5 h-28 shrink-0 w-full overflow-x-auto">
+          <div className="flex gap-2.5 h-28 shrink-0 w-full overflow-x-auto scrollbar-none">
             {others.map((p) => (
               <div key={p.id} className="flex-1 min-w-[140px] h-full">
-                <VideoTile key={p.id} p={p} onPinParticipant={onPinParticipant} />
+                <VideoTile
+                  key={p.id}
+                  p={p}
+                  onPinParticipant={onPinParticipant}
+                  onMuteParticipant={onMuteParticipant}
+                  currentUserRole={currentUserRole}
+                />
               </div>
             ))}
           </div>
@@ -238,10 +275,16 @@ export default function VideoGrid({ participants, onPinParticipant, fullStage }:
   }
 
   return (
-    <div className="flex flex-col gap-2.5 w-full h-full p-2.5 bg-[#0a0a0c]">
+    <div className="flex flex-col gap-2.5 w-full h-full p-2.5 bg-[#0a0a0c] overflow-y-auto">
       {participants.map((p) => (
-        <div key={p.id} className="flex-1 min-h-0 w-full">
-          <VideoTile key={p.id} p={p} onPinParticipant={onPinParticipant} />
+        <div key={p.id} className="flex-1 min-h-[140px] w-full">
+          <VideoTile
+            key={p.id}
+            p={p}
+            onPinParticipant={onPinParticipant}
+            onMuteParticipant={onMuteParticipant}
+            currentUserRole={currentUserRole}
+          />
         </div>
       ))}
     </div>

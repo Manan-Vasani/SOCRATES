@@ -14,9 +14,10 @@ function createSocketServer(server) {
     },
   });
 
-  // In-memory registry for room participants
+  // In-memory registry for room participants & whiteboard permissions
   const roomParticipants = {}; // roomId -> { socketId: participantData }
   const socketRoomMap = {}; // socketId -> roomId
+  const roomWhiteboardPermissions = {}; // roomId -> { socketId: boolean }
 
   // Main connection handler
   io.on('connection', (socket) => {
@@ -31,38 +32,42 @@ function createSocketServer(server) {
       socket.join(`room:${roomId}`);
       socketRoomMap[socket.id] = roomId;
 
+      const participantData = {
+        id: user.id || socket.id,
+        socketId: socket.id,
+        name: user.name || 'Anonymous Student',
+        role: user.role || 'student',
+        avatar: user.avatar || '',
+        isMuted: false,
+        isCameraOff: false,
+        isHandRaised: false,
+        isScreenSharing: false,
+        hasWhiteboardPermission: user.role === 'tutor' ? true : false,
+      };
+
       if (!roomParticipants[roomId]) {
         roomParticipants[roomId] = {};
       }
-
-      const participantData = {
-        socketId: socket.id,
-        id: user?.id || user?._id || socket.id,
-        userId: user?.id || user?._id || socket.id,
-        name: user?.fullName || user?.name || 'Guest User',
-        role: user?.role || 'student',
-        avatar: user?.profileImage || user?.avatar || '',
-        isMuted: false,
-        isCameraOff: false,
-        isSpeaking: false,
-        isPinned: false,
-        isHandRaised: false,
-        isScreenSharing: false,
-        joinedAt: new Date().toISOString(),
-      };
-
       roomParticipants[roomId][socket.id] = participantData;
 
-      console.log(`[Meeting Socket] ${socket.id} (${participantData.name}) joined room:${roomId}`);
+      if (!roomWhiteboardPermissions[roomId]) {
+        roomWhiteboardPermissions[roomId] = {};
+      }
+      if (user.role === 'tutor') {
+        roomWhiteboardPermissions[roomId][socket.id] = true;
+      }
 
-      // 1. Send current participants list to the newly joined user
+      // Send existing participants list and permissions to joining user
       const existingParticipants = Object.values(roomParticipants[roomId]).filter(
         (p) => p.socketId !== socket.id
       );
       socket.emit('existing-participants', existingParticipants);
+      socket.emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
 
-      // 2. Notify all existing participants in the room about the new user
+      // Broadcast new-user-joined to other participants in room
       socket.to(`room:${roomId}`).emit('user-joined', participantData);
+
+      console.log(`[Meeting Socket] ${participantData.name} joined room ${roomId} (${socket.id})`);
     });
 
     // WebRTC SDP Offer
@@ -108,6 +113,51 @@ function createSocketServer(server) {
         socketId: socket.id,
         state: updated,
       });
+    });
+
+    // Tutor Remote Mute Student Event
+    socket.on('tutor-mute-participant', ({ roomId, targetSocketId }) => {
+      if (!roomId || !targetSocketId) return;
+      if (roomParticipants[roomId] && roomParticipants[roomId][targetSocketId]) {
+        roomParticipants[roomId][targetSocketId].isMuted = true;
+      }
+      io.to(targetSocketId).emit('remote-muted-by-tutor');
+      socket.to(`room:${roomId}`).emit('participant-state-updated', {
+        socketId: targetSocketId,
+        state: { isMuted: true },
+      });
+    });
+
+    // Whiteboard Permission Events
+    socket.on('request-whiteboard-permission', ({ roomId, socketId, name }) => {
+      if (!roomId) return;
+      socket.to(`room:${roomId}`).emit('tutor-whiteboard-request-received', {
+        socketId: socketId || socket.id,
+        name,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
+    });
+
+    socket.on('grant-whiteboard-permission', ({ roomId, targetSocketId }) => {
+      if (!roomId || !targetSocketId) return;
+      if (!roomWhiteboardPermissions[roomId]) roomWhiteboardPermissions[roomId] = {};
+      roomWhiteboardPermissions[roomId][targetSocketId] = true;
+      if (roomParticipants[roomId] && roomParticipants[roomId][targetSocketId]) {
+        roomParticipants[roomId][targetSocketId].hasWhiteboardPermission = true;
+      }
+      io.to(targetSocketId).emit('whiteboard-permission-updated', { hasAccess: true });
+      io.to(`room:${roomId}`).emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
+    });
+
+    socket.on('revoke-whiteboard-permission', ({ roomId, targetSocketId }) => {
+      if (!roomId || !targetSocketId) return;
+      if (!roomWhiteboardPermissions[roomId]) roomWhiteboardPermissions[roomId] = {};
+      roomWhiteboardPermissions[roomId][targetSocketId] = false;
+      if (roomParticipants[roomId] && roomParticipants[roomId][targetSocketId]) {
+        roomParticipants[roomId][targetSocketId].hasWhiteboardPermission = false;
+      }
+      io.to(targetSocketId).emit('whiteboard-permission-updated', { hasAccess: false });
+      io.to(`room:${roomId}`).emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
     });
 
     // Real-Time Room Chat Broadcast

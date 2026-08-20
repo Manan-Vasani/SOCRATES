@@ -600,7 +600,7 @@ export default function Tutors() {
                   options={ratingOptions}
                   value={minRating}
                   onChange={(val: number) => setMinRating(val)}
-                  buttonClassName="py-1.5 w-[134px] sm:w-[138px] justify-between"
+                  buttonClassName="py-1.5 w-[136px] sm:w-[142px] justify-between"
                   align="center"
                 />
 
@@ -608,7 +608,7 @@ export default function Tutors() {
                   options={priceOptions}
                   value={maxPrice}
                   onChange={(val: number) => setMaxPrice(val)}
-                  buttonClassName="py-1.5 w-[144px] sm:w-[148px] justify-between"
+                  buttonClassName="py-1.5 w-[154px] sm:w-[158px] justify-between"
                   align="center"
                 />
               </div>

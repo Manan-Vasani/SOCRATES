@@ -28,6 +28,9 @@ import {
   Layout,
   GripHorizontal,
   X,
+  Lock,
+  Check,
+  Sparkles,
 } from 'lucide-react'
 
 type BgType = 'dots' | 'grid' | 'blank' | 'dark' | 'chalkboard'
@@ -77,7 +80,25 @@ function isShapeTool(t: Tool): boolean {
   return SHAPE_TOOLS.some((s) => s.key === t)
 }
 
-export default function Whiteboard() {
+export interface WhiteboardProps {
+  canDraw?: boolean
+  isTutor?: boolean
+  onRequestPermission?: () => void
+  onGrantPermission?: (socketId: string) => void
+  onRevokePermission?: (socketId: string) => void
+  whiteboardRequests?: { socketId: string; name: string; time: string }[]
+  onDenyRequest?: (socketId: string) => void
+}
+
+export default function Whiteboard({
+  canDraw = true,
+  isTutor = false,
+  onRequestPermission,
+  onGrantPermission,
+  onRevokePermission,
+  whiteboardRequests = [],
+  onDenyRequest,
+}: WhiteboardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const textInputRef = useRef<HTMLTextAreaElement>(null)
@@ -707,6 +728,7 @@ export default function Whiteboard() {
   }, [strokes, getElementBBox])
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!canDraw) return
     const p = getPos(e)
 
     // Check handle click on active selection
@@ -1305,6 +1327,65 @@ export default function Whiteboard() {
             }}
             placeholder="Type here..."
           />
+        )}
+        {/* Student View-Only Lock Banner */}
+        {!canDraw && (
+          <div className="absolute top-4 inset-x-0 mx-auto w-max z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#1d1d1f]/95 text-white border border-white/15 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="flex items-center gap-2">
+              <Lock size={14} className="text-amber-400 shrink-0" />
+              <span className="text-xs font-semibold">View-Only Whiteboard</span>
+            </div>
+            {onRequestPermission && (
+              <button
+                type="button"
+                onClick={onRequestPermission}
+                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-bold transition-all cursor-pointer shadow-md transform-gpu active:scale-95 flex items-center gap-1.5"
+              >
+                <Sparkles size={12} />
+                <span>Ask Draw Access</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Tutor Permission Request Prompt Overlay */}
+        {isTutor && whiteboardRequests.length > 0 && (
+          <div className="absolute top-4 right-4 z-50 flex flex-col gap-2.5 max-w-xs w-full animate-in fade-in slide-in-from-top-4 duration-200">
+            {whiteboardRequests.map((req) => (
+              <div
+                key={req.socketId}
+                className="p-3.5 rounded-2xl bg-white border border-[#e5e5e7] shadow-2xl space-y-2.5 text-[#1d1d1f]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-ping" />
+                    <span className="text-xs font-bold truncate">{req.name}</span>
+                  </div>
+                  <span className="text-[10px] text-[#a1a1a6] font-mono">{req.time}</span>
+                </div>
+                <p className="text-[11px] text-[#525252] leading-snug">
+                  Requested permission to draw on the Whiteboard.
+                </p>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onGrantPermission?.(req.socketId)}
+                    className="flex-1 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1"
+                  >
+                    <Check size={13} />
+                    <span>Grant</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDenyRequest?.(req.socketId)}
+                    className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] text-xs font-semibold transition-all cursor-pointer border border-[#e5e5e7]"
+                  >
+                    Deny
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

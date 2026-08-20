@@ -7,6 +7,7 @@ import {
   MessageCircle,
   SmilePlus,
   Hand,
+  Mic,
   MicOff,
   Image as ImageIcon,
   FileText,
@@ -68,6 +69,10 @@ interface StudyRoomChatProps {
   onTabChange?: (tab: ChatTab) => void
   messages?: ChatMessage[]
   onSendMessage?: (text: string) => void
+  currentUserRole?: 'tutor' | 'student'
+  onGrantWhiteboardPermission?: (socketId: string) => void
+  onRevokeWhiteboardPermission?: (socketId: string) => void
+  whiteboardPermissionsMap?: Record<string, boolean>
 }
 
 const QUICK_REACTIONS = ['👍', '👏', '💡', '❓', '🔥', '❤️']
@@ -84,6 +89,10 @@ export default function StudyRoomChat({
   onTabChange,
   messages: externalMessages,
   onSendMessage,
+  currentUserRole,
+  onGrantWhiteboardPermission,
+  onRevokeWhiteboardPermission,
+  whiteboardPermissionsMap,
 }: StudyRoomChatProps) {
   const [internalTab, setInternalTab] = useState<ChatTab>(activeTab)
   const tab = onTabChange ? activeTab : internalTab
@@ -263,11 +272,11 @@ export default function StudyRoomChat({
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden">
         {/* Chat Tab */}
         {tab === 'chat' && (
           <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-3 py-4 space-y-4">
               {messages.map((msg) => (
                 <div key={msg.id}>
                   {msg.role === 'system' ? (
@@ -340,7 +349,7 @@ export default function StudyRoomChat({
             </div>
 
             {/* AI Messages Feed */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-3">
               {aiMessages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div
@@ -377,7 +386,7 @@ export default function StudyRoomChat({
 
         {/* Participants Tab */}
         {tab === 'participants' && (
-          <div className="p-3 space-y-2">
+          <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-2">
             <div className="text-[10px] font-bold text-[#a1a1a6] uppercase tracking-wider px-1 mb-3">
               In this session ({participants.length})
             </div>
@@ -408,18 +417,42 @@ export default function StudyRoomChat({
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  {currentUserRole === 'tutor' && p.role === 'student' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetId = p.socketId || p.id
+                        const hasAccess = whiteboardPermissionsMap?.[targetId]
+                        if (hasAccess) {
+                          onRevokeWhiteboardPermission?.(targetId)
+                        } else {
+                          onGrantWhiteboardPermission?.(targetId)
+                        }
+                      }}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 ${
+                        whiteboardPermissionsMap?.[p.socketId || p.id]
+                          ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                          : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20'
+                      }`}
+                      title={whiteboardPermissionsMap?.[p.socketId || p.id] ? 'Revoke Draw Access' : 'Grant Draw Access'}
+                    >
+                      {whiteboardPermissionsMap?.[p.socketId || p.id] ? 'Revoke Draw' : 'Allow Draw'}
+                    </button>
+                  )}
+
                   {p.isHandRaised && (
                     <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200" title="Hand Raised">
                       <Hand size={11} className="text-amber-600" />
                     </span>
                   )}
-                  {p.isMuted && (
-                    <span className="p-1.5 rounded-lg bg-red-50 border border-red-200" title="Muted">
-                      <MicOff size={11} className="text-red-400" />
+                  {p.isMuted ? (
+                    <span className="p-1.5 rounded-xl bg-red-50 border border-red-200 text-red-500 flex items-center justify-center shrink-0" title="Muted">
+                      <MicOff size={13} className="text-red-500" />
                     </span>
-                  )}
-                  {!p.isMuted && !p.isHandRaised && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" title="Connected" />
+                  ) : (
+                    <span className="p-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0" title="Unmuted">
+                      <Mic size={13} className="text-emerald-600" />
+                    </span>
                   )}
                 </div>
               </div>
@@ -429,7 +462,7 @@ export default function StudyRoomChat({
 
         {/* Resources / Files Tab */}
         {tab === 'resources' && (
-          <div className="p-3 space-y-3">
+          <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-3">
             {/* Interactive File Upload Card */}
             <div
               onClick={() => fileInputRef.current?.click()}

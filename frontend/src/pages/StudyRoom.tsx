@@ -11,7 +11,7 @@ import AIAssistantDrawer from '../components/study/AIAssistantDrawer'
 import MeetingLobby from '../components/study/MeetingLobby'
 import { useWebRTC } from '../hooks/useWebRTC'
 import { useAuthStore } from '../store/useAuthStore'
-import { fetchStudyRoom } from '../services/api'
+import { fetchStudyRoom, joinStudyRoom, leaveStudyRoom } from '../services/api'
 
 export default function StudyRoom() {
   const { roomId, meetingId } = useParams<{ roomId?: string; meetingId?: string }>()
@@ -76,6 +76,19 @@ export default function StudyRoom() {
   })
 
   useEffect(() => {
+    document.documentElement.classList.add('no-scrollbar')
+    document.body.classList.add('no-scrollbar')
+    const originalGutter = document.documentElement.style.scrollbarGutter
+    document.documentElement.style.scrollbarGutter = 'auto'
+
+    return () => {
+      document.documentElement.classList.remove('no-scrollbar')
+      document.body.classList.remove('no-scrollbar')
+      document.documentElement.style.scrollbarGutter = originalGutter
+    }
+  }, [])
+
+  useEffect(() => {
     if (user && !hasInitializedName.current) {
       setDisplayName(user.fullName || user.name || 'User')
       hasInitializedName.current = true
@@ -109,10 +122,18 @@ export default function StudyRoom() {
     isScreenSharing,
     isHandRaised,
     connectionStatus,
+    hasWhiteboardPermission,
+    whiteboardRequests,
+    whiteboardPermissionsMap,
     toggleMic,
     toggleCamera,
     toggleHandRaise,
     toggleScreenShare,
+    muteParticipant,
+    requestWhiteboardPermission,
+    grantWhiteboardPermission,
+    revokeWhiteboardPermission,
+    denyWhiteboardRequest,
     sendMessage,
     leaveRoom,
     setParticipants,
@@ -189,6 +210,7 @@ export default function StudyRoom() {
 
   const handleLeave = () => setShowLeaveModal(true)
   const confirmLeave = () => {
+    leaveStudyRoom(activeRoomId).catch(() => {})
     leaveRoom()
     setShowLeaveModal(false)
     navigate('/profile')
@@ -261,7 +283,12 @@ export default function StudyRoom() {
         isCameraOn={isCameraOn}
         onCameraToggle={toggleCamera}
         localStream={localStream}
-        onJoinMeeting={() => setHasJoined(true)}
+        onJoinMeeting={async () => {
+          if (user) {
+            await joinStudyRoom(activeRoomId).catch(() => {})
+          }
+          setHasJoined(true)
+        }}
       />
     )
   }
@@ -271,7 +298,15 @@ export default function StudyRoom() {
       case 'whiteboard':
         return (
           <div className="flex-1 min-h-0 flex bg-white">
-            <Whiteboard />
+            <Whiteboard
+              canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
+              isTutor={currentUser.role === 'tutor'}
+              onRequestPermission={requestWhiteboardPermission}
+              onGrantPermission={grantWhiteboardPermission}
+              onRevokePermission={revokeWhiteboardPermission}
+              whiteboardRequests={whiteboardRequests}
+              onDenyRequest={denyWhiteboardRequest}
+            />
           </div>
         )
       case 'code':
@@ -283,7 +318,13 @@ export default function StudyRoom() {
       case 'grid':
         return (
           <div className="flex-1 min-h-0 bg-[#0a0a0c]">
-            <VideoGrid participants={participants} onPinParticipant={handlePinParticipant} fullStage />
+            <VideoGrid
+              participants={participants}
+              onPinParticipant={handlePinParticipant}
+              onMuteParticipant={muteParticipant}
+              currentUserRole={currentUser.role}
+              fullStage
+            />
           </div>
         )
       case 'split':
@@ -296,7 +337,12 @@ export default function StudyRoom() {
               className="bg-[#0a0a0c] shrink-0 flex flex-col border-r border-white/5 relative"
             >
               <div className="flex-1 min-h-0">
-                <VideoGrid participants={participants} onPinParticipant={handlePinParticipant} />
+                <VideoGrid
+                  participants={participants}
+                  onPinParticipant={handlePinParticipant}
+                  onMuteParticipant={muteParticipant}
+                  currentUserRole={currentUser.role}
+                />
               </div>
               {/* Bottom mini status bar */}
               <div className="h-9 bg-[#0e0e12] border-t border-white/5 flex items-center justify-between px-3">
@@ -323,7 +369,15 @@ export default function StudyRoom() {
 
             {/* Right: Active workspace */}
             <div className="flex-1 min-w-0 flex bg-white">
-              <Whiteboard />
+              <Whiteboard
+                canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
+                isTutor={currentUser.role === 'tutor'}
+                onRequestPermission={requestWhiteboardPermission}
+                onGrantPermission={grantWhiteboardPermission}
+                onRevokePermission={revokeWhiteboardPermission}
+                whiteboardRequests={whiteboardRequests}
+                onDenyRequest={denyWhiteboardRequest}
+              />
             </div>
           </div>
         )
@@ -390,7 +444,7 @@ export default function StudyRoom() {
         {isChatOpen && (
           <div
             style={{ width: `${rightPanelWidth}px` }}
-            className="shrink-0 flex border-l border-[#e5e5e7] bg-white relative max-w-full z-30"
+            className="shrink-0 flex flex-col h-full overflow-hidden border-l border-[#e5e5e7] bg-white relative max-w-full z-30"
           >
             {isAIOpen ? (
               <AIAssistantDrawer isOpen={true} onClose={() => setIsAIOpen(false)} />
@@ -399,6 +453,10 @@ export default function StudyRoom() {
                 participants={participants}
                 messages={messages}
                 onSendMessage={sendMessage}
+                currentUserRole={currentUser.role}
+                onGrantWhiteboardPermission={grantWhiteboardPermission}
+                onRevokeWhiteboardPermission={revokeWhiteboardPermission}
+                whiteboardPermissionsMap={whiteboardPermissionsMap}
               />
             )}
           </div>

@@ -160,27 +160,18 @@ export default function RoomHeader({
 
       {/* Right: Media Controls + Share + Timer */}
       <div className="flex items-center gap-1.5 flex-1 justify-end">
-        <div className="hidden sm:flex items-center gap-2 mr-1.5 shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/6 border border-white/10 text-white/90 text-xs font-mono font-semibold tabular-nums tracking-wide shadow-2xs">
-            <Clock size={13} className="text-white/60" />
-            <span>{formatTime(elapsed)}</span>
+        <div className="hidden sm:flex items-center gap-2 mr-2 shrink-0">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 border border-white/15 text-white text-xs font-bold font-sans tracking-wide shadow-sm backdrop-blur-md select-none transform-gpu">
+            <Clock size={13} className="text-[#3894ff] shrink-0" />
+            <span className="tabular-nums font-semibold text-xs tracking-wider">{formatTime(elapsed)}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/6 border border-white/10 text-white/90 text-xs font-semibold shadow-2xs">
-            <Users size={13} className="text-white/60" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0066cc]/15 border border-[#0066cc]/30 text-[#4d9fff] text-xs font-bold shadow-sm backdrop-blur-md select-none transform-gpu">
+            <Users size={13} className="text-[#3894ff] shrink-0" />
             <span>{participantCount}</span>
           </div>
         </div>
 
-        {onShareLink && (
-          <button
-            onClick={onShareLink}
-            className="px-3 py-2 rounded-xl bg-[#0066cc]/20 hover:bg-[#0066cc]/30 text-[#4d9fff] border border-[#0066cc]/35 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
-            title="Share Meeting Link"
-          >
-            <Share2 size={14} />
-            <span className="hidden md:inline">Share</span>
-          </button>
-        )}
+
 
         <MediaBtn active={isMicOn} danger={!isMicOn} onClick={onMicToggle} title={isMicOn ? 'Mute' : 'Unmute'}>
           {isMicOn ? <Mic size={16} /> : <MicOff size={16} />}

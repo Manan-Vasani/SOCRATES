@@ -81,6 +81,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [isHandRaised, setIsHandRaised] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'reconnecting' | 'disconnected'>('connecting')
+  const [hasWhiteboardPermission, setHasWhiteboardPermission] = useState<boolean>(currentUser.role === 'tutor')
+  const [whiteboardRequests, setWhiteboardRequests] = useState<{ socketId: string; name: string; time: string }[]>([])
+  const [whiteboardPermissionsMap, setWhiteboardPermissionsMap] = useState<Record<string, boolean>>({})
 
   const socketRef = useRef<Socket | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
@@ -452,6 +455,46 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       )
     })
 
+    // Remote Muted By Tutor Event
+    socket.on('remote-muted-by-tutor', () => {
+      if (localStreamRef.current) {
+        const audioTrack = localStreamRef.current.getAudioTracks()[0]
+        if (audioTrack) {
+          audioTrack.enabled = false
+        }
+      }
+      setIsMicOn(false)
+      if (socketRef.current) {
+        socketRef.current.emit('participant-state-change', {
+          roomId,
+          state: { isMuted: true },
+        })
+      }
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socket.id
+            ? { ...p, isMuted: true }
+            : p
+        )
+      )
+    })
+
+    // Whiteboard Permission Events
+    socket.on('tutor-whiteboard-request-received', (req: { socketId: string; name: string; time: string }) => {
+      setWhiteboardRequests((prev) => {
+        if (prev.some((r) => r.socketId === req.socketId)) return prev
+        return [...prev, req]
+      })
+    })
+
+    socket.on('whiteboard-permission-updated', ({ hasAccess }: { hasAccess: boolean }) => {
+      setHasWhiteboardPermission(hasAccess)
+    })
+
+    socket.on('room-whiteboard-permissions-updated', (permissions: Record<string, boolean>) => {
+      setWhiteboardPermissionsMap(permissions)
+    })
+
     // Real-Time Room Message Received
     socket.on('room-message-received', (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg])
@@ -533,7 +576,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
                 : p
             )
           )
-          toast.success(newMicState ? 'Microphone unmuted' : 'Microphone muted')
           return
         }
       }
@@ -583,7 +625,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
               : p
           )
         )
-        toast.success('Microphone enabled')
       }
     } catch (err: any) {
       console.error('[WebRTC] Microphone access error:', err)
@@ -614,7 +655,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
                 : p
             )
           )
-          toast.success(newCamState ? 'Camera turned on' : 'Camera turned off')
           return
         }
       }
@@ -664,7 +704,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
               : p
           )
         )
-        toast.success('Camera enabled')
       }
     } catch (err: any) {
       console.error('[WebRTC] Camera access error:', err)
@@ -672,6 +711,19 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       setIsCameraOn(false)
     }
   }, [roomId, currentUser.id])
+
+  // Tutor Mute Remote Participant Handler
+  const muteParticipant = useCallback(
+    (targetSocketId: string) => {
+      if (socketRef.current) {
+        socketRef.current.emit('tutor-mute-participant', { roomId, targetSocketId })
+      }
+      setParticipants((prev) =>
+        prev.map((p) => (p.socketId === targetSocketId || p.id === targetSocketId ? { ...p, isMuted: true } : p))
+      )
+    },
+    [roomId]
+  )
 
   const toggleHandRaise = useCallback(() => {
     setIsHandRaised((prev) => {
@@ -794,6 +846,42 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     [roomId, currentUser.name, currentUser.role]
   )
 
+  // Whiteboard Permission Methods
+  const requestWhiteboardPermission = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit('request-whiteboard-permission', {
+        roomId,
+        socketId: socketRef.current.id,
+        name: currentUser.name,
+      })
+    }
+  }, [roomId, currentUser.name])
+
+  const grantWhiteboardPermission = useCallback(
+    (targetSocketId: string) => {
+      if (socketRef.current) {
+        socketRef.current.emit('grant-whiteboard-permission', { roomId, targetSocketId })
+      }
+      setWhiteboardRequests((prev) => prev.filter((r) => r.socketId !== targetSocketId))
+      setWhiteboardPermissionsMap((prev) => ({ ...prev, [targetSocketId]: true }))
+    },
+    [roomId]
+  )
+
+  const revokeWhiteboardPermission = useCallback(
+    (targetSocketId: string) => {
+      if (socketRef.current) {
+        socketRef.current.emit('revoke-whiteboard-permission', { roomId, targetSocketId })
+      }
+      setWhiteboardPermissionsMap((prev) => ({ ...prev, [targetSocketId]: false }))
+    },
+    [roomId]
+  )
+
+  const denyWhiteboardRequest = useCallback((targetSocketId: string) => {
+    setWhiteboardRequests((prev) => prev.filter((r) => r.socketId !== targetSocketId))
+  }, [])
+
   const leaveRoom = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.emit('leave-room', { roomId })
@@ -814,10 +902,18 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     isScreenSharing,
     isHandRaised,
     connectionStatus,
+    hasWhiteboardPermission,
+    whiteboardRequests,
+    whiteboardPermissionsMap,
     toggleMic,
     toggleCamera,
     toggleHandRaise,
     toggleScreenShare,
+    muteParticipant,
+    requestWhiteboardPermission,
+    grantWhiteboardPermission,
+    revokeWhiteboardPermission,
+    denyWhiteboardRequest,
     sendMessage,
     leaveRoom,
     setParticipants,

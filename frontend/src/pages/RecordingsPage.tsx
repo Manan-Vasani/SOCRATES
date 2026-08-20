@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
@@ -205,31 +206,166 @@ export default function RecordingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10">
-      {/* Header Banner */}
-      <section className="bg-white border-b border-[#e5e5e7] py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
-              Session Recordings & AI Notes Library
-            </h1>
-            <p className="text-sm text-[#6e6e73] max-w-xl">
-              Access your past Study Room video recordings, automated Socratic AI lesson summaries, whiteboard snapshots, and PDF exports.
-            </p>
+    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10 antialiased">
+      {/* Premium Apple-Grade Centered Hero Showcase */}
+      <section className="relative bg-gradient-to-b from-[#fbfbfd] via-[#f5f5f7] to-[#fafafc] border-b border-[#e5e5e7] pt-10 sm:pt-14 pb-5 sm:pb-6 px-6 overflow-hidden transform-gpu subpixel-antialiased">
+        {/* Radial Center Highlight */}
+        <div
+          className="absolute inset-0 pointer-events-none flex items-start justify-center"
+          aria-hidden="true"
+        >
+          <div className="w-[900px] h-[480px] bg-radial from-[#0066cc]/[0.05] via-transparent to-transparent rounded-full blur-3xl transform-gpu" />
+        </div>
+
+        {/* Ambient Corner Glows */}
+        <div className="absolute top-10 left-1/5 w-72 h-72 bg-[#0066cc]/5 rounded-full blur-3xl pointer-events-none transform-gpu" />
+        <div className="absolute bottom-4 right-1/5 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none transform-gpu" />
+
+        <div className="max-w-4xl mx-auto relative z-10 text-center flex flex-col items-center">
+          {/* Main Headline */}
+          <h1 className="mt-6 text-4xl sm:text-6xl md:text-7xl font-display font-extrabold tracking-tight text-[#1d1d1f] leading-[1.08] transform-gpu">
+            Session Recordings &amp;
+            <span className="block mt-1 sm:mt-2 bg-gradient-to-r from-[#0066cc] to-indigo-600 bg-clip-text text-transparent pb-1">
+              Knowledge Archive.
+            </span>
+          </h1>
+
+          {/* Description */}
+          <p className="mt-6 max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-[#6e6e73] font-normal leading-relaxed transform-gpu">
+            Revisit your past Study Room video recordings, review Socratic lesson
+            summaries, inspect whiteboard proofs, and export formatted PDF notes
+            anytime.
+          </p>
+
+          {/* CTA Action Buttons & Status Counter */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto transform-gpu">
+            <Link
+              to="/study-room/demo-101"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0052a3] text-white font-bold text-sm shadow-md shadow-[#0066cc]/20 transition-all duration-150 cursor-pointer select-none transform-gpu"
+            >
+              <Video size={16} className="shrink-0" />
+              <span>Join Active Study Room</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById('library-section')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white border border-[#e0e0e4] hover:border-[#0066cc]/40 hover:bg-[#0066cc]/5 text-[#1d1d1f] hover:text-[#0066cc] font-bold text-sm shadow-2xs transition-all duration-150 cursor-pointer select-none transform-gpu"
+            >
+              <Download size={16} className="text-[#0066cc] shrink-0" />
+              <span>Browse the Vault</span>
+            </button>
+
           </div>
 
-          <Link
-            to="/study-room/demo-101"
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0066cc] text-white text-xs font-extrabold hover:bg-[#0077ed] transition-all shadow-md shadow-[#0066cc]/25 cursor-pointer shrink-0"
-          >
-            <Video size={16} />
-            <span>Join Active Study Room</span>
-          </Link>
+          {/* Feature Capability Chips */}
+          <div className="mt-8 flex flex-wrap justify-center gap-2.5 text-xs select-none transform-gpu">
+            <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
+              <Video size={13} className="text-[#0066cc] shrink-0" />
+              HD 1080p Video Vault
+            </span>
+            <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
+              <Sigma size={13} className="text-[#0066cc] shrink-0" />
+              LaTeX Math Proof Engine
+            </span>
+            <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
+              <Sparkles size={13} className="text-[#0066cc] shrink-0" />
+              Socratic AI Summaries
+            </span>
+            <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
+              <Download size={13} className="text-[#0066cc] shrink-0" />
+              One-Click PDF Export
+            </span>
+          </div>
+
+          {/* Featured Session Showcase Mockup */}
+          <div className="mt-8 sm:mt-10 w-full max-w-3xl transform-gpu">
+            <div className="w-full bg-white border border-[#e5e5e7] rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.07)] overflow-hidden text-left transform-gpu">
+              {/* Window Header */}
+              <div className="px-5 py-3 bg-[#f5f5f7] border-b border-[#e5e5e7] flex items-center justify-between select-none transform-gpu">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#e0e0e0]" />
+                  <div className="w-3 h-3 rounded-full bg-[#e0e0e0]" />
+                  <div className="w-3 h-3 rounded-full bg-[#e0e0e0]" />
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#7a7a7a]">
+                  <Video size={13} className="text-[#0066cc] shrink-0" />
+                  <span>SOCRATES Session Vault</span>
+                </div>
+                <div className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold flex items-center gap-1.5 shrink-0">
+                  <span className="relative flex h-1.5 w-1.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  LIVE
+                </div>
+              </div>
+
+              {/* Preview Thumbnail */}
+              <div
+                onClick={() => setSelectedRecord(SAMPLE_RECORDINGS[0])}
+                className="relative group overflow-hidden cursor-pointer transform-gpu"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=800&auto=format&fit=crop"
+                  alt="Featured Session Preview"
+                  className="w-full h-44 sm:h-56 object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedRecord(SAMPLE_RECORDINGS[0])
+                    }}
+                    className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-2xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-all duration-200 cursor-pointer transform-gpu group-hover:scale-105 active:scale-95 select-none"
+                    title="Play Featured Session"
+                  >
+                    <Play size={24} className="fill-current translate-x-[1.5px] shrink-0" />
+                  </div>
+                </div>
+                <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-display font-bold tracking-wide border border-white/25 shadow-md flex items-center gap-1.5 select-none transform-gpu">
+                  <Clock size={13} className="text-white/90 shrink-0" />
+                  <span>45 mins</span>
+                </div>
+              </div>
+
+              {/* Session Breakdown Footer */}
+              <div className="p-5 sm:p-6 space-y-3.5 transform-gpu">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-bold text-[11px] shadow-2xs shrink-0">
+                      DV
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-display text-sm font-bold text-[#1d1d1f] truncate">
+                        Advanced Calculus: Integration by Parts
+                      </div>
+                      <div className="text-[11px] text-[#6e6e73] font-medium">
+                        Dr. Alex Vance • Aug 2, 2026
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-bold text-[10px] border border-[#0066cc]/20 shrink-0 select-none">
+                    Mathematics
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-mono text-[#0066cc] flex items-center justify-between gap-3 select-none transform-gpu">
+                  <span className="truncate">∫ u dv = uv - ∫ v du</span>
+                  <span className="text-[10px] text-[#6e6e73] font-sans font-semibold shrink-0">
+                    Derived Formula
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Main Body */}
-      <main className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+      <main id="library-section" className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
         {/* Integrated Search, Date & Subject Control Panel */}
         <div className="bg-white rounded-3xl border border-[#e5e5e7] p-4 sm:p-5 space-y-4 shadow-2xs">
           {/* Top Control Bar: Search Input + Date Filter + Sort Order */}
@@ -496,9 +632,9 @@ export default function RecordingsPage() {
                   alt={rec.title}
                   className="w-full h-full object-cover opacity-95 group-hover:opacity-100 transition-opacity duration-150"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-colors duration-150">
-                    <Play size={24} className="fill-current translate-x-[1.5px] transition-colors duration-150" />
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-2xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-all duration-200 transform-gpu group-hover:scale-105 active:scale-95 select-none">
+                    <Play size={24} className="fill-current translate-x-[1.5px] shrink-0" />
                   </div>
                 </div>
 
