@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { Mic, MicOff, VideoOff, Pin, Hand, Monitor } from 'lucide-react'
 
 export interface Participant {
@@ -43,23 +43,20 @@ function VideoTile({
   currentUserRole?: 'tutor' | 'student'
 }) {
   const isSelf = p.name.includes('(You)')
+  const videoRef = useRef<HTMLVideoElement | null>(null)
 
-  // Callback ref guarantees srcObject assignment and .play() immediately upon mounting DOM node
-  const setVideoRef = useCallback(
-    (node: HTMLVideoElement | null) => {
-      if (node && p.stream) {
-        if (node.srcObject !== p.stream) {
-          node.srcObject = p.stream
-        }
-        node
-          .play()
-          .catch((err) => {
-            console.warn('[VideoTile] Video play warning:', err)
-          })
+  useEffect(() => {
+    if (videoRef.current && p.stream) {
+      if (videoRef.current.srcObject !== p.stream) {
+        videoRef.current.srcObject = p.stream
       }
-    },
-    [p.stream]
-  )
+      videoRef.current
+        .play()
+        .catch((err) => {
+          console.warn('[VideoTile] Video play warning:', err)
+        })
+    }
+  }, [p.stream, p.isCameraOff])
 
   return (
     <div
@@ -84,10 +81,15 @@ function VideoTile({
       {/* Video element or Avatar Fallback */}
       {p.stream && !p.isCameraOff ? (
         <video
-          ref={setVideoRef}
+          ref={videoRef}
           autoPlay
           playsInline
           muted={isSelf} // Mute self video feed locally to prevent audio echo loop
+          onLoadedMetadata={(e) => {
+            e.currentTarget.play().catch((err) => {
+              console.warn('[VideoTile] play onLoadedMetadata error:', err)
+            })
+          }}
           className={`w-full h-full ${
             p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
           } ${isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}

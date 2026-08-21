@@ -235,7 +235,7 @@ const forgotPassword = async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-  const defaultFrontend = isProd ? 'https://socrates-steel.vercel.app' : 'http://localhost:5173';
+  const defaultFrontend = isProd ? 'https://socrates-steel.vercel.app' : 'http://localhost:3000';
   let frontendUrl = process.env.FRONTEND_URL || defaultFrontend;
   if (isProd && (frontendUrl.includes('localhost') || frontendUrl.includes('google.com'))) {
     frontendUrl = 'https://socrates-steel.vercel.app';

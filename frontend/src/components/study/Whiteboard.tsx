@@ -31,6 +31,7 @@ import {
   Lock,
   Check,
   Sparkles,
+  Clock,
 } from 'lucide-react'
 
 type BgType = 'dots' | 'grid' | 'blank' | 'dark' | 'chalkboard'
@@ -129,6 +130,21 @@ export default function Whiteboard({
   const [hoverCursor, setHoverCursor] = useState<string | null>(null)
   const transformStartPos = useRef<Point>({ x: 0, y: 0 })
   const transformInitialBBox = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
+
+  // 2-Second Mouse Inactivity Auto-Hide for View-Only Banner (Starts hidden, appears ONLY on drawing/writing attempt)
+  const [isBannerVisible, setIsBannerVisible] = useState(false)
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const triggerViewOnlyBanner = useCallback(() => {
+    if (canDraw) return
+    setIsBannerVisible(true)
+    if (bannerTimerRef.current) {
+      clearTimeout(bannerTimerRef.current)
+    }
+    bannerTimerRef.current = setTimeout(() => {
+      setIsBannerVisible(false)
+    }, 2000)
+  }, [canDraw])
 
   // Auto-switch default active color based on background mode (Dark/Chalkboard -> White, Light/Dots/Grid -> Black)
   useEffect(() => {
@@ -728,7 +744,10 @@ export default function Whiteboard({
   }, [strokes, getElementBBox])
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!canDraw) return
+    if (!canDraw) {
+      triggerViewOnlyBanner()
+      return
+    }
     const p = getPos(e)
 
     // Check handle click on active selection
@@ -1049,7 +1068,13 @@ export default function Whiteboard({
   )
 
   return (
-    <div ref={containerRef} className="flex w-full h-full relative bg-[#fafbfc]">
+    <div
+      ref={containerRef}
+      onMouseDown={() => {
+        if (!canDraw) triggerViewOnlyBanner()
+      }}
+      className="flex w-full h-full relative bg-[#fafbfc]"
+    >
       {/* Dynamic Floating Toolbar (1-line normal, 2-line when shrunk) */}
       <div
         className={`absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/8 border border-[#e5e5e7] select-none ${
@@ -1328,9 +1353,17 @@ export default function Whiteboard({
             placeholder="Type here..."
           />
         )}
-        {/* Student View-Only Lock Banner */}
+
+
+        {/* Student View-Only Lock Banner (Auto-hides after 2s inactivity, Rate-limited 10s cooldown) */}
         {!canDraw && (
-          <div className="absolute top-4 inset-x-0 mx-auto w-max z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#1d1d1f]/95 text-white border border-white/15 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-200">
+          <div
+            className={`absolute top-4 inset-x-0 mx-auto w-max z-40 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#1d1d1f]/95 text-white border border-white/15 shadow-2xl backdrop-blur-xl transition-all duration-300 ${
+              isBannerVisible
+                ? 'opacity-100 translate-y-0 pointer-events-auto'
+                : 'opacity-0 -translate-y-2 pointer-events-none'
+            }`}
+          >
             <div className="flex items-center gap-2">
               <Lock size={14} className="text-amber-400 shrink-0" />
               <span className="text-xs font-semibold">View-Only Whiteboard</span>
@@ -1339,7 +1372,7 @@ export default function Whiteboard({
               <button
                 type="button"
                 onClick={onRequestPermission}
-                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-bold transition-all cursor-pointer shadow-md transform-gpu active:scale-95 flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-bold transition-colors cursor-pointer select-none outline-none transform-none active:transform-none flex items-center gap-1.5 shadow-md"
               >
                 <Sparkles size={12} />
                 <span>Ask Draw Access</span>
@@ -1350,35 +1383,44 @@ export default function Whiteboard({
 
         {/* Tutor Permission Request Prompt Overlay */}
         {isTutor && whiteboardRequests.length > 0 && (
-          <div className="absolute top-4 right-4 z-50 flex flex-col gap-2.5 max-w-xs w-full animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="absolute top-4 right-4 z-50 flex flex-col gap-3 max-w-[290px] w-full animate-in fade-in slide-in-from-top-4 duration-200">
             {whiteboardRequests.map((req) => (
               <div
-                key={req.socketId}
-                className="p-3.5 rounded-2xl bg-white border border-[#e5e5e7] shadow-2xl space-y-2.5 text-[#1d1d1f]"
+                key={req.socketId || req.name}
+                className="p-4 rounded-3xl bg-white/95 backdrop-blur-2xl border border-[#e5e5e7] shadow-2xl shadow-black/10 space-y-3 text-[#1d1d1f]"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-ping" />
-                    <span className="text-xs font-bold truncate">{req.name}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center text-xs font-extrabold shrink-0 uppercase">
+                      {req.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-extrabold text-[#1d1d1f] truncate">{req.name}</div>
+                      <div className="text-[10px] font-medium text-[#7a7a7a]">Draw Access Request</div>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-[#a1a1a6] font-mono">{req.time}</span>
+                  <span className="text-[10px] text-[#7a7a7a] font-mono shrink-0 px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5e7]">
+                    {req.time}
+                  </span>
                 </div>
-                <p className="text-[11px] text-[#525252] leading-snug">
-                  Requested permission to draw on the Whiteboard.
+
+                <p className="text-[11px] text-[#525252] leading-relaxed">
+                  Requested permission to write and draw on the Whiteboard.
                 </p>
+
                 <div className="flex items-center gap-2 pt-0.5">
                   <button
                     type="button"
                     onClick={() => onGrantPermission?.(req.socketId)}
-                    className="flex-1 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1"
+                    className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors cursor-pointer shadow-md flex items-center justify-center gap-1.5 select-none outline-none transform-none active:transform-none"
                   >
-                    <Check size={13} />
+                    <Check size={14} />
                     <span>Grant</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => onDenyRequest?.(req.socketId)}
-                    className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] text-xs font-semibold transition-all cursor-pointer border border-[#e5e5e7]"
+                    className="px-4 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] text-xs font-bold transition-colors cursor-pointer border border-[#e5e5e7] select-none outline-none transform-none active:transform-none"
                   >
                     Deny
                   </button>

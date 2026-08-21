@@ -123,7 +123,7 @@ const googleAuthCallback = async (req, res) => {
               if (isProd && (!frontendUrl || frontendUrl.indexOf('localhost') !== -1 || frontendUrl.indexOf('google.com') !== -1)) {
                 frontendUrl = 'https://socrates-steel.vercel.app';
               } else if (!frontendUrl) {
-                frontendUrl = 'http://localhost:5173';
+                frontendUrl = 'http://localhost:3000';
               }
               window.location.href = frontendUrl + '/dashboard?token=${token}';
             }
