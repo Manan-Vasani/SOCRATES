@@ -43,6 +43,7 @@ interface RoomHeaderProps {
   isChatOpen: boolean
   onChatToggle: () => void
   onShareLink?: () => void
+  currentUserRole?: 'tutor' | 'student'
 }
 
 export default function RoomHeader({
@@ -64,6 +65,7 @@ export default function RoomHeader({
   isChatOpen,
   onChatToggle,
   onShareLink,
+  currentUserRole,
 }: RoomHeaderProps) {
   const [elapsed, setElapsed] = useState(0)
 
@@ -171,8 +173,6 @@ export default function RoomHeader({
           </div>
         </div>
 
-
-
         <MediaBtn active={isMicOn} danger={!isMicOn} onClick={onMicToggle} title={isMicOn ? 'Mute' : 'Unmute'}>
           {isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
         </MediaBtn>
@@ -185,9 +185,11 @@ export default function RoomHeader({
 
         <div className="w-px h-7 bg-white/8 mx-0.5" />
 
-        <MediaBtn active={isHandRaised} onClick={onHandRaise} title="Raise Hand">
-          <Hand size={16} />
-        </MediaBtn>
+        {currentUserRole !== 'tutor' && (
+          <MediaBtn active={isHandRaised} onClick={onHandRaise} title="Raise Hand">
+            <Hand size={16} />
+          </MediaBtn>
+        )}
         <MediaBtn onClick={onAIToggle} title="Socrates AI">
           <Bot size={16} />
         </MediaBtn>

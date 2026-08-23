@@ -11,7 +11,13 @@ import AIAssistantDrawer from '../components/study/AIAssistantDrawer'
 import MeetingLobby from '../components/study/MeetingLobby'
 import { useWebRTC } from '../hooks/useWebRTC'
 import { useAuthStore } from '../store/useAuthStore'
-import { fetchStudyRoom, joinStudyRoom, leaveStudyRoom } from '../services/api'
+import {
+  fetchStudyRoom,
+  joinStudyRoom,
+  leaveStudyRoom,
+  endStudyRoom,
+  fetchStudyRoomMessages,
+} from '../services/api'
 
 export default function StudyRoom() {
   const { roomId, meetingId } = useParams<{ roomId?: string; meetingId?: string }>()
@@ -29,44 +35,6 @@ export default function StudyRoom() {
     message?: string
     studentName?: string
   } | null>(null)
-
-  // Fetch room metadata and authorization
-  useEffect(() => {
-    setIsDetailsLoading(true)
-    let matchedLocalSession: any = null
-    try {
-      const stored = localStorage.getItem('socrates_profile_sessions')
-      if (stored) {
-        const list = JSON.parse(stored)
-        matchedLocalSession = list.find((s: any) => s.id === activeRoomId || s.meetingId === activeRoomId)
-      }
-    } catch (e) {}
-
-    fetchStudyRoom(activeRoomId).then((res) => {
-      const apiData = res?.data || {}
-      const rawTitle = apiData.title || apiData.description || ''
-      const isGeneric = !rawTitle || rawTitle.includes('sess-') || rawTitle.includes('Study Session (')
-      const hostName = apiData.host?.fullName
-
-      if (apiData.authorization) {
-        setAuthorization(apiData.authorization)
-      }
-
-      setSessionDetails({
-        subject: matchedLocalSession?.subject || (apiData.subject && apiData.subject !== 'Tutoring Session' ? apiData.subject : 'Linear Algebra'),
-        topic: matchedLocalSession?.topic || (isGeneric ? 'Matrix Decompositions, Vector Spaces & Core Practice' : rawTitle),
-        tutorName: matchedLocalSession?.tutorName || (hostName && hostName !== 'Tutor' ? hostName : 'Marcus Chen'),
-        studentName: matchedLocalSession?.studentName || user?.name || 'Manan Vasani',
-        dateStr: matchedLocalSession?.dateStr || 'Mon, Aug 17, 2026',
-        timeStr: matchedLocalSession?.timeStr || '04:30 PM',
-        fee: matchedLocalSession?.fee || 55,
-        duration: matchedLocalSession?.duration || 60,
-      })
-      setIsDetailsLoading(false)
-    }).catch(() => {
-      setIsDetailsLoading(false)
-    })
-  }, [activeRoomId, user])
 
   const hasInitializedName = useRef(false)
 
@@ -117,6 +85,7 @@ export default function StudyRoom() {
     localStream,
     participants,
     messages,
+    socketRef,
     isMicOn,
     isCameraOn,
     isScreenSharing,
@@ -137,10 +106,79 @@ export default function StudyRoom() {
     sendMessage,
     leaveRoom,
     setParticipants,
+    setMessages,
   } = useWebRTC({
     roomId: activeRoomId,
     currentUser,
   })
+
+  // Fetch room metadata, authorization and chat history
+  useEffect(() => {
+    setIsDetailsLoading(true)
+    let matchedLocalSession: any = null
+    try {
+      const stored = localStorage.getItem('socrates_profile_sessions')
+      if (stored) {
+        const list = JSON.parse(stored)
+        matchedLocalSession = list.find((s: any) => s.id === activeRoomId || s.meetingId === activeRoomId)
+      }
+    } catch (e) {}
+
+    fetchStudyRoom(activeRoomId)
+      .then((res) => {
+        const apiData = res?.data || {}
+        const rawTitle = apiData.title || apiData.description || ''
+        const isGeneric = !rawTitle || rawTitle.includes('sess-') || rawTitle.includes('Study Session (')
+        const hostName = apiData.host?.fullName || apiData.tutorName
+
+        if (apiData.authorization) {
+          setAuthorization(apiData.authorization)
+        }
+
+        setSessionDetails({
+          subject:
+            matchedLocalSession?.subject ||
+            (apiData.subject && apiData.subject !== 'Tutoring Session' ? apiData.subject : 'Linear Algebra'),
+          topic:
+            matchedLocalSession?.topic ||
+            (isGeneric ? 'Matrix Decompositions, Vector Spaces & Core Practice' : rawTitle),
+          tutorName:
+            matchedLocalSession?.tutorName ||
+            (hostName && hostName !== 'Tutor' ? hostName : 'Marcus Chen'),
+          studentName: matchedLocalSession?.studentName || apiData.studentName || user?.fullName || user?.name || 'Student',
+          dateStr: matchedLocalSession?.dateStr || apiData.dateStr || 'Mon, Aug 17, 2026',
+          timeStr: matchedLocalSession?.timeStr || apiData.timeStr || '04:30 PM',
+          fee: matchedLocalSession?.fee || apiData.fee || 55,
+          duration: matchedLocalSession?.duration || apiData.duration || 60,
+        })
+        setIsDetailsLoading(false)
+      })
+      .catch(() => {
+        setIsDetailsLoading(false)
+      })
+
+    // Fetch existing room chat history from MongoDB
+    fetchStudyRoomMessages(activeRoomId)
+      .then((res) => {
+        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          const loadedMessages = res.data.map((m: any) => ({
+            id: m._id || String(Date.now()),
+            sender: m.sender?.fullName || m.sender?.name || 'Participant',
+            senderId: m.sender?._id || m.sender,
+            role: m.sender?.role === 'tutor' ? 'tutor' : m.type === 'system' ? 'system' : 'student',
+            text: m.text,
+            time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }))
+          setMessages((prev) => {
+            // Keep unique messages
+            const existingIds = new Set(prev.map((p) => p.id))
+            const filtered = loadedMessages.filter((m: any) => !existingIds.has(m.id))
+            return [...filtered, ...prev]
+          })
+        }
+      })
+      .catch(() => {})
+  }, [activeRoomId, user, setMessages])
 
   const [stageMode, setStageMode] = useState<StageMode>('split')
   const [isAIOpen, setIsAIOpen] = useState(false)
@@ -301,6 +339,8 @@ export default function StudyRoom() {
             <Whiteboard
               canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
               isTutor={currentUser.role === 'tutor'}
+              socketRef={socketRef}
+              roomId={activeRoomId}
               onRequestPermission={requestWhiteboardPermission}
               onGrantPermission={grantWhiteboardPermission}
               onRevokePermission={revokeWhiteboardPermission}
@@ -312,7 +352,7 @@ export default function StudyRoom() {
       case 'code':
         return (
           <div className="flex-1 min-h-0 flex">
-            <CodeSandbox />
+            <CodeSandbox socketRef={socketRef} roomId={activeRoomId} />
           </div>
         )
       case 'grid':
@@ -372,6 +412,8 @@ export default function StudyRoom() {
               <Whiteboard
                 canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
                 isTutor={currentUser.role === 'tutor'}
+                socketRef={socketRef}
+                roomId={activeRoomId}
                 onRequestPermission={requestWhiteboardPermission}
                 onGrantPermission={grantWhiteboardPermission}
                 onRevokePermission={revokeWhiteboardPermission}
@@ -382,6 +424,16 @@ export default function StudyRoom() {
           </div>
         )
     }
+  }
+
+  const handleEndSession = async () => {
+    try {
+      await endStudyRoom(activeRoomId)
+      toast.success('Study session ended. Session recaps dispatched to all participants!')
+    } catch (e) {}
+    leaveRoom()
+    setShowLeaveModal(false)
+    navigate('/profile')
   }
 
   return (
@@ -420,6 +472,7 @@ export default function StudyRoom() {
           }
         }}
         onShareLink={activeRoomId.startsWith('sess-') ? undefined : handleShareLink}
+        currentUserRole={currentUser.role}
       />
 
       {/* Main Content */}
@@ -447,7 +500,12 @@ export default function StudyRoom() {
             className="shrink-0 flex flex-col h-full overflow-hidden border-l border-[#e5e5e7] bg-white relative max-w-full z-30"
           >
             {isAIOpen ? (
-              <AIAssistantDrawer isOpen={true} onClose={() => setIsAIOpen(false)} />
+              <AIAssistantDrawer
+                isOpen={true}
+                onClose={() => setIsAIOpen(false)}
+                roomId={activeRoomId}
+                activeTopic={sessionDetails?.topic || sessionDetails?.subject || 'Mathematics'}
+              />
             ) : (
               <StudyRoomChat
                 participants={participants}
@@ -463,12 +521,14 @@ export default function StudyRoom() {
         )}
       </div>
 
-      {/* Leave Confirmation Modal */}
+      {/* Leave / End Confirmation Modal */}
       {showLeaveModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-7 w-full max-w-sm mx-4 space-y-5 animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#1d1d1f]">Leave Session?</h3>
+              <h3 className="text-lg font-bold text-[#1d1d1f]">
+                {currentUser.role === 'tutor' ? 'Manage Study Session' : 'Leave Session?'}
+              </h3>
               <button
                 onClick={() => setShowLeaveModal(false)}
                 className="p-1.5 rounded-xl hover:bg-[#f0f0f2] text-[#7a7a7a] cursor-pointer transition-colors"
@@ -477,21 +537,33 @@ export default function StudyRoom() {
               </button>
             </div>
             <p className="text-sm text-[#525252] leading-relaxed">
-              Are you sure you want to leave this study session? You can rejoin later using the same room link.
+              {currentUser.role === 'tutor'
+                ? 'Would you like to temporarily step out or officially conclude the session and dispatch summary recaps to all learners?'
+                : 'Are you sure you want to leave this study session? You can rejoin later using the same room link.'}
             </p>
-            <div className="flex gap-2.5 justify-end pt-1">
-              <button
-                onClick={() => setShowLeaveModal(false)}
-                className="px-5 py-2.5 rounded-xl border border-[#e5e5e7] text-sm font-medium text-[#525252] hover:bg-[#f5f5f7] transition-all cursor-pointer"
-              >
-                Stay
-              </button>
-              <button
-                onClick={confirmLeave}
-                className="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-all cursor-pointer shadow-lg shadow-red-500/20"
-              >
-                Leave Session
-              </button>
+            <div className="flex flex-col gap-2 pt-1">
+              {currentUser.role === 'tutor' && (
+                <button
+                  onClick={handleEndSession}
+                  className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-all cursor-pointer shadow-lg shadow-red-500/20"
+                >
+                  End Session & Dispatch Recaps
+                </button>
+              )}
+              <div className="flex gap-2.5 justify-end">
+                <button
+                  onClick={() => setShowLeaveModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-[#e5e5e7] text-sm font-medium text-[#525252] hover:bg-[#f5f5f7] transition-all cursor-pointer"
+                >
+                  Stay
+                </button>
+                <button
+                  onClick={confirmLeave}
+                  className="flex-1 py-2.5 rounded-xl bg-[#1d1d1f] hover:bg-black text-white text-sm font-bold transition-all cursor-pointer"
+                >
+                  {currentUser.role === 'tutor' ? 'Step Out' : 'Leave Room'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -13,8 +13,9 @@ router.post('/:id/join', protect, studyRoom.joinRoom);
 router.post('/:id/leave', protect, studyRoom.leaveRoom);
 router.post('/:id/end', protect, studyRoom.endRoom);
 
-// ─── Room Chat ─────────────────────────────────────────────────
-router.get('/:id/messages', protect, studyRoom.getMessages);
+// ─── Room Chat & AI Copilot ──────────────────────────────────
+router.get('/:id/messages', optionalAuth, studyRoom.getMessages);
+router.post('/:id/ai-copilot', optionalAuth, studyRoom.aiCopilot);
 
 // ─── Thread-Linked Room ────────────────────────────────────────
 router.post('/from-thread/:threadId', protect, studyRoom.createRoomFromThread);

@@ -20,7 +20,8 @@ export interface Participant {
 export interface ChatMessage {
   id: string
   sender: string
-  role: 'tutor' | 'student' | 'system'
+  senderId?: string
+  role: 'tutor' | 'student' | 'system' | 'ai'
   text: string
   time: string
 }
@@ -43,64 +44,6 @@ const ICE_SERVERS: RTCConfiguration = {
   ],
 }
 
-// Generate animated synthetic video stream when physical camera hardware is locked by another browser tab
-function createSyntheticVideoStream(name: string): MediaStream {
-  const canvas = document.createElement('canvas')
-  canvas.width = 640
-  canvas.height = 480
-  const ctx = canvas.getContext('2d')
-
-  let frame = 0
-  const draw = () => {
-    if (!ctx) return
-    frame++
-    ctx.save()
-    // Pre-flip canvas horizontally so CSS scale-x-[-1] mirrors it back to 100% normal readable text
-    ctx.translate(640, 0)
-    ctx.scale(-1, 1)
-
-    const grad = ctx.createLinearGradient(0, 0, 640, 480)
-    grad.addColorStop(0, '#18181c')
-    grad.addColorStop(1, '#0e0e12')
-    ctx.fillStyle = grad
-    ctx.fillRect(0, 0, 640, 480)
-
-    const pulse = Math.sin(frame * 0.05) * 5
-    ctx.beginPath()
-    ctx.arc(320, 210, 55 + pulse, 0, Math.PI * 2)
-    ctx.fillStyle = '#0066cc'
-    ctx.shadowColor = '#0066cc'
-    ctx.shadowBlur = 15
-    ctx.fill()
-    ctx.shadowBlur = 0
-
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 32px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    const initials = name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
-    ctx.fillText(initials || 'U', 320, 210)
-
-    ctx.font = '14px sans-serif'
-    ctx.fillStyle = '#a1a1a6'
-    ctx.fillText(name, 320, 290)
-
-    ctx.restore()
-  }
-
-  const interval = setInterval(draw, 50)
-  const stream = canvas.captureStream(25)
-
-  if (stream.getTracks()[0]) {
-    const originalStop = stream.getTracks()[0].stop.bind(stream.getTracks()[0])
-    stream.getTracks()[0].stop = () => {
-      clearInterval(interval)
-      originalStop()
-    }
-  }
-  return stream
-}
-
 const SOCKET_URL =
   (import.meta.env.VITE_SOCKET_URL as string) ||
   (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/v1', '') : 'http://localhost:5000')
@@ -119,7 +62,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     },
   ])
   const [isMicOn, setIsMicOn] = useState(true)
-  const [isCameraOn, setIsCameraOn] = useState(true)
+  const [isCameraOn, setIsCameraOn] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [isHandRaised, setIsHandRaised] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<
@@ -157,92 +100,73 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     }
   }, [])
 
-  // 1. Acquire Local Media Stream (Camera & Microphone) with Synthetic Stream Fallback
+  // 1. Acquire Local Media Stream (Camera & Microphone)
   useEffect(() => {
     let isMounted = true
 
     async function initLocalStream() {
+      let stream: MediaStream | null = null
+      let camOk = false
+      let micOk = false
+
       try {
         console.log('[WebRTC] Requesting local camera & microphone access...')
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
           audio: { echoCancellation: true, noiseSuppression: true },
         })
+        camOk = true
+        micOk = true
+        console.log('[WebRTC] Camera & microphone acquired successfully.')
+      } catch (videoErr) {
+        console.warn('[WebRTC] Camera unavailable or denied, attempting audio only...', videoErr)
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+          })
+          micOk = true
+          console.log('[WebRTC] Microphone acquired successfully (camera off).')
+        } catch (audioErr) {
+          console.warn('[WebRTC] Audio access denied or unavailable:', audioErr)
+        }
+      }
 
-        if (!isMounted) {
-          stream.getTracks().forEach((track) => track.stop())
-          return
+      if (!isMounted) {
+        if (stream) stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+
+      localStreamRef.current = stream
+      setLocalStream(stream)
+      setIsCameraOn(camOk)
+      setIsMicOn(micOk)
+
+      setParticipants((prev) => {
+        const exists = prev.some((p) => p.id === currentUser.id || p.name.includes('(You)'))
+        const selfParticipant: Participant = {
+          id: currentUser.id,
+          socketId: socketRef.current?.id || 'local-self',
+          name: `${currentUser.name} (You)`,
+          role: currentUser.role,
+          avatar: currentUser.avatar,
+          stream: stream || undefined,
+          isMuted: !micOk,
+          isCameraOff: !camOk,
+          isSpeaking: false,
+          isPinned: false,
+          isHandRaised: false,
+          isScreenSharing: false,
         }
 
-        localStreamRef.current = stream
-        setLocalStream(stream)
-        setIsCameraOn(true)
-        setIsMicOn(true)
-        console.log('[WebRTC] Camera & microphone streams acquired successfully.')
-
-        setParticipants((prev) => {
-          const exists = prev.some((p) => p.id === currentUser.id || p.name.includes('(You)'))
-          if (!exists) {
-            return [
-              {
-                id: currentUser.id,
-                socketId: socketRef.current?.id || 'local-self',
-                name: `${currentUser.name} (You)`,
-                role: currentUser.role,
-                avatar: currentUser.avatar,
-                stream: stream,
-                isMuted: false,
-                isCameraOff: false,
-                isSpeaking: false,
-                isPinned: false,
-                isHandRaised: false,
-                isScreenSharing: false,
-              },
-            ]
-          }
-          return prev.map((p) =>
-            p.id === currentUser.id || p.name.includes('(You)')
-              ? { ...p, stream: stream, isCameraOff: false, isMuted: false }
-              : p
-          )
-        })
-      } catch (err: any) {
-        console.warn('[WebRTC] Media access constrained (camera locked by another tab/denied). Creating synthetic video stream fallback...', err)
-        if (!isMounted) return
-
-        const synthStream = createSyntheticVideoStream(currentUser.name)
-        localStreamRef.current = synthStream
-        setLocalStream(synthStream)
-        setIsCameraOn(true)
-        setIsMicOn(true)
-
-        setParticipants((prev) => {
-          const exists = prev.some((p) => p.id === currentUser.id || p.name.includes('(You)'))
-          if (!exists) {
-            return [
-              {
-                id: currentUser.id,
-                socketId: socketRef.current?.id || 'local-self',
-                name: `${currentUser.name} (You)`,
-                role: currentUser.role,
-                avatar: currentUser.avatar,
-                stream: synthStream,
-                isMuted: false,
-                isCameraOff: false,
-                isSpeaking: false,
-                isPinned: false,
-                isHandRaised: false,
-                isScreenSharing: false,
-              },
-            ]
-          }
-          return prev.map((p) =>
-            p.id === currentUser.id || p.name.includes('(You)')
-              ? { ...p, stream: synthStream, isCameraOff: false, isMuted: false }
-              : p
-          )
-        })
-      }
+        if (!exists) {
+          return [selfParticipant]
+        }
+        return prev.map((p) =>
+          p.id === currentUser.id || p.name.includes('(You)')
+            ? { ...p, stream: stream || undefined, isCameraOff: !camOk, isMuted: !micOk }
+            : p
+        )
+      })
     }
 
     initLocalStream()
@@ -266,14 +190,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       console.log(`[WebRTC] Creating RTCPeerConnection for target peer: ${targetSocketId}`)
       const pc = new RTCPeerConnection(ICE_SERVERS)
 
-      // Guarantee localStreamRef.current exists so SDP offer/answer always contains media tracks
-      if (!localStreamRef.current) {
-        const synthStream = createSyntheticVideoStream(currentUser.name)
-        localStreamRef.current = synthStream
-        setLocalStream(synthStream)
-      }
-
-      // Add local media tracks to peer connection
+      // Add local media tracks to peer connection if available
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => {
           try {
@@ -282,6 +199,11 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
             console.warn(`[WebRTC] addTrack error:`, e)
           }
         })
+      } else {
+        try {
+          pc.addTransceiver('audio', { direction: 'sendrecv' })
+          pc.addTransceiver('video', { direction: 'sendrecv' })
+        } catch (e) {}
       }
 
       // Relay ICE candidates to remote peer via Socket.IO
@@ -297,16 +219,13 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       // Handle incoming remote media stream track (robustly merge tracks into remote stream)
       pc.ontrack = (event) => {
         console.log(`[WebRTC] Received remote stream track (${event.track.kind}) from ${targetSocketId}`)
-        const track = event.track
+        const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track])
+        const hasLiveVideo = stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live')
 
         setParticipants((prev) =>
           prev.map((p) => {
             if (p.socketId === targetSocketId || p.id === targetSocketId) {
-              const currentStream = p.stream ? new MediaStream(p.stream.getTracks()) : new MediaStream()
-              if (!currentStream.getTracks().some((t) => t.id === track.id)) {
-                currentStream.addTrack(track)
-              }
-              return { ...p, stream: currentStream, isCameraOff: false }
+              return { ...p, stream, isCameraOff: !hasLiveVideo }
             }
             return p
           })
@@ -395,7 +314,11 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       // Join room signaling channel
       socket.emit('join-room', {
         roomId,
-        user: currentUser,
+        user: {
+          ...currentUser,
+          isCameraOff: !isCameraOn,
+          isMuted: !isMicOn,
+        },
       })
     })
 
@@ -929,13 +852,14 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       const newMsg: ChatMessage = {
         id: String(Date.now()),
         sender: currentUser.name,
+        senderId: currentUser.id,
         role: currentUser.role,
         text,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
       socketRef.current.emit('send-room-message', { roomId, message: newMsg })
     },
-    [roomId, currentUser.name, currentUser.role]
+    [roomId, currentUser.id, currentUser.name, currentUser.role]
   )
 
   // Whiteboard Permission Methods
@@ -989,6 +913,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     localStream,
     participants,
     messages,
+    socketRef,
     isMicOn,
     isCameraOn,
     isScreenSharing,
@@ -1009,5 +934,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     sendMessage,
     leaveRoom,
     setParticipants,
+    setMessages,
   }
 }

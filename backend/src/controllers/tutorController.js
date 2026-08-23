@@ -1,11 +1,22 @@
+const crypto = require('crypto');
 const Tutor = require('../models/Tutor');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
+const {
+  buildTutorBookingRequestEmail,
+  buildStudentBookingPendingEmail,
+  buildStudentBookingConfirmedEmail,
+  buildTutorStudentJoinedGroupEmail,
+  buildHostStudentPeerJoinedEmail,
+  buildPeerStudentJoinedGroupEmail,
+} = require('../utils/bookingEmails');
 
 const SEEDED_TUTORS = [
   {
     id: 'tut_101',
     name: 'Dr. Evelyn Reed',
+    email: '24dcs147@charusat.edu.in',
     subject: 'Algorithms & Data Structures',
     experience: '8+ yrs exp • Stanford PhD',
     rating: 4.98,
@@ -19,6 +30,7 @@ const SEEDED_TUTORS = [
   {
     id: 'tut_102',
     name: 'Marcus Chen',
+    email: '24dcs147@charusat.edu.in',
     subject: 'Linear Algebra & AI Foundations',
     experience: '6+ yrs exp • MIT Alum',
     rating: 4.95,
@@ -32,6 +44,7 @@ const SEEDED_TUTORS = [
   {
     id: 'tut_103',
     name: 'Sophia Williams',
+    email: 'sophia.williams@socrates.edu',
     subject: 'Quantum Mechanics & Physics',
     experience: '10+ yrs exp • Cambridge Postdoc',
     rating: 5.0,
@@ -45,6 +58,7 @@ const SEEDED_TUTORS = [
   {
     id: 'tut_104',
     name: 'Alexandre Dubois',
+    email: 'alexandre.dubois@socrates.edu',
     subject: 'Full-Stack React & Node Systems',
     experience: '7+ yrs exp • Senior Staff Engineer',
     rating: 4.92,
@@ -58,6 +72,7 @@ const SEEDED_TUTORS = [
   {
     id: 'tut_105',
     name: 'Priya Sharma',
+    email: 'priya.sharma@socrates.edu',
     subject: 'Statistics & Data Science',
     experience: '5+ yrs exp • UC Berkeley MS',
     rating: 4.97,
@@ -71,6 +86,7 @@ const SEEDED_TUTORS = [
   {
     id: 'tut_106',
     name: 'David Vance',
+    email: 'david.vance@socrates.edu',
     subject: 'Organic Chemistry & Biochemistry',
     experience: '9+ yrs exp • Johns Hopkins MD',
     rating: 4.99,
@@ -220,7 +236,7 @@ exports.getTutorBookings = async (req, res) => {
 exports.createBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const { studentName, date, time, subject, duration, topic, fee } = req.body;
+    const { studentName, date, time, subject, duration, topic, fee, studentEmail: bodyStudentEmail } = req.body;
 
     if (!studentName || !date || !time || !subject || !fee) {
       return res.status(400).json({ success: false, message: 'Missing required booking fields' });
@@ -228,6 +244,8 @@ exports.createBooking = async (req, res) => {
 
     const cleanDate = date.trim();
     const cleanTime = time.trim();
+    const isGroupBooking = !!(req.body.isGroupSession || req.body.allowGroupSplit);
+    const studentEmail = bodyStudentEmail || (req.user ? req.user.email : null) || 'student@socrates.edu';
 
     // Check for existing active booking for this tutor at the requested date and time slot
     const existingBooking = await Booking.findOne({
@@ -238,32 +256,226 @@ exports.createBooking = async (req, res) => {
     });
 
     if (existingBooking) {
+      // If the existing booking is an open group session, allow the student to join the group
+      if (existingBooking.isGroupSession) {
+        const alreadyJoined = 
+          existingBooking.studentEmail === studentEmail ||
+          existingBooking.participants.some(p => p.studentEmail === studentEmail);
+
+        if (!alreadyJoined) {
+          existingBooking.participants.push({
+            studentId: req.user ? req.user._id : undefined,
+            studentName,
+            studentEmail,
+            joinedAt: new Date(),
+          });
+          await existingBooking.save();
+
+          const totalParticipants = existingBooking.participants.length;
+          const splitFee = Math.round(existingBooking.fee / Math.max(1, totalParticipants));
+
+          // 1. Send confirmation or pending email to this newly joined student (Student B)
+          if (existingBooking.status === 'confirmed') {
+            const confirmedHtml = buildStudentBookingConfirmedEmail({
+              booking: existingBooking,
+              tutorName: existingBooking.tutorName || 'Tutor',
+              studentName,
+              frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+            });
+            sendEmail({
+              to: studentEmail,
+              subject: `Session Confirmed with ${existingBooking.tutorName || 'Tutor'} (Group Session) — SOCRATES`,
+              html: confirmedHtml,
+            }).catch((err) => console.error('Failed to notify group student:', err.message));
+          } else {
+            const pendingHtml = buildStudentBookingPendingEmail({
+              booking: existingBooking,
+              tutorName: existingBooking.tutorName || 'Tutor',
+              studentName,
+            });
+            sendEmail({
+              to: studentEmail,
+              subject: `Booking Request Sent to ${existingBooking.tutorName || 'Tutor'} — SOCRATES`,
+              html: pendingHtml,
+            }).catch((err) => console.error('Failed to notify group student:', err.message));
+          }
+
+          // 2. Notify Host Student (Student A) that a peer has joined and fee is split
+          if (existingBooking.studentEmail && existingBooking.studentEmail !== studentEmail) {
+            const hostHtml = buildHostStudentPeerJoinedEmail({
+              booking: existingBooking,
+              hostName: existingBooking.studentName,
+              newStudentName: studentName,
+              tutorName: existingBooking.tutorName || 'Tutor',
+              splitFee,
+              totalParticipants,
+            });
+            sendEmail({
+              to: existingBooking.studentEmail,
+              subject: `Peer Learner (${studentName}) Joined Your Session — SOCRATES`,
+              html: hostHtml,
+            }).catch((err) => console.error('Failed to notify host student on peer join:', err.message));
+          }
+
+          // 3. Notify the Tutor that a new student has enrolled in the group session
+          if (existingBooking.tutorEmail) {
+            const tutorRosterHtml = buildTutorStudentJoinedGroupEmail({
+              booking: existingBooking,
+              tutorName: existingBooking.tutorName || 'Tutor',
+              newStudentName: studentName,
+              newStudentEmail: studentEmail,
+              totalParticipants,
+            });
+            sendEmail({
+              to: existingBooking.tutorEmail,
+              subject: `New Student Joined Group Session: ${studentName} — SOCRATES`,
+              html: tutorRosterHtml,
+            }).catch((err) => console.error('Failed to notify tutor on roster update:', err.message));
+          }
+
+          // 4. Notify other peer students who already joined (Student C, D, etc.)
+          existingBooking.participants.forEach((p) => {
+            if (p.studentEmail && p.studentEmail !== studentEmail && p.studentEmail !== existingBooking.studentEmail) {
+              const peerHtml = buildPeerStudentJoinedGroupEmail({
+                booking: existingBooking,
+                peerStudentName: p.studentName || 'Learner',
+                newStudentName: studentName,
+                tutorName: existingBooking.tutorName || 'Tutor',
+                totalParticipants,
+              });
+              sendEmail({
+                to: p.studentEmail,
+                subject: `New Member (${studentName}) in Your Study Group — SOCRATES`,
+                html: peerHtml,
+              }).catch((err) => console.error(`Failed to notify peer ${p.studentEmail}:`, err.message));
+            }
+          });
+
+          return res.status(200).json({
+            success: true,
+            message: 'Joined group tutoring session successfully!',
+            data: existingBooking,
+          });
+        } else {
+          return res.status(200).json({
+            success: true,
+            message: 'You are already registered in this session.',
+            data: existingBooking,
+          });
+        }
+      }
+
       return res.status(409).json({
         success: false,
-        message: `This time slot (${cleanTime}) on ${cleanDate} is already booked for this tutor. Please select another time slot.`,
+        message: `This time slot (${cleanTime}) on ${cleanDate} is already booked as a private 1-on-1 session. Please select another time slot.`,
       });
     }
 
+    // Resolve tutor name and email
+    let tutorName = 'Peer Tutor';
+    let tutorEmail = req.body.tutorEmail || '24dcs147@charusat.edu.in';
+
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      const dbUser = await User.findById(id).catch(() => null);
+      if (dbUser) {
+        tutorName = dbUser.fullName || dbUser.name || tutorName;
+        tutorEmail = req.body.tutorEmail || dbUser.email || tutorEmail;
+      } else {
+        const dbTutor = await Tutor.findById(id).catch(() => null);
+        if (dbTutor) {
+          tutorName = dbTutor.name || tutorName;
+          tutorEmail = req.body.tutorEmail || dbTutor.email || tutorEmail;
+        }
+      }
+    }
+
+    if (tutorName === 'Peer Tutor') {
+      const seeded = findTutorInList(id, SEEDED_TUTORS);
+      if (seeded) {
+        tutorName = seeded.name;
+        tutorEmail = req.body.tutorEmail || seeded.email || tutorEmail;
+      }
+    }
+
+    const approvalToken = crypto.randomUUID();
+    const meetingId = req.body.meetingId || `sess-${Date.now()}`;
+
     const booking = await Booking.create({
       tutorId: id,
+      tutorName,
+      tutorEmail,
       studentId: req.user ? req.user._id : undefined,
       studentName,
+      studentEmail,
       date: cleanDate,
       time: cleanTime,
       subject,
       duration: duration || 60,
       topic: topic || '',
       fee,
-      meetingId: req.body.meetingId || `sess-${Date.now()}`,
-      status: 'confirmed',
+      meetingId,
+      approvalToken,
+      isGroupSession: isGroupBooking,
+      participants: [
+        {
+          studentId: req.user ? req.user._id : undefined,
+          studentName,
+          studentEmail,
+          joinedAt: new Date(),
+        },
+      ],
+      status: 'pending',
     });
+
+    const host = req.get('host') || 'localhost:5000';
+    const protocol = req.protocol || 'http';
+    const approveUrl = `${protocol}://${host}/api/v1/bookings/${booking._id}/approve?token=${approvalToken}`;
+    const declineUrl = `${protocol}://${host}/api/v1/bookings/${booking._id}/decline?token=${approvalToken}`;
+
+    // 1. Dispatch email to tutor with Approve / Decline links
+    if (tutorEmail) {
+      const tutorEmailHtml = buildTutorBookingRequestEmail({
+        booking,
+        tutorName,
+        studentName,
+        studentEmail,
+        approveUrl,
+        declineUrl,
+      });
+
+      sendEmail({
+        to: tutorEmail,
+        subject: `Session Request from ${studentName} — SOCRATES`,
+        html: tutorEmailHtml,
+      }).catch((err) => {
+        console.error('⚠️ Failed to dispatch tutor request email:', err.message);
+      });
+    }
+
+    // 2. Dispatch pending status email to student
+    if (studentEmail) {
+      const studentEmailHtml = buildStudentBookingPendingEmail({
+        booking,
+        tutorName,
+        studentName,
+      });
+
+      sendEmail({
+        to: studentEmail,
+        subject: `Booking Request Sent to ${tutorName} — SOCRATES`,
+        html: studentEmailHtml,
+      }).catch((err) => {
+        console.error('⚠️ Failed to dispatch student pending email:', err.message);
+      });
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Session booked successfully with tutor!',
+      message: 'Session requested successfully! An approval request email has been sent to the tutor.',
       data: booking,
     });
   } catch (error) {
+    console.error('Create booking error:', error);
     res.status(500).json({ success: false, message: 'Could not complete booking process' });
   }
 };

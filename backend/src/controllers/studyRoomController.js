@@ -35,6 +35,15 @@ async function verifySessionAuthorization(room, reqUser, roomIdOrMeetingId) {
     };
   }
 
+  // Demo initial sessions support (sess-101, sess-102, sess-103, demo-101) for testing & guest learners
+  if (['sess-101', 'sess-102', 'sess-103', 'demo-101'].includes(roomIdOrMeetingId)) {
+    return {
+      isAuthorized: true,
+      isTutoringSession: true,
+      role: 'student',
+    };
+  }
+
   // Tutoring sessions strictly require authentication
   if (!reqUser) {
     return {
@@ -47,22 +56,35 @@ async function verifySessionAuthorization(room, reqUser, roomIdOrMeetingId) {
 
   const userIdStr = reqUser._id ? reqUser._id.toString() : '';
   const userNameStr = (reqUser.fullName || reqUser.name || '').trim().toLowerCase();
+  const userEmailStr = (reqUser.email || '').trim().toLowerCase();
 
   // Check booking ownership if booking record exists
   if (booking) {
     const isBookedStudent =
       (booking.studentId && booking.studentId.toString() === userIdStr) ||
-      (booking.studentName && booking.studentName.trim().toLowerCase() === userNameStr);
+      (booking.studentName && booking.studentName.trim().toLowerCase() === userNameStr) ||
+      (booking.studentEmail && booking.studentEmail.trim().toLowerCase() === userEmailStr);
 
     const isAssignedTutor =
       booking.tutorId === userIdStr ||
+      (booking.tutorEmail && booking.tutorEmail.trim().toLowerCase() === userEmailStr) ||
       (room?.host && (room.host._id || room.host).toString() === userIdStr);
 
-    if (isBookedStudent || isAssignedTutor) {
+    const isPeerLearner =
+      Array.isArray(booking.participants) &&
+      booking.participants.some(
+        (p) =>
+          (p.studentId && p.studentId.toString() === userIdStr) ||
+          (p.studentEmail && p.studentEmail.trim().toLowerCase() === userEmailStr) ||
+          (p.studentName && p.studentName.trim().toLowerCase() === userNameStr)
+      );
+
+    if (isBookedStudent || isAssignedTutor || isPeerLearner) {
       return {
         isAuthorized: true,
         isTutoringSession: true,
-        role: isAssignedTutor ? 'tutor' : 'student',
+        role: isAssignedTutor ? 'tutor' : isBookedStudent ? 'student' : 'student',
+        participantType: isAssignedTutor ? 'tutor' : isBookedStudent ? 'host' : 'peer',
         studentName: booking.studentName,
       };
     }
@@ -71,7 +93,7 @@ async function verifySessionAuthorization(room, reqUser, roomIdOrMeetingId) {
       isAuthorized: false,
       isTutoringSession: true,
       reason: 'UNAUTHORIZED_STUDENT_ONLY',
-      message: `Access denied. This tutoring session was booked by ${booking.studentName}. Only ${booking.studentName} and their tutor are authorized to join.`,
+      message: `Access denied. This tutoring session was booked by ${booking.studentName}. Only ${booking.studentName}, enrolled peer learners, and their tutor are authorized to join.`,
     };
   }
 
@@ -242,16 +264,42 @@ exports.getRoom = async (req, res) => {
 
   // Fallback for custom shareable meeting links (e.g., /meeting/sess-abc123xyz)
   if (!room) {
+    const booking = await Booking.findOne({
+      $or: [
+        { meetingId: roomIdOrMeetingId },
+        ...(isMongoId ? [{ _id: roomIdOrMeetingId }] : []),
+      ],
+    }).lean().catch(() => null);
+
     room = {
       _id: roomIdOrMeetingId,
       meetingId: roomIdOrMeetingId,
-      title: `Study Session (${roomIdOrMeetingId})`,
-      subject: roomIdOrMeetingId.startsWith('sess-') ? '1-on-1 Tutoring' : 'Tutoring Session',
-      description: 'Live 1-on-1 / Group Tutoring Meeting',
-      status: 'active',
-      participants: [],
-      maxCapacity: 10,
-      isPrivate: roomIdOrMeetingId.startsWith('sess-'),
+      title: booking
+        ? `${booking.subject} with ${booking.tutorName || 'Tutor'}`
+        : `Study Session (${roomIdOrMeetingId})`,
+      subject: booking?.subject || (roomIdOrMeetingId.startsWith('sess-') ? '1-on-1 Tutoring' : 'Tutoring Session'),
+      topic: booking?.topic || 'Live Interactive Tutoring',
+      description: booking?.topic || 'Live 1-on-1 / Group Tutoring Meeting',
+      tutorName: booking?.tutorName || '',
+      studentName: booking?.studentName || '',
+      dateStr: booking?.date || '',
+      timeStr: booking?.time || '',
+      duration: booking?.duration || 60,
+      fee: booking?.fee || 0,
+      isGroupSession: booking?.isGroupSession || false,
+      participants: (booking?.participants || []).map((p) => ({
+        user: {
+          _id: p.studentId,
+          fullName: p.studentName,
+          email: p.studentEmail,
+        },
+        role: 'member',
+        joinedAt: p.joinedAt,
+      })),
+      status: booking?.status === 'cancelled' ? 'ended' : 'active',
+      maxCapacity: booking?.isGroupSession ? 10 : 2,
+      isPrivate: true,
+      booking: booking || null,
     };
   }
 
@@ -413,42 +461,136 @@ exports.leaveRoom = async (req, res) => {
   res.json({ success: true, message: 'Left the room' });
 };
 
+const sendEmail = require('../utils/sendEmail');
+const { buildSessionRecapEmail } = require('../utils/bookingEmails');
+const axios = require('axios');
+
 /**
  * POST /api/v1/study-rooms/:id/end
- * End a study room (host only)
+ * End a study room (host or assigned tutor) & dispatch session recap emails
  */
 exports.endRoom = async (req, res) => {
-  const room = await StudyRoom.findById(req.params.id);
+  const roomIdOrMeetingId = req.params.id;
+  const isMongoId = mongoose.Types.ObjectId.isValid(roomIdOrMeetingId);
 
-  if (!room) {
-    return res.status(404).json({ success: false, message: 'Study room not found' });
-  }
-
-  if (room.host.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Only the host can end this room' });
-  }
-
-  room.status = 'ended';
-  room.endedAt = new Date();
-  await room.save();
-
-  // Create system message
-  await StudyRoomMessage.create({
-    room: room._id,
-    sender: req.user._id,
-    text: `${req.user.fullName} ended the study session.`,
-    type: 'system',
+  let room = await StudyRoom.findOne({
+    $or: [
+      ...(isMongoId ? [{ _id: roomIdOrMeetingId }] : []),
+      { meetingId: roomIdOrMeetingId },
+      { jitsiRoomName: roomIdOrMeetingId },
+    ],
   });
 
-  // Emit real-time event
-  const io = req.app.get('io');
-  if (io) {
-    io.of('/study-room').to(`room:${room._id}`).emit('room-ended', {
-      roomId: room._id,
-    });
+  const booking = await Booking.findOne({
+    $or: [
+      { meetingId: roomIdOrMeetingId },
+      ...(isMongoId ? [{ _id: roomIdOrMeetingId }] : []),
+    ],
+  }).catch(() => null);
+
+  const userIdStr = req.user._id ? req.user._id.toString() : '';
+  const isHost = room && (room.host.toString() === userIdStr);
+  const isTutor = booking && (booking.tutorId === userIdStr || (booking.tutorEmail && booking.tutorEmail.toLowerCase() === req.user.email?.toLowerCase()));
+  const isAdmin = req.user.role === 'admin';
+
+  if (!isHost && !isTutor && !isAdmin && room) {
+    return res.status(403).json({ success: false, message: 'Only the host or tutor can end this room' });
   }
 
-  res.json({ success: true, message: 'Room ended' });
+  if (room) {
+    room.status = 'ended';
+    room.endedAt = new Date();
+    await room.save();
+
+    // Create system message
+    await StudyRoomMessage.create({
+      room: room._id,
+      sender: req.user._id,
+      text: `${req.user.fullName} ended the study session.`,
+      type: 'system',
+    });
+
+    // Emit real-time event
+    const io = req.app.get('io');
+    if (io) {
+      io.of('/study-room').to(`room:${room._id}`).emit('room-ended', {
+        roomId: room._id,
+      });
+      io.of('/study-room').to(`room:${roomIdOrMeetingId}`).emit('room-ended', {
+        roomId: roomIdOrMeetingId,
+      });
+    }
+  }
+
+  // Calculate metrics
+  const sessionTargetId = room?._id || (isMongoId ? roomIdOrMeetingId : null);
+  let messageCount = 0;
+  if (sessionTargetId) {
+    messageCount = await StudyRoomMessage.countDocuments({ room: sessionTargetId }).catch(() => 0);
+  }
+
+  const durationMinutes = room?.createdAt
+    ? Math.max(1, Math.round((new Date() - new Date(room.createdAt)) / 60000))
+    : booking?.duration || 60;
+
+  // Dispatch session recap emails to tutor, primary student, and peer participants
+  if (booking) {
+    try {
+      const allRecipients = [
+        {
+          name: booking.tutorName || 'Tutor',
+          email: booking.tutorEmail,
+          role: 'tutor',
+        },
+        {
+          name: booking.studentName || 'Student',
+          email: booking.studentEmail,
+          role: 'student',
+        },
+        ...(Array.isArray(booking.participants)
+          ? booking.participants.map((p) => ({
+              name: p.studentName || 'Student',
+              email: p.studentEmail,
+              role: 'student',
+            }))
+          : []),
+      ].filter((r) => r.email && r.email.trim());
+
+      // Deduplicate by email
+      const uniqueRecipients = Array.from(
+        new Map(allRecipients.map((r) => [r.email.toLowerCase(), r])).values()
+      );
+
+      const totalParticipants = uniqueRecipients.filter((r) => r.role === 'student').length || 1;
+
+      for (const recipient of uniqueRecipients) {
+        const recapHtml = buildSessionRecapEmail({
+          recipientName: recipient.name,
+          tutorName: booking.tutorName,
+          studentName: booking.studentName,
+          subject: booking.subject || 'Study Session',
+          topic: booking.topic || 'Tutoring Practice',
+          durationMinutes,
+          messageCount,
+          meetingId: booking.meetingId || roomIdOrMeetingId,
+          isGroupSession: !!booking.isGroupSession,
+          totalParticipants,
+        });
+
+        sendEmail({
+          to: recipient.email,
+          subject: `Session Recap: ${booking.subject || 'Study Session'} — SOCRATES`,
+          html: recapHtml,
+        }).catch((err) => {
+          console.error(`[Recap Email Error] Failed to send recap to ${recipient.email}:`, err.message);
+        });
+      }
+    } catch (emailErr) {
+      console.error('[Recap Email Error]', emailErr.message);
+    }
+  }
+
+  res.json({ success: true, message: 'Room ended successfully and recaps dispatched.' });
 };
 
 /**
@@ -458,15 +600,27 @@ exports.endRoom = async (req, res) => {
 exports.getMessages = async (req, res) => {
   const { page = 1, limit = 50 } = req.query;
   const skip = (parseInt(page) - 1) * parseInt(limit);
+  const roomIdOrMeetingId = req.params.id;
+  const isMongoId = mongoose.Types.ObjectId.isValid(roomIdOrMeetingId);
+
+  let targetRoomId = roomIdOrMeetingId;
+  if (!isMongoId) {
+    const roomDoc = await StudyRoom.findOne({
+      $or: [{ meetingId: roomIdOrMeetingId }, { jitsiRoomName: roomIdOrMeetingId }],
+    }).select('_id');
+    if (roomDoc) {
+      targetRoomId = roomDoc._id;
+    }
+  }
 
   const [messages, total] = await Promise.all([
-    StudyRoomMessage.find({ room: req.params.id })
+    StudyRoomMessage.find({ room: targetRoomId })
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('sender', 'fullName profileImage')
+      .populate('sender', 'fullName profileImage role')
       .lean(),
-    StudyRoomMessage.countDocuments({ room: req.params.id }),
+    StudyRoomMessage.countDocuments({ room: targetRoomId }),
   ]);
 
   res.json({
@@ -477,6 +631,72 @@ exports.getMessages = async (req, res) => {
       limit: parseInt(limit),
       total,
       pages: Math.ceil(total / parseInt(limit)),
+    },
+  });
+};
+
+/**
+ * POST /api/v1/study-rooms/:id/ai-copilot
+ * In-Room Socrates AI Copilot Endpoint
+ */
+exports.aiCopilot = async (req, res) => {
+  const { prompt, quickAction, currentCode, activeTopic } = req.body;
+  const questionText = (prompt || '').trim();
+
+  if (!questionText && !quickAction) {
+    return res.status(400).json({ success: false, message: 'Prompt or quickAction is required.' });
+  }
+
+  const FASTAPI_SERVICE_URL = process.env.FASTAPI_SERVICE_URL || 'http://localhost:8000';
+
+  try {
+    const response = await axios.post(
+      `${FASTAPI_SERVICE_URL}/api/v1/ai/tutor/query`,
+      {
+        question: questionText || quickAction,
+        student_id: req.user?._id?.toString() || 'guest-student',
+        subject: activeTopic || 'General Tutoring',
+        code_snippet: currentCode || '',
+        action: quickAction || null,
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000,
+      }
+    );
+
+    if (response.data && (response.data.answer || response.data.response)) {
+      return res.json({
+        success: true,
+        data: {
+          response: response.data.answer || response.data.response,
+        },
+      });
+    }
+  } catch (err) {
+    console.warn('[AI Microservice Offline/Fallback]', err.message);
+  }
+
+  // Socratic intelligent fallback response generator
+  let fallbackAnswer = '';
+
+  if (quickAction === 'Explain Formula' || questionText.toLowerCase().includes('formula')) {
+    fallbackAnswer = `**Socratic Formula Derivation & Breakdown**\n\n**Core Insight:**\nWhen analyzing mathematical formulas, identify each variable's dimension and behavioral limits.\n\n**Step 1:** Isolate the dependent variables and boundary conditions.\n**Step 2:** Apply differential or algebraic identities step-by-step.\n**Step 3:** Verify dimensional consistency.\n\n*Question for you:* Which specific variable in this expression is changing relative to the others?`;
+  } else if (quickAction === 'Debug Code' || currentCode) {
+    fallbackAnswer = `**Socratic Code Analysis**\n\nI reviewed your code snippet:\n\`\`\`\n${(currentCode || questionText).slice(0, 300)}\n\`\`\`\n\n**Key Observations:**\n1. **State & Bounds:** Check whether loop indices or edge cases (empty list, null inputs) are handled properly.\n2. **Type Safety:** Ensure the return value matches the expected caller signature.\n\n*Guided Question:* What output do you expect when the input is 0 or empty? Trace that path line by line.`;
+  } else if (quickAction === 'Summarize Session') {
+    fallbackAnswer = `**Study Session Summary**\n\n**Topic:** ${activeTopic || 'Live Tutoring Session'}\n\n**Key Focus Points:**\n- Clarified core concepts and algorithmic foundations.\n- Worked through live interactive examples on the Whiteboard and Code Sandbox.\n- Validated problem-solving strategies collaboratively.\n\n**Next Steps:** Review your notes and practice 2-3 similar problems to solidify understanding.`;
+  } else if (quickAction === 'Practice Quiz') {
+    fallbackAnswer = `**Practice Quiz — ${activeTopic || 'Concept Mastery'}**\n\n1. What is the primary invariant or condition that must hold true in this problem?\n2. How would the complexity change if the input size doubled?\n3. Can you describe an edge case that could break the naive approach?`;
+  } else {
+    fallbackAnswer = `**Socratic AI Response**\n\nThat's a thoughtful question regarding **${activeTopic || 'this concept'}**.\n\nTo explore this deeply:\n1. What is the fundamental principle governing this system?\n2. If we simplify the problem to its simplest non-trivial case, what pattern emerges?\n\nTake a moment to reason through the first step on the Whiteboard or in code, and let's verify together!`;
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      response: fallbackAnswer,
+      isFallback: true,
     },
   });
 };

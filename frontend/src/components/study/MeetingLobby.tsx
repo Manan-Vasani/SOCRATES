@@ -175,18 +175,20 @@ export default function MeetingLobby({
   }
 
   const { user } = useAuthStore()
-  const [isAvatarLoading, setIsAvatarLoading] = useState(true)
   const [avatarFailed, setAvatarFailed] = useState(false)
-
-  const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
-  const userAvatarSrc = avatarFailed
-    ? DEFAULT_AVATAR_URL
-    : (user?.avatar || DEFAULT_AVATAR_URL)
+  const userAvatarSrc = user?.profileImage || user?.avatar || ''
+  const hasRealPhoto = Boolean(userAvatarSrc && !avatarFailed)
 
   const initials = getCleanInitials(displayName)
   const isCustomTopic = sessionDetails?.topic && !sessionDetails.topic.includes('sess-')
   const heroTitle = isCustomTopic ? sessionDetails.topic : 'Ready to join?'
   const subjectTag = sessionDetails?.subject || '1-on-1 Tutoring'
+
+  const hasActiveCamera = Boolean(
+    localStream &&
+      isCameraOn &&
+      localStream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live')
+  )
 
   return (
     <div className="min-h-screen w-full bg-[#f5f5f7] text-[#1d1d1f] flex flex-col justify-between select-none antialiased">
@@ -199,12 +201,12 @@ export default function MeetingLobby({
           {/* Left: Device Camera & Audio Viewport (7 cols) - Matches Right Card Height Exactly */}
           <div className="lg:col-span-7 flex flex-col">
             <div className="relative w-full h-full min-h-[380px] sm:min-h-[410px] rounded-3xl overflow-hidden bg-[#1c1c1e] border border-[#e5e5e7] shadow-xl shadow-black/8 group flex flex-col items-center justify-center">
-              {/* Video Element */}
-              {localStream && isCameraOn ? (
+              {/* Video Element (Live Real Camera Feed) */}
+              {hasActiveCamera ? (
                 <video
                   ref={(node) => {
                     videoRef.current = node
-                    if (node && localStream && isCameraOn) {
+                    if (node && localStream) {
                       if (node.srcObject !== localStream) {
                         node.srcObject = localStream
                       }
@@ -217,31 +219,30 @@ export default function MeetingLobby({
                   className="w-full h-full object-cover scale-x-[-1] absolute inset-0"
                 />
               ) : (
-                /* Camera Off State with Profile Avatar & Image Loading State */
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 bg-gradient-to-b from-[#252528] to-[#1a1a1d]">
-                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl shadow-black/40 flex items-center justify-center bg-[#252528] shrink-0">
-                    {/* Loading spinner while profile avatar is loading */}
-                    {isAvatarLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#252528] z-10">
-                        <Loader2 size={26} className="animate-spin text-[#0066cc]" />
-                      </div>
-                    )}
-                    <img
-                      src={userAvatarSrc}
-                      alt={displayName || 'User Avatar'}
-                      onLoad={() => setIsAvatarLoading(false)}
-                      onError={() => {
-                        setIsAvatarLoading(false)
-                        setAvatarFailed(true)
-                      }}
-                      className={`w-full h-full object-cover transition-opacity duration-300 ${
-                        isAvatarLoading ? 'opacity-0' : 'opacity-100'
-                      }`}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-medium text-white/80">
-                    <VideoOff size={13} className="text-white/60" />
-                    <span>Camera is off</span>
+                /* Authentic Camera Off State with Profile Avatar / Monogram & Status Badge */
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3.5 p-6 bg-gradient-to-b from-[#202024] to-[#121214]">
+                  {hasRealPhoto ? (
+                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl shadow-black/40 flex items-center justify-center bg-[#252528] shrink-0">
+                      <img
+                        src={userAvatarSrc}
+                        alt={displayName || 'User Avatar'}
+                        onError={() => setAvatarFailed(true)}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#0066cc] to-[#004499] border-2 border-white/20 shadow-2xl shadow-[#0066cc]/25 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold tracking-tight select-none shrink-0">
+                      {initials}
+                    </div>
+                  )}
+                  <div className="text-center space-y-1">
+                    <span className="text-sm font-semibold text-white/90 block tracking-tight">
+                      {displayName || 'You'}
+                    </span>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[11px] font-medium text-white/70 select-none">
+                      <VideoOff size={12} className="text-white/60" />
+                      <span>Camera is off</span>
+                    </div>
                   </div>
                 </div>
               )}

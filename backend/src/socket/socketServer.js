@@ -1,4 +1,7 @@
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
+const StudyRoomMessage = require('../models/StudyRoomMessage');
+const StudyRoom = require('../models/StudyRoom');
 
 let io = null;
 
@@ -14,10 +17,12 @@ function createSocketServer(server) {
     },
   });
 
-  // In-memory registry for room participants & whiteboard permissions
+  // In-memory registry for room participants, permissions, whiteboard strokes & code sandbox
   const roomParticipants = {}; // roomId -> { socketId: participantData }
   const socketRoomMap = {}; // socketId -> roomId
   const roomWhiteboardPermissions = {}; // roomId -> { socketId: boolean }
+  const roomWhiteboardStrokes = {}; // roomId -> Stroke[]
+  const roomCodeState = {}; // roomId -> { code, language, fileName }
 
   // Main connection handler
   io.on('connection', (socket) => {
@@ -38,8 +43,8 @@ function createSocketServer(server) {
         name: user.name || 'Anonymous Student',
         role: user.role || 'student',
         avatar: user.avatar || '',
-        isMuted: false,
-        isCameraOff: false,
+        isMuted: user.isMuted ?? false,
+        isCameraOff: user.isCameraOff ?? false,
         isHandRaised: false,
         isScreenSharing: false,
         hasWhiteboardPermission: user.role === 'tutor' ? true : false,
@@ -66,6 +71,14 @@ function createSocketServer(server) {
 
       // Broadcast new-user-joined to other participants in room
       socket.to(`room:${roomId}`).emit('user-joined', participantData);
+
+      // Send initial whiteboard strokes and code state if already present in room
+      if (roomWhiteboardStrokes[roomId] && roomWhiteboardStrokes[roomId].length > 0) {
+        socket.emit('whiteboard-history', roomWhiteboardStrokes[roomId]);
+      }
+      if (roomCodeState[roomId]) {
+        socket.emit('code-sync', roomCodeState[roomId]);
+      }
 
       console.log(`[Meeting Socket] ${participantData.name} joined room ${roomId} (${socket.id})`);
     });
@@ -128,7 +141,8 @@ function createSocketServer(server) {
       });
     });
 
-    // Whiteboard Permission Events
+    // ─── Whiteboard Permission & Live Stroke Sync ───
+
     socket.on('request-whiteboard-permission', ({ roomId, socketId, name }) => {
       if (!roomId) return;
       socket.to(`room:${roomId}`).emit('tutor-whiteboard-request-received', {
@@ -160,10 +174,115 @@ function createSocketServer(server) {
       io.to(`room:${roomId}`).emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
     });
 
-    // Real-Time Room Chat Broadcast
-    socket.on('send-room-message', ({ roomId, message }) => {
+    // Whiteboard Stroke Broadcast & Memory Cache
+    socket.on('whiteboard-stroke', ({ roomId, stroke }) => {
+      if (!roomId || !stroke) return;
+      if (!roomWhiteboardStrokes[roomId]) {
+        roomWhiteboardStrokes[roomId] = [];
+      }
+      const strokeWithId = {
+        ...stroke,
+        id: stroke.id || `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      };
+      roomWhiteboardStrokes[roomId].push(strokeWithId);
+      // Cap in-memory strokes to prevent unbounded memory usage (last 2000 strokes)
+      if (roomWhiteboardStrokes[roomId].length > 2000) {
+        roomWhiteboardStrokes[roomId].shift();
+      }
+      socket.to(`room:${roomId}`).emit('whiteboard-stroke', strokeWithId);
+    });
+
+    // Whiteboard Clear Event
+    socket.on('whiteboard-clear', ({ roomId }) => {
       if (!roomId) return;
+      roomWhiteboardStrokes[roomId] = [];
+      socket.to(`room:${roomId}`).emit('whiteboard-cleared');
+    });
+
+    // Whiteboard Undo Event
+    socket.on('whiteboard-undo', ({ roomId, strokeId }) => {
+      if (!roomId) return;
+      if (roomWhiteboardStrokes[roomId]) {
+        if (strokeId) {
+          roomWhiteboardStrokes[roomId] = roomWhiteboardStrokes[roomId].filter(
+            (s) => s.id !== strokeId
+          );
+        } else {
+          roomWhiteboardStrokes[roomId].pop();
+        }
+      }
+      socket.to(`room:${roomId}`).emit('whiteboard-undo-applied', { strokeId });
+    });
+
+    // Whiteboard History Request
+    socket.on('request-whiteboard-history', ({ roomId }) => {
+      if (!roomId) return;
+      socket.emit('whiteboard-history', roomWhiteboardStrokes[roomId] || []);
+    });
+
+    // ─── Collaborative Code Sandbox Live Sync ───
+
+    socket.on('code-change', ({ roomId, code }) => {
+      if (!roomId) return;
+      if (!roomCodeState[roomId]) {
+        roomCodeState[roomId] = { code: '', language: 'python', fileName: 'example.py' };
+      }
+      roomCodeState[roomId].code = code;
+      socket.to(`room:${roomId}`).emit('code-change', { code });
+    });
+
+    socket.on('code-language-change', ({ roomId, language, fileName }) => {
+      if (!roomId) return;
+      if (!roomCodeState[roomId]) {
+        roomCodeState[roomId] = { code: '', language: language || 'python', fileName: fileName || 'example.py' };
+      } else {
+        roomCodeState[roomId].language = language;
+        if (fileName) roomCodeState[roomId].fileName = fileName;
+      }
+      socket.to(`room:${roomId}`).emit('code-language-change', { language, fileName });
+    });
+
+    socket.on('request-code-sync', ({ roomId }) => {
+      if (!roomId) return;
+      socket.emit('code-sync', roomCodeState[roomId] || null);
+    });
+
+    // ─── Real-Time Room Chat Broadcast & Persistent Ledger ───
+
+    socket.on('send-room-message', async ({ roomId, message }) => {
+      if (!roomId || !message) return;
+
+      // 1. Broadcast live message immediately to all room sockets
       io.to(`room:${roomId}`).emit('room-message-received', message);
+
+      // 2. Asynchronously persist message in MongoDB
+      try {
+        const isMongoId = mongoose.Types.ObjectId.isValid(roomId);
+        let targetRoomId = null;
+
+        if (isMongoId) {
+          targetRoomId = roomId;
+        } else {
+          // Resolve StudyRoom doc by meetingId or jitsiRoomName
+          const roomDoc = await StudyRoom.findOne({
+            $or: [{ meetingId: roomId }, { jitsiRoomName: roomId }],
+          }).select('_id');
+          if (roomDoc) {
+            targetRoomId = roomDoc._id;
+          }
+        }
+
+        if (targetRoomId && message.senderId && mongoose.Types.ObjectId.isValid(message.senderId)) {
+          await StudyRoomMessage.create({
+            room: targetRoomId,
+            sender: message.senderId,
+            text: message.text || '',
+            type: message.role === 'system' ? 'system' : message.role === 'ai' ? 'ai' : 'text',
+          });
+        }
+      } catch (err) {
+        console.error(`[Chat Persistence] Failed to store message in room ${roomId}:`, err.message);
+      }
     });
 
     // Explicit Leave Room Event
@@ -206,6 +325,9 @@ function createSocketServer(server) {
 
       if (Object.keys(roomParticipants[roomId]).length === 0) {
         delete roomParticipants[roomId];
+        delete roomWhiteboardStrokes[roomId];
+        delete roomCodeState[roomId];
+        delete roomWhiteboardPermissions[roomId];
       }
 
       console.log(`[Meeting Socket] ${socket.id} (${leavingUser.name}) left room:${roomId}`);

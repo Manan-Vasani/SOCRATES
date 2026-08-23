@@ -10,6 +10,7 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react'
+import { askStudyRoomAICopilot } from '../../services/api'
 
 interface AIMessage {
   id: string
@@ -20,68 +21,25 @@ interface AIMessage {
 interface AIAssistantDrawerProps {
   isOpen: boolean
   onClose: () => void
+  roomId?: string
+  activeTopic?: string
+  currentCode?: string
 }
 
 const QUICK_ACTIONS = [
-  { icon: <Calculator size={14} />, label: 'Explain Formula', prompt: 'Explain this formula step by step:' },
-  { icon: <Bug size={14} />, label: 'Debug Code', prompt: 'Debug this code and find any errors:' },
-  { icon: <FileText size={14} />, label: 'Summarize Session', prompt: 'Summarize the key takeaways from this study session.' },
-  { icon: <HelpCircle size={14} />, label: 'Practice Quiz', prompt: 'Generate 3 practice quiz questions on the current topic.' },
+  { icon: <Calculator size={14} />, label: 'Explain Formula', action: 'Explain Formula', prompt: 'Explain this formula step by step:' },
+  { icon: <Bug size={14} />, label: 'Debug Code', action: 'Debug Code', prompt: 'Debug this code and find any errors:' },
+  { icon: <FileText size={14} />, label: 'Summarize Session', action: 'Summarize Session', prompt: 'Summarize the key takeaways from this study session.' },
+  { icon: <HelpCircle size={14} />, label: 'Practice Quiz', action: 'Practice Quiz', prompt: 'Generate 3 practice quiz questions on the current topic.' },
 ]
 
-const AI_RESPONSES: Record<string, string> = {
-  'Explain this formula step by step:': `**The Derivative Rule (Chain Rule)**
-
-Given f(g(x)), the derivative is:
-
-\`f'(g(x)) · g'(x)\`
-
-**Step 1:** Identify the outer function f and inner function g.
-**Step 2:** Differentiate the outer function, keeping the inner function intact.
-**Step 3:** Multiply by the derivative of the inner function.
-
-**Example:** d/dx [sin(x²)] = cos(x²) · 2x`,
-
-  'Debug this code and find any errors:': `🔍 **Code Analysis Complete**
-
-I found **2 potential issues**:
-
-1. **Line 5:** Missing semicolon at end of statement. Add \`;\` after the expression.
-2. **Line 12:** Variable \`result\` may be used before assignment. Initialize it with a default value.
-
-**Suggested Fix:**
-\`\`\`
-let result = 0;  // Initialize with default
-\`\`\`
-
-The rest of the code looks clean! ✅`,
-
-  'Summarize the key takeaways from this study session.': `📝 **Session Summary**
-
-**Topic:** Advanced Calculus — Derivatives & Integrals
-
-**Key Takeaways:**
-• Reviewed the **Chain Rule** for composite functions
-• Practiced **integration by parts** with 3 examples
-• Discussed **real-world applications** in physics (velocity → acceleration)
-
-**Action Items:**
-- Complete practice problems 4.1–4.8
-- Review the whiteboard export for formula reference
-- Next session: **Multivariable Calculus**`,
-
-  'Generate 3 practice quiz questions on the current topic.': `📋 **Practice Quiz — Derivatives**
-
-**Q1.** Find the derivative of f(x) = 3x⁴ + 2x² − 7x + 1
-
-**Q2.** Apply the chain rule to differentiate g(x) = sin(2x³ + 1)
-
-**Q3.** Find the second derivative of h(x) = e^(2x) · cos(x)
-
-*Take your time and work through each step! I'm here to help if you get stuck.* 💪`,
-}
-
-export default function AIAssistantDrawer({ isOpen, onClose }: AIAssistantDrawerProps) {
+export default function AIAssistantDrawer({
+  isOpen,
+  onClose,
+  roomId = 'demo-101',
+  activeTopic = 'General Tutoring',
+  currentCode = '',
+}: AIAssistantDrawerProps) {
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -90,7 +48,7 @@ export default function AIAssistantDrawer({ isOpen, onClose }: AIAssistantDrawer
     {
       id: '0',
       role: 'assistant',
-      text: "Hey! I'm **Socrates AI** 🤖 — your study copilot. Ask me anything about your session, or use the quick actions below!",
+      text: "Welcome to Socrates AI — your real-time study copilot. Ask any question about your session, or choose a quick action below.",
     },
   ])
 
@@ -98,23 +56,36 @@ export default function AIAssistantDrawer({ isOpen, onClose }: AIAssistantDrawer
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return
-    const userMsg: AIMessage = { id: String(Date.now()), role: 'user', text }
+  const sendMessage = async (text: string, quickAction?: string) => {
+    if (!text.trim() && !quickAction) return
+    const displayText = text || quickAction || ''
+    const userMsg: AIMessage = { id: String(Date.now()), role: 'user', text: displayText }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setIsThinking(true)
 
-    setTimeout(() => {
-      // Match known prompts or give generic response
-      let response =
-        AI_RESPONSES[text] ||
-        `Great question! Based on the current session context, here's my analysis:\n\n${text.length > 20 ? 'I\'ve reviewed the topic thoroughly. ' : ''}The key concept here involves understanding the fundamental relationship between the variables. Let me break it down:\n\n1. **First**, identify the core components\n2. **Then**, apply the relevant formula or method\n3. **Finally**, verify your answer\n\nWant me to elaborate on any specific step?`
+    try {
+      const res = await askStudyRoomAICopilot(roomId, {
+        prompt: displayText,
+        quickAction,
+        currentCode,
+        activeTopic,
+      })
 
-      const aiMsg: AIMessage = { id: String(Date.now() + 1), role: 'assistant', text: response }
+      const replyText =
+        res?.data?.response ||
+        res?.response ||
+        "I've analyzed your question against the current study session context. Let me know which part you'd like to dive into further!"
+
+      const aiMsg: AIMessage = { id: String(Date.now() + 1), role: 'assistant', text: replyText }
       setMessages((prev) => [...prev, aiMsg])
+    } catch (err: any) {
+      const fallbackText = `I'm analyzing **${activeTopic}**. Consider breaking down the formula or code snippet into its base cases, and let's work through it on the Whiteboard together.`
+      const aiMsg: AIMessage = { id: String(Date.now() + 1), role: 'assistant', text: fallbackText }
+      setMessages((prev) => [...prev, aiMsg])
+    } finally {
       setIsThinking(false)
-    }, 1200 + Math.random() * 800)
+    }
   }
 
   if (!isOpen) return null
@@ -146,7 +117,7 @@ export default function AIAssistantDrawer({ isOpen, onClose }: AIAssistantDrawer
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action.label}
-              onClick={() => sendMessage(action.prompt)}
+              onClick={() => sendMessage(action.prompt, action.action)}
               disabled={isThinking}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#f5f5f7] border border-[#e0e0e0] text-[10px] font-semibold text-[#525252] hover:bg-[#e8e8ed] hover:text-[#1d1d1f] transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 select-none"
             >

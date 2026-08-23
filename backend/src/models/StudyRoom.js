@@ -54,6 +54,5 @@ const studyRoomSchema = new mongoose.Schema(
 studyRoomSchema.index({ status: 1, subject: 1, createdAt: -1 });
 studyRoomSchema.index({ host: 1, status: 1 });
 studyRoomSchema.index({ linkedThread: 1 });
-studyRoomSchema.index({ meetingId: 1 });
 
 module.exports = mongoose.model('StudyRoom', studyRoomSchema);

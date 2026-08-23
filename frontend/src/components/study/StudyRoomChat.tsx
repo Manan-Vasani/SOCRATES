@@ -24,13 +24,8 @@ import {
 
 type ChatTab = 'chat' | 'ai' | 'participants' | 'resources'
 
-export interface ChatMessage {
-  id: string
-  sender: string
-  role: 'tutor' | 'student' | 'system'
-  text: string
-  time: string
-}
+import type { ChatMessage } from '../../hooks/useWebRTC'
+export type { ChatMessage }
 
 interface AIMessage {
   id: string
@@ -292,10 +287,12 @@ export default function StudyRoomChat({
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-md ${
                           msg.role === 'tutor'
                             ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                            : msg.role === 'ai'
+                            ? 'bg-gradient-to-br from-[#0066cc] to-purple-600'
                             : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
                         }`}
                       >
-                        {msg.sender.charAt(0)}
+                        {msg.role === 'ai' ? <Bot size={14} /> : msg.sender.charAt(0)}
                       </div>
                       <div className={`max-w-[78%] ${msg.sender.includes('You') ? 'text-right' : ''}`}>
                         <div className={`flex items-center gap-1.5 mb-1 ${msg.sender.includes('You') ? 'justify-end' : ''}`}>
@@ -305,12 +302,19 @@ export default function StudyRoomChat({
                               TUTOR
                             </span>
                           )}
+                          {msg.role === 'ai' && (
+                            <span className="text-[8px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md border border-purple-100">
+                              AI COPILOT
+                            </span>
+                          )}
                           <span className="text-[9px] text-[#c0c0c4]">{msg.time}</span>
                         </div>
                         <div
                           className={`inline-block px-3.5 py-2.5 rounded-2xl text-[12.5px] leading-relaxed ${
                             msg.sender.includes('You')
                               ? 'bg-[#0066cc] text-white rounded-br-md'
+                              : msg.role === 'ai'
+                              ? 'bg-purple-50/80 border border-purple-100 text-[#1d1d1f] rounded-bl-md'
                               : 'bg-[#f0f0f2] text-[#1d1d1f] rounded-bl-md'
                           }`}
                         >
@@ -440,7 +444,7 @@ export default function StudyRoomChat({
                     </button>
                   )}
 
-                  {p.isHandRaised && (
+                  {p.isHandRaised && p.role !== 'tutor' && (
                     <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200" title="Hand Raised">
                       <Hand size={11} className="text-amber-600" />
                     </span>

@@ -166,12 +166,15 @@ export const createTutorBookingApi = async (
   tutorId: string,
   bookingData: {
     studentName: string
+    studentEmail?: string
     date: string
     time: string
     subject: string
     duration: number
     topic?: string
     fee: number
+    isGroupSession?: boolean
+    allowGroupSplit?: boolean
   }
 ) => {
   try {
@@ -343,6 +346,19 @@ export const fetchStudyRoomMessages = async (roomId: string, page = 1) => {
   } catch (error) {
     return { success: false, data: [] }
   }
+}
+
+export const askStudyRoomAICopilot = async (
+  roomId: string,
+  payload: {
+    prompt?: string
+    quickAction?: string
+    currentCode?: string
+    activeTopic?: string
+  }
+) => {
+  const response = await api.post(`/study-rooms/${roomId}/ai-copilot`, payload)
+  return response.data
 }
 
 export const createStudyRoomFromThread = async (threadId: string) => {

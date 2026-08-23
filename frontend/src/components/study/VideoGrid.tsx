@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Mic, MicOff, VideoOff, Pin, Hand, Monitor } from 'lucide-react'
 
 export interface Participant {
@@ -29,6 +29,22 @@ const GRADIENT_AVATARS: Record<string, string> = {
   student: 'from-[#0066cc] to-indigo-600',
 }
 
+/**
+ * Extracts clean user initials (e.g. "24DCS147 MANAN VASANI (You)" -> "MV")
+ */
+function getCleanInitials(name: string): string {
+  if (!name) return 'U'
+  const cleaned = name.replace(/\s*\(You\)\s*/gi, '').replace(/^[0-9a-zA-Z]{5,12}\s+/, '').trim() || name.trim()
+  const parts = cleaned.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+  if (parts.length === 1 && parts[0].length >= 2 && !/^\d+$/.test(parts[0])) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+  return (parts[0]?.[0] || 'U').toUpperCase()
+}
+
 function VideoTile({
   p,
   large = false,
@@ -44,19 +60,28 @@ function VideoTile({
 }) {
   const isSelf = p.name.includes('(You)')
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [imgError, setImgError] = useState(false)
+  const videoTracks = p.stream ? p.stream.getVideoTracks() : []
+  const hasActiveVideo = Boolean(
+    p.stream &&
+      !p.isCameraOff &&
+      videoTracks.length > 0 &&
+      videoTracks.some((t) => t.enabled && t.readyState === 'live')
+  )
 
   useEffect(() => {
-    if (videoRef.current && p.stream) {
-      if (videoRef.current.srcObject !== p.stream) {
-        videoRef.current.srcObject = p.stream
+    const el = videoRef.current
+    if (el && p.stream && hasActiveVideo) {
+      if (el.srcObject !== p.stream) {
+        el.srcObject = p.stream
       }
-      videoRef.current
-        .play()
-        .catch((err) => {
-          console.warn('[VideoTile] Video play warning:', err)
-        })
+      el.play().catch((err) => {
+        console.warn('[VideoTile] Video play warning:', err)
+      })
     }
-  }, [p.stream, p.isCameraOff])
+  }, [p.stream, p.isCameraOff, hasActiveVideo])
+
+  const initials = getCleanInitials(p.name)
 
   return (
     <div
@@ -78,10 +103,20 @@ function VideoTile({
         }}
       />
 
-      {/* Video element or Avatar Fallback */}
-      {p.stream && !p.isCameraOff ? (
+      {/* Real Live Video Feed or Authentic Camera Off Avatar View */}
+      {hasActiveVideo ? (
         <video
-          ref={videoRef}
+          ref={(node) => {
+            videoRef.current = node
+            if (node && p.stream) {
+              if (node.srcObject !== p.stream) {
+                node.srcObject = p.stream
+              }
+              node.play().catch((err) => {
+                console.warn('[VideoTile] play error:', err)
+              })
+            }
+          }}
           autoPlay
           playsInline
           muted={isSelf} // Mute self video feed locally to prevent audio echo loop
@@ -97,10 +132,11 @@ function VideoTile({
       ) : (
         <div className="absolute inset-0 flex items-center justify-center p-4">
           <div className="flex flex-col items-center gap-3">
-            {p.avatar ? (
+            {p.avatar && !imgError ? (
               <img
                 src={p.avatar}
                 alt={p.name}
+                onError={() => setImgError(true)}
                 className={`rounded-full object-cover border-2 border-white/10 shadow-2xl ${
                   large ? 'w-28 h-28 md:w-36 md:h-36' : 'w-16 h-16 md:w-20 md:h-20'
                 }`}
@@ -109,16 +145,11 @@ function VideoTile({
               <div
                 className={`rounded-full bg-gradient-to-br ${
                   GRADIENT_AVATARS[p.role] || GRADIENT_AVATARS.student
-                } flex items-center justify-center font-bold text-white shadow-2xl border-2 border-white/10 ${
+                } flex items-center justify-center font-bold text-white shadow-2xl border-2 border-white/10 select-none ${
                   large ? 'w-28 h-28 md:w-36 md:h-36 text-3xl md:text-4xl' : 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl'
                 }`}
               >
-                {p.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .substring(0, 2)
-                  .toUpperCase()}
+                {initials}
               </div>
             )}
             <div className="flex items-center gap-2">
@@ -147,7 +178,7 @@ function VideoTile({
         </div>
 
         <div className="flex items-center gap-2">
-          {p.isHandRaised && (
+          {p.isHandRaised && p.role !== 'tutor' && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/25 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-md animate-bounce">
               <Hand size={12} />
               <span className="text-[10px] font-bold">Hand Raised</span>

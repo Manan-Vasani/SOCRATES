@@ -626,9 +626,11 @@ export default function TutorSchedule() {
       : tutor.hourlyRate;
     const activeSubject = selectedSubject || tutor.subjects[0] || 'General Session'
     const studentDisplayName = user?.fullName || user?.name || 'Alex Mercer'
+    const studentEmailAddress = user?.email || undefined
 
     const res = await createTutorBookingApi(tutor.id, {
       studentName: studentDisplayName,
+      studentEmail: studentEmailAddress,
       date: selectedDay.fullDateStr,
       time: selectedSlot.time,
       subject: activeSubject,
@@ -644,8 +646,8 @@ export default function TutorSchedule() {
     selectedSlot.topic = bookingTopic ? bookingTopic.trim() : undefined
     selectedSlot.allowGroupSplit = allowGroupSplitBooking
 
-    toast.success(`Session Booked with ${tutor.name}!`, {
-      description: `${selectedDay.fullDateStr} at ${selectedSlot.time} (${selectedDuration} min • $${calculatedFee} • ${selectedSlot.subject} • ${allowGroupSplitBooking ? 'Group Enabled' : 'Private Session'})`
+    toast.success(`Booking Request Sent to ${tutor.name}!`, {
+      description: `Approval email dispatched to tutor. Check your inbox for status updates (${selectedDay.fullDateStr} @ ${selectedSlot.time}).`
     })
 
     if (res?.success) {
@@ -1628,14 +1630,33 @@ export default function TutorSchedule() {
                     disabled={isModalGroupFull}
                     onClick={() => {
                       if (isModalGroupFull) return
-                      const hostName = groupSplitModalSlot.slot.bookedBy?.replace(/\s*\([^)]*\)/g, '') || 'Alex Mercer'
+                      const hostName = groupSplitModalSlot.slot.bookedBy?.replace(/\s*\([^)]*\)/g, '') || 'Host Student'
+                      const joinStudentName = user?.fullName || user?.name || 'Alex Mercer'
+                      const joinStudentEmail = user?.email || 'student@socrates.edu'
+
+                      // Dispatch backend group join API & email cascade
+                      createTutorBookingApi(tutor.id, {
+                        studentName: joinStudentName,
+                        studentEmail: joinStudentEmail,
+                        date: groupSplitModalSlot.day.fullDateStr,
+                        time: groupSplitModalSlot.slot.time,
+                        subject: groupSplitModalSlot.slot.subject,
+                        duration: modalDuration,
+                        topic: groupSplitModalSlot.slot.topic,
+                        fee: modalSplitFee,
+                        isGroupSession: true,
+                        allowGroupSplit: true,
+                      }).catch((err) => {
+                        console.error('Failed to register group join on server:', err)
+                      })
+
                       toast.success(`Group Session Confirmed with ${hostName}!`, {
                         description: `Joined ${groupSplitModalSlot.slot.subject} on ${groupSplitModalSlot.day.fullDateStr} at ${groupSplitModalSlot.slot.time}. Your split fee: $${modalSplitFee}.`
                       })
                       const newGroupProfileSession: ProfileSessionItem = {
                         id: `sess-${Date.now()}`,
                         tutorName: tutor.name,
-                        studentName: 'Alex Mercer',
+                        studentName: joinStudentName,
                         subject: groupSplitModalSlot.slot.subject,
                         topic: groupSplitModalSlot.slot.topic,
                         dateStr: groupSplitModalSlot.day.fullDateStr,

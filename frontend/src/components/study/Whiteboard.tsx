@@ -84,6 +84,8 @@ function isShapeTool(t: Tool): boolean {
 export interface WhiteboardProps {
   canDraw?: boolean
   isTutor?: boolean
+  socketRef?: React.RefObject<import('socket.io-client').Socket | null>
+  roomId?: string
   onRequestPermission?: () => void
   onGrantPermission?: (socketId: string) => void
   onRevokePermission?: (socketId: string) => void
@@ -94,6 +96,8 @@ export interface WhiteboardProps {
 export default function Whiteboard({
   canDraw = true,
   isTutor = false,
+  socketRef,
+  roomId,
   onRequestPermission,
   onGrantPermission,
   onRevokePermission,
@@ -965,15 +969,23 @@ export default function Whiteboard({
     setUndoStack((prev) => [...prev, strokes])
     setRedoStack([])
     setStrokes((prev) => [...prev, currentStroke])
+    if (socketRef?.current && roomId) {
+      socketRef.current.emit('whiteboard-stroke', { roomId, stroke: currentStroke })
+    }
     setCurrentStroke(null)
   }
 
   const undo = () => {
     if (undoStack.length === 0 && textUndoStack.length === 0) return
     if (undoStack.length > 0) {
+      const prevStrokes = undoStack[undoStack.length - 1]
+      const lastStroke = strokes[strokes.length - 1]
       setRedoStack((prev) => [...prev, strokes])
-      setStrokes(undoStack[undoStack.length - 1])
+      setStrokes(prevStrokes)
       setUndoStack((prev) => prev.slice(0, -1))
+      if (socketRef?.current && roomId && lastStroke?.id) {
+        socketRef.current.emit('whiteboard-undo', { roomId, strokeId: lastStroke.id })
+      }
     }
     if (textUndoStack.length > 0) {
       setTextRedoStack((prev) => [...prev, textItems])
@@ -985,9 +997,16 @@ export default function Whiteboard({
   const redo = () => {
     if (redoStack.length === 0 && textRedoStack.length === 0) return
     if (redoStack.length > 0) {
+      const nextStrokes = redoStack[redoStack.length - 1]
       setUndoStack((prev) => [...prev, strokes])
-      setStrokes(redoStack[redoStack.length - 1])
+      setStrokes(nextStrokes)
       setRedoStack((prev) => prev.slice(0, -1))
+      if (socketRef?.current && roomId && nextStrokes.length > 0) {
+        const addedStroke = nextStrokes[nextStrokes.length - 1]
+        if (addedStroke) {
+          socketRef.current.emit('whiteboard-stroke', { roomId, stroke: addedStroke })
+        }
+      }
     }
     if (textRedoStack.length > 0) {
       setTextUndoStack((prev) => [...prev, textItems])
@@ -1004,7 +1023,59 @@ export default function Whiteboard({
     setTextRedoStack([])
     setStrokes([])
     setTextItems([])
+    if (socketRef?.current && roomId) {
+      socketRef.current.emit('whiteboard-clear', { roomId })
+    }
   }
+
+  // ─── Socket Synchronization for Whiteboard ───
+  useEffect(() => {
+    const socket = socketRef?.current
+    if (!socket || !roomId) return
+
+    // Request full whiteboard history upon joining
+    socket.emit('request-whiteboard-history', { roomId })
+
+    const handleRemoteStroke = (remoteStroke: Stroke) => {
+      if (!remoteStroke || !remoteStroke.points) return
+      setStrokes((prev) => {
+        if (remoteStroke.id && prev.some((s) => s.id === remoteStroke.id)) {
+          return prev
+        }
+        return [...prev, remoteStroke]
+      })
+    }
+
+    const handleRemoteClear = () => {
+      setStrokes([])
+      setTextItems([])
+    }
+
+    const handleRemoteUndo = ({ strokeId }: { strokeId?: string }) => {
+      setStrokes((prev) => {
+        if (strokeId) return prev.filter((s) => s.id !== strokeId)
+        return prev.slice(0, -1)
+      })
+    }
+
+    const handleHistory = (historyStrokes: Stroke[]) => {
+      if (Array.isArray(historyStrokes) && historyStrokes.length > 0) {
+        setStrokes(historyStrokes)
+      }
+    }
+
+    socket.on('whiteboard-stroke', handleRemoteStroke)
+    socket.on('whiteboard-cleared', handleRemoteClear)
+    socket.on('whiteboard-undo-applied', handleRemoteUndo)
+    socket.on('whiteboard-history', handleHistory)
+
+    return () => {
+      socket.off('whiteboard-stroke', handleRemoteStroke)
+      socket.off('whiteboard-cleared', handleRemoteClear)
+      socket.off('whiteboard-undo-applied', handleRemoteUndo)
+      socket.off('whiteboard-history', handleHistory)
+    }
+  }, [socketRef?.current, roomId])
 
   const exportPng = () => {
     const canvas = canvasRef.current
@@ -1355,26 +1426,33 @@ export default function Whiteboard({
         )}
 
 
-        {/* Student View-Only Lock Banner (Auto-hides after 2s inactivity, Rate-limited 10s cooldown) */}
-        {!canDraw && (
+        {/* Permission Banner for Students (When not allowed to draw, only appears on interaction, auto-hides after 2s) */}
+        {!canDraw && !isTutor && isBannerVisible && (
           <div
-            className={`absolute top-4 inset-x-0 mx-auto w-max z-40 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#1d1d1f]/95 text-white border border-white/15 shadow-2xl backdrop-blur-xl transition-all duration-300 ${
-              isBannerVisible
-                ? 'opacity-100 translate-y-0 pointer-events-auto'
-                : 'opacity-0 -translate-y-2 pointer-events-none'
-            }`}
+            onMouseEnter={() => {
+              if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+            }}
+            onMouseLeave={() => {
+              if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+              bannerTimerRef.current = setTimeout(() => {
+                setIsBannerVisible(false)
+              }, 2000)
+            }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-2xl bg-[#18181c]/95 backdrop-blur-2xl border border-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/5 text-white flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200"
           >
-            <div className="flex items-center gap-2">
-              <Lock size={14} className="text-amber-400 shrink-0" />
-              <span className="text-xs font-semibold">View-Only Whiteboard</span>
+            <div className="flex items-center gap-2 text-white/70">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400">
+                <Lock size={12} />
+              </div>
+              <span className="text-xs font-semibold tracking-tight text-white/90">View-Only Whiteboard</span>
             </div>
             {onRequestPermission && (
               <button
                 type="button"
                 onClick={onRequestPermission}
-                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-bold transition-colors cursor-pointer select-none outline-none transform-none active:transform-none flex items-center gap-1.5 shadow-md"
+                className="px-3.5 py-1.5 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] active:bg-[#0055b3] text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer select-none outline-none shadow-md shadow-[#0066cc]/25 flex items-center gap-1.5 transform-gpu active:scale-98"
               >
-                <Sparkles size={12} />
+                <Sparkles size={12} className="text-sky-200" />
                 <span>Ask Draw Access</span>
               </button>
             )}
@@ -1383,52 +1461,96 @@ export default function Whiteboard({
 
         {/* Tutor Permission Request Prompt Overlay */}
         {isTutor && whiteboardRequests.length > 0 && (
-          <div className="absolute top-4 right-4 z-50 flex flex-col gap-3 max-w-[290px] w-full animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="absolute top-4 right-4 z-50 flex flex-col gap-2.5 max-w-[310px] w-full animate-in fade-in slide-in-from-top-3 duration-200">
             {whiteboardRequests.map((req) => (
-              <div
+              <DrawRequestCard
                 key={req.socketId || req.name}
-                className="p-4 rounded-3xl bg-white/95 backdrop-blur-2xl border border-[#e5e5e7] shadow-2xl shadow-black/10 space-y-3 text-[#1d1d1f]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center text-xs font-extrabold shrink-0 uppercase">
-                      {req.name.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-extrabold text-[#1d1d1f] truncate">{req.name}</div>
-                      <div className="text-[10px] font-medium text-[#7a7a7a]">Draw Access Request</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-[#7a7a7a] font-mono shrink-0 px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5e7]">
-                    {req.time}
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-[#525252] leading-relaxed">
-                  Requested permission to write and draw on the Whiteboard.
-                </p>
-
-                <div className="flex items-center gap-2 pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => onGrantPermission?.(req.socketId)}
-                    className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors cursor-pointer shadow-md flex items-center justify-center gap-1.5 select-none outline-none transform-none active:transform-none"
-                  >
-                    <Check size={14} />
-                    <span>Grant</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDenyRequest?.(req.socketId)}
-                    className="px-4 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] text-xs font-bold transition-colors cursor-pointer border border-[#e5e5e7] select-none outline-none transform-none active:transform-none"
-                  >
-                    Deny
-                  </button>
-                </div>
-              </div>
+                req={req}
+                onGrantPermission={onGrantPermission}
+                onDenyRequest={onDenyRequest}
+              />
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function DrawRequestCard({
+  req,
+  onGrantPermission,
+  onDenyRequest,
+}: {
+  req: { socketId: string; name: string; time?: string }
+  onGrantPermission?: (socketId: string) => void
+  onDenyRequest?: (socketId: string) => void
+}) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const startDismissTimer = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      onDenyRequest?.(req.socketId)
+    }, 3000)
+  }, [onDenyRequest, req.socketId])
+
+  useEffect(() => {
+    startDismissTimer()
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [startDismissTimer])
+
+  const handlePause = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+  }
+
+  const handleResume = () => {
+    startDismissTimer()
+  }
+
+  return (
+    <div
+      onMouseEnter={handlePause}
+      onMouseLeave={handleResume}
+      onMouseMove={handlePause}
+      className="p-3.5 rounded-2xl bg-[#18181c]/95 backdrop-blur-2xl border border-white/12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/5 space-y-3 text-white animate-in fade-in slide-in-from-top-3 duration-200"
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0066cc] to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md ring-1 ring-white/15 shrink-0 uppercase select-none">
+          {req.name.charAt(0)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-bold text-white tracking-tight truncate">{req.name}</div>
+          <div className="text-[10px] font-medium text-emerald-400 flex items-center gap-1">
+            <Pencil size={9} />
+            <span>Draw Access Request</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-white/70 leading-relaxed pl-0.5">
+        Requested permission to collaborate and draw on the Whiteboard.
+      </p>
+
+      <div className="flex items-center gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={() => onGrantPermission?.(req.socketId)}
+          className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 select-none outline-none transform-gpu active:scale-98"
+        >
+          <Check size={13} className="stroke-[2.5]" />
+          <span>Grant Access</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onDenyRequest?.(req.socketId)}
+          className="py-2 px-3.5 rounded-xl bg-white/8 hover:bg-white/14 active:bg-white/20 text-white/75 hover:text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer border border-white/10 select-none outline-none transform-gpu flex items-center gap-1 active:scale-98"
+        >
+          <X size={12} />
+          <span>Deny</span>
+        </button>
       </div>
     </div>
   )

@@ -70,7 +70,12 @@ const LANGUAGE_ICONS: Record<Language, React.ReactNode> = {
 
 interface OutputLine { type: 'stdout' | 'error' | 'info'; text: string }
 
-export default function CodeSandbox() {
+export interface CodeSandboxProps {
+  socketRef?: React.RefObject<import('socket.io-client').Socket | null>
+  roomId?: string
+}
+
+export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
   const [language, setLanguage] = useState<Language>('python')
   const [fullFileName, setFullFileName] = useState('example.py')
   const [code, setCode] = useState(LANGUAGES[0].boilerplate)
@@ -82,6 +87,78 @@ export default function CodeSandbox() {
   const [isDark, setIsDark] = useState(true)
   const [outputTab, setOutputTab] = useState<'terminal' | 'preview'>('terminal')
   const [toast, setToast] = useState<{ type: 'success' | 'warning'; text: string } | null>(null)
+
+  const isRemoteUpdateRef = useRef(false)
+  const codeDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ─── Socket Synchronization for Collaborative Code Sandbox ───
+  useEffect(() => {
+    const socket = socketRef?.current
+    if (!socket || !roomId) return
+
+    // Request initial code state upon joining room
+    socket.emit('request-code-sync', { roomId })
+
+    const handleRemoteCode = ({ code: remoteCode }: { code: string }) => {
+      if (typeof remoteCode === 'string') {
+        isRemoteUpdateRef.current = true
+        setCode(remoteCode)
+      }
+    }
+
+    const handleRemoteLanguage = ({
+      language: remoteLang,
+      fileName: remoteFileName,
+    }: {
+      language: Language
+      fileName?: string
+    }) => {
+      if (remoteLang) {
+        setLanguage(remoteLang)
+        if (remoteFileName) setFullFileName(remoteFileName)
+      }
+    }
+
+    const handleCodeSync = (state: { code?: string; language?: Language; fileName?: string } | null) => {
+      if (state) {
+        if (typeof state.code === 'string' && state.code.trim()) {
+          isRemoteUpdateRef.current = true
+          setCode(state.code)
+        }
+        if (state.language) setLanguage(state.language)
+        if (state.fileName) setFullFileName(state.fileName)
+      }
+    }
+
+    socket.on('code-change', handleRemoteCode)
+    socket.on('code-language-change', handleRemoteLanguage)
+    socket.on('code-sync', handleCodeSync)
+
+    return () => {
+      socket.off('code-change', handleRemoteCode)
+      socket.off('code-language-change', handleRemoteLanguage)
+      socket.off('code-sync', handleCodeSync)
+    }
+  }, [socketRef?.current, roomId])
+
+  // Handle local code edits with debounce broadcast
+  const handleLocalCodeChange = (newCode: string) => {
+    setCode(newCode)
+
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false
+      return
+    }
+
+    if (socketRef?.current && roomId) {
+      if (codeDebounceTimerRef.current) {
+        clearTimeout(codeDebounceTimerRef.current)
+      }
+      codeDebounceTimerRef.current = setTimeout(() => {
+        socketRef.current?.emit('code-change', { roomId, code: newCode })
+      }, 150)
+    }
+  }
 
   // Auto-dismiss Toast notification
   useEffect(() => {
@@ -114,6 +191,18 @@ export default function CodeSandbox() {
     setMemUsage(null)
     setShowLangPicker(false)
     setToast({ type: 'success', text: `Language set to ${cfg.label} (${cfg.ext})` })
+
+    if (socketRef?.current && roomId) {
+      socketRef.current.emit('code-language-change', {
+        roomId,
+        language: lang,
+        fileName: newFullName,
+      })
+      socketRef.current.emit('code-change', {
+        roomId,
+        code: cfg.boilerplate,
+      })
+    }
   }
 
   const handleFileNameChange = (inputVal: string) => {
@@ -459,7 +548,7 @@ export default function CodeSandbox() {
         </div>
         <textarea
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => handleLocalCodeChange(e.target.value)}
           spellCheck={false}
           className={`flex-1 resize-none p-4 text-[13px] font-mono leading-[22px] outline-none ${isDark ? 'text-[#d4d4d8] bg-[#1e1e22] caret-[#4d9fff]' : 'text-[#1d1d1f] bg-white caret-[#0066cc]'}`}
           style={{ tabSize: 4 }}

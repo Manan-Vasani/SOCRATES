@@ -57,6 +57,7 @@ async function seedDB() {
     await Tutor.insertMany([
       {
         name: 'Dr. Evelyn Reed',
+        email: 'evelyn.reed@socrates.edu',
         subject: 'Algorithms & Data Structures',
         experience: '8+ yrs exp • Stanford PhD',
         rating: 4.98,
@@ -67,6 +68,7 @@ async function seedDB() {
       },
       {
         name: 'Marcus Chen',
+        email: 'marcus.chen@socrates.edu',
         subject: 'Linear Algebra & AI Foundations',
         experience: '6+ yrs exp • MIT Alum',
         rating: 4.95,
@@ -77,6 +79,7 @@ async function seedDB() {
       },
       {
         name: 'Sophia Williams',
+        email: 'sophia.williams@socrates.edu',
         subject: 'Quantum Mechanics & Physics',
         experience: '10+ yrs exp • Cambridge Postdoc',
         rating: 5.0,
