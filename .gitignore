@@ -1,46 +1,71 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-lerna-debug.log*
-
 # Dependencies
 node_modules/
 **/node_modules/
 
-# Production / Build output
+# Production & Build Outputs
 dist/
 dist-ssr/
 build/
 out/
+*.tsbuildinfo
 
-# Environment files
+# Environment & Secrets (Never commit credentials)
 .env
 .env.local
 .env.*.local
 *.env
 !*.env.example
+*.pem
+*.key
+*.cert
 
-# Editor / OS files
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# AI Coding Agents & Tool Caches
+.agent/
+.claude/
+.kilo/
+.kilocode/
+.cursor/
 
-# Python
+# Python (ai-service)
 __pycache__/
 *.py[cod]
 *$py.class
 .venv/
 *.venv/
 venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Graphify
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & OS Metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Office Temporary Lock Files (When Word/Excel are open)
+~$*.doc*
+~$*.xls*
+~$*.ppt*
+
+# Graphify / Scratch
 graphify-out/
 .graphify*
-
+scratch/
