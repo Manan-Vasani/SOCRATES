@@ -60,7 +60,9 @@ desktop.ini
 *.sln
 *.sw?
 
-# Office Temporary Lock Files (When Word/Excel are open)
+# Office Documents & Temporary Lock Files
+*.docx
+*.doc
 ~$*.doc*
 ~$*.xls*
 ~$*.ppt*
