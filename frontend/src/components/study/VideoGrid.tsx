@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Mic, MicOff, VideoOff, Pin, Hand, Monitor } from 'lucide-react'
+import { Mic, MicOff, VideoOff, Pin, Monitor } from 'lucide-react'
+import { HiHandRaised } from 'react-icons/hi2'
 
 export interface Participant {
   id: string
@@ -19,7 +20,7 @@ export interface Participant {
 interface VideoGridProps {
   participants: Participant[]
   onPinParticipant: (id: string) => void
-  onMuteParticipant?: (id: string) => void
+  onMuteParticipant?: (id: string, shouldMute?: boolean) => void
   currentUserRole?: 'tutor' | 'student'
   fullStage?: boolean
 }
@@ -55,7 +56,7 @@ function VideoTile({
   p: Participant
   large?: boolean
   onPinParticipant: (id: string) => void
-  onMuteParticipant?: (id: string) => void
+  onMuteParticipant?: (id: string, shouldMute?: boolean) => void
   currentUserRole?: 'tutor' | 'student'
 }) {
   const isSelf = p.name.includes('(You)')
@@ -66,20 +67,31 @@ function VideoTile({
     p.stream &&
       !p.isCameraOff &&
       videoTracks.length > 0 &&
-      videoTracks.some((t) => t.enabled && t.readyState === 'live')
+      (isSelf
+        ? videoTracks.some((t) => t.enabled && t.readyState === 'live')
+        : videoTracks.some((t) => t.readyState === 'live'))
   )
 
-  useEffect(() => {
-    const el = videoRef.current
-    if (el && p.stream && hasActiveVideo) {
+  const playVideo = useCallback(
+    (el: HTMLVideoElement | null) => {
+      if (!el || !p.stream || !hasActiveVideo) return
       if (el.srcObject !== p.stream) {
         el.srcObject = p.stream
       }
       el.play().catch((err) => {
-        console.warn('[VideoTile] Video play warning:', err)
+        console.warn('[VideoTile] Video play warning, retrying muted:', err)
+        if (!isSelf) {
+          el.muted = true
+          el.play().catch(() => {})
+        }
       })
-    }
-  }, [p.stream, p.isCameraOff, hasActiveVideo])
+    },
+    [p.stream, hasActiveVideo, isSelf]
+  )
+
+  useEffect(() => {
+    playVideo(videoRef.current)
+  }, [playVideo])
 
   const initials = getCleanInitials(p.name)
 
@@ -108,22 +120,13 @@ function VideoTile({
         <video
           ref={(node) => {
             videoRef.current = node
-            if (node && p.stream) {
-              if (node.srcObject !== p.stream) {
-                node.srcObject = p.stream
-              }
-              node.play().catch((err) => {
-                console.warn('[VideoTile] play error:', err)
-              })
-            }
+            playVideo(node)
           }}
           autoPlay
           playsInline
           muted={isSelf} // Mute self video feed locally to prevent audio echo loop
           onLoadedMetadata={(e) => {
-            e.currentTarget.play().catch((err) => {
-              console.warn('[VideoTile] play onLoadedMetadata error:', err)
-            })
+            playVideo(e.currentTarget)
           }}
           className={`w-full h-full ${
             p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
@@ -179,16 +182,18 @@ function VideoTile({
 
         <div className="flex items-center gap-2">
           {p.isHandRaised && p.role !== 'tutor' && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/25 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-md animate-bounce">
-              <Hand size={12} />
-              <span className="text-[10px] font-bold">Hand Raised</span>
+            <div
+              className="flex items-center justify-center select-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+              title="Hand Raised"
+            >
+              <HiHandRaised size={22} className="text-yellow-400 drop-shadow-md animate-bounce" />
             </div>
           )}
         </div>
       </div>
 
       {/* Bottom info bar */}
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3.5 py-2.5 flex items-end justify-between z-10">
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3.5 py-2.5 flex items-center justify-between z-10">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-white text-xs font-semibold truncate max-w-[140px]">{p.name}</span>
           <span
@@ -202,37 +207,17 @@ function VideoTile({
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {currentUserRole === 'tutor' && !isSelf && !p.isMuted && onMuteParticipant && (
-            <button
-              type="button"
-              onClick={() => onMuteParticipant(p.socketId || p.id)}
-              className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500 border border-red-500/30 text-red-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer select-none flex items-center gap-1 shadow-sm transform-gpu active:scale-95"
-              title="Remote Mute Student"
-            >
-              <MicOff size={10} />
-              <span>Mute</span>
-            </button>
-          )}
-
-          {p.isMuted ? (
-            <span className="p-1.5 rounded-lg bg-red-500/15 border border-red-500/20" title="Muted">
-              <MicOff size={10} className="text-red-400" />
-            </span>
-          ) : (
-            <span className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/20" title="Unmuted">
-              <Mic size={10} className="text-emerald-400" />
-            </span>
-          )}
           <button
+            type="button"
             onClick={() => onPinParticipant(p.id)}
-            className={`w-7 h-7 flex items-center justify-center rounded-lg border transition-colors cursor-pointer select-none ${
+            className={`w-6 h-6 flex items-center justify-center rounded-lg border transition-colors cursor-pointer select-none ${
               p.isPinned
                 ? 'bg-[#0066cc]/20 border-[#0066cc]/40 text-[#4d9fff]'
                 : 'bg-white/8 border-white/10 text-white/40 hover:text-white opacity-0 group-hover:opacity-100'
             }`}
             title={p.isPinned ? 'Unpin' : 'Pin'}
           >
-            <Pin size={10} />
+            <Pin size={11} />
           </button>
         </div>
       </div>

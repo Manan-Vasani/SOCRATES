@@ -348,6 +348,15 @@ export const fetchStudyRoomMessages = async (roomId: string, page = 1) => {
   }
 }
 
+export const fetchStudyRoomTranscript = async (roomId: string) => {
+  try {
+    const response = await api.get(`/study-rooms/${roomId}/transcript`)
+    return response.data
+  } catch (error) {
+    return { success: false, data: [] }
+  }
+}
+
 export const askStudyRoomAICopilot = async (
   roomId: string,
   payload: {

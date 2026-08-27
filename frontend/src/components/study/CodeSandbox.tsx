@@ -71,11 +71,13 @@ const LANGUAGE_ICONS: Record<Language, React.ReactNode> = {
 interface OutputLine { type: 'stdout' | 'error' | 'info'; text: string }
 
 export interface CodeSandboxProps {
+  socket?: import('socket.io-client').Socket | null
   socketRef?: React.RefObject<import('socket.io-client').Socket | null>
   roomId?: string
+  runnerName?: string
 }
 
-export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
+export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: CodeSandboxProps) {
   const [language, setLanguage] = useState<Language>('python')
   const [fullFileName, setFullFileName] = useState('example.py')
   const [code, setCode] = useState(LANGUAGES[0].boilerplate)
@@ -89,33 +91,55 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
   const [toast, setToast] = useState<{ type: 'success' | 'warning'; text: string } | null>(null)
 
   const isRemoteUpdateRef = useRef(false)
-  const codeDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const activeSocket = socket || socketRef?.current
 
   // ─── Socket Synchronization for Collaborative Code Sandbox ───
   useEffect(() => {
-    const socket = socketRef?.current
-    if (!socket || !roomId) return
+    const s = socket || socketRef?.current
+    if (!s || !roomId) return
 
     // Request initial code state upon joining room
-    socket.emit('request-code-sync', { roomId })
+    s.emit('request-code-sync', { roomId })
 
     const handleRemoteCode = ({ code: remoteCode }: { code: string }) => {
       if (typeof remoteCode === 'string') {
-        isRemoteUpdateRef.current = true
-        setCode(remoteCode)
+        const textarea = textareaRef.current
+        if (textarea && document.activeElement === textarea) {
+          const start = textarea.selectionStart
+          const end = textarea.selectionEnd
+          isRemoteUpdateRef.current = true
+          setCode(remoteCode)
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.selectionStart = start
+              textareaRef.current.selectionEnd = end
+            }
+          })
+        } else {
+          isRemoteUpdateRef.current = true
+          setCode(remoteCode)
+        }
       }
     }
 
     const handleRemoteLanguage = ({
       language: remoteLang,
       fileName: remoteFileName,
+      code: remoteCode,
     }: {
       language: Language
       fileName?: string
+      code?: string
     }) => {
       if (remoteLang) {
         setLanguage(remoteLang)
         if (remoteFileName) setFullFileName(remoteFileName)
+        if (typeof remoteCode === 'string') {
+          isRemoteUpdateRef.current = true
+          setCode(remoteCode)
+        }
       }
     }
 
@@ -130,18 +154,53 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
       }
     }
 
-    socket.on('code-change', handleRemoteCode)
-    socket.on('code-language-change', handleRemoteLanguage)
-    socket.on('code-sync', handleCodeSync)
+    const handleRemoteExecutionStart = ({ runnerName: rName }: { runnerName?: string }) => {
+      setIsRunning(true)
+      setOutput([{ type: 'info', text: `[${rName || 'Peer'} started code execution...]` }])
+      setToast({ type: 'warning', text: `${rName || 'Peer'} is running the code...` })
+    }
+
+    const handleRemoteExecutionFinish = ({
+      output: remoteOutput,
+      execTime: remoteExecTime,
+      memUsage: remoteMemUsage,
+    }: {
+      output: OutputLine[]
+      execTime?: number | null
+      memUsage?: string | null
+    }) => {
+      setIsRunning(false)
+      if (Array.isArray(remoteOutput)) {
+        setOutput(remoteOutput)
+      }
+      if (remoteExecTime !== undefined) setExecTime(remoteExecTime)
+      if (remoteMemUsage !== undefined) setMemUsage(remoteMemUsage)
+    }
+
+    const handleRemoteExecutionClear = () => {
+      setOutput([])
+      setExecTime(null)
+      setMemUsage(null)
+    }
+
+    s.on('code-change', handleRemoteCode)
+    s.on('code-language-change', handleRemoteLanguage)
+    s.on('code-sync', handleCodeSync)
+    s.on('code-execution-start', handleRemoteExecutionStart)
+    s.on('code-execution-finish', handleRemoteExecutionFinish)
+    s.on('code-execution-clear', handleRemoteExecutionClear)
 
     return () => {
-      socket.off('code-change', handleRemoteCode)
-      socket.off('code-language-change', handleRemoteLanguage)
-      socket.off('code-sync', handleCodeSync)
+      s.off('code-change', handleRemoteCode)
+      s.off('code-language-change', handleRemoteLanguage)
+      s.off('code-sync', handleCodeSync)
+      s.off('code-execution-start', handleRemoteExecutionStart)
+      s.off('code-execution-finish', handleRemoteExecutionFinish)
+      s.off('code-execution-clear', handleRemoteExecutionClear)
     }
-  }, [socketRef?.current, roomId])
+  }, [socket, socketRef?.current, roomId])
 
-  // Handle local code edits with debounce broadcast
+  // Handle local code edits: emit immediately on every keystroke for real-time word-by-word sync
   const handleLocalCodeChange = (newCode: string) => {
     setCode(newCode)
 
@@ -150,13 +209,10 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
       return
     }
 
-    if (socketRef?.current && roomId) {
-      if (codeDebounceTimerRef.current) {
-        clearTimeout(codeDebounceTimerRef.current)
-      }
-      codeDebounceTimerRef.current = setTimeout(() => {
-        socketRef.current?.emit('code-change', { roomId, code: newCode })
-      }, 150)
+    const s = socket || socketRef?.current
+    if (s && roomId) {
+      // Immediate broadcast: zero delay, word-by-word and character-by-character live sync
+      s.emit('code-change', { roomId, code: newCode })
     }
   }
 
@@ -192,13 +248,15 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
     setShowLangPicker(false)
     setToast({ type: 'success', text: `Language set to ${cfg.label} (${cfg.ext})` })
 
-    if (socketRef?.current && roomId) {
-      socketRef.current.emit('code-language-change', {
+    const s = socket || socketRef?.current
+    if (s && roomId) {
+      s.emit('code-language-change', {
         roomId,
         language: lang,
         fileName: newFullName,
+        code: cfg.boilerplate,
       })
-      socketRef.current.emit('code-change', {
+      s.emit('code-change', {
         roomId,
         code: cfg.boilerplate,
       })
@@ -281,14 +339,29 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
     setExecTime(null)
     setMemUsage(null)
 
+    const s = socket || socketRef?.current
+    if (s && roomId) {
+      s.emit('code-execution-start', { roomId, runnerName: runnerName || 'Participant' })
+    }
+
     if (language === 'html') {
       setOutputTab('preview')
-      setExecTime(4)
-      setMemUsage('1.2 MB')
-      setOutput([{ type: 'info', text: 'HTML DOM Document rendered successfully in live preview.' }])
+      const htmlExecTime = 4
+      const htmlMem = '1.2 MB'
+      const htmlLines: OutputLine[] = [{ type: 'info', text: 'HTML DOM Document rendered successfully in live preview.' }]
+      setExecTime(htmlExecTime)
+      setMemUsage(htmlMem)
+      setOutput(htmlLines)
       setIsRunning(false)
+      if (s && roomId) {
+        s.emit('code-execution-finish', { roomId, output: htmlLines, execTime: htmlExecTime, memUsage: htmlMem })
+      }
       return
     }
+
+    let finalLines: OutputLine[] = []
+    let finalExecTime: number = 50
+    let finalMemUsage: string = '3.2 MB'
 
     try {
       const paizaLang = mapLangToPaiza(language)
@@ -324,45 +397,43 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
       }
 
       const timeSec = parseFloat(details.time || details.build_time || '0.02')
-      const execTimeMs = Math.max(1, Math.round(timeSec * 1000))
-      const memMb = details.memory ? `${(parseInt(details.memory) / (1024 * 1024)).toFixed(1)} MB` : '3.2 MB'
+      finalExecTime = Math.max(1, Math.round(timeSec * 1000))
+      finalMemUsage = details.memory ? `${(parseInt(details.memory) / (1024 * 1024)).toFixed(1)} MB` : '3.2 MB'
 
-      setExecTime(execTimeMs)
-      setMemUsage(memMb)
-
-      const lines: OutputLine[] = []
+      setExecTime(finalExecTime)
+      setMemUsage(finalMemUsage)
 
       if (details.build_stderr) {
         details.build_stderr.trim().split('\n').forEach((l: string) => {
-          lines.push({ type: 'error', text: `[Compile Error] ${l}` })
+          finalLines.push({ type: 'error', text: `[Compile Error] ${l}` })
         })
       }
       if (details.build_stdout) {
         details.build_stdout.trim().split('\n').forEach((l: string) => {
-          lines.push({ type: 'info', text: `[Compiler Output] ${l}` })
+          finalLines.push({ type: 'info', text: `[Compiler Output] ${l}` })
         })
       }
 
       if (details.stderr) {
         details.stderr.trim().split('\n').forEach((l: string) => {
           if (l.includes('EOFError') || l.includes('EOF when reading a line')) {
-            lines.push({ type: 'error', text: 'EOFError: input() expected STDIN input. Type a value below at the $ prompt and press Enter.' })
+            finalLines.push({ type: 'error', text: 'EOFError: input() expected STDIN input. Type a value below at the $ prompt and press Enter.' })
           } else {
-            lines.push({ type: 'error', text: l })
+            finalLines.push({ type: 'error', text: l })
           }
         })
       }
       if (details.stdout) {
         details.stdout.trim().split('\n').forEach((l: string) => {
-          lines.push({ type: 'stdout', text: l })
+          finalLines.push({ type: 'stdout', text: l })
         })
       }
 
-      if (lines.length === 0) {
-        lines.push({ type: 'info', text: `Program finished with result: ${details.result || 'success'}` })
+      if (finalLines.length === 0) {
+        finalLines.push({ type: 'info', text: `Program finished with result: ${details.result || 'success'}` })
       }
 
-      setOutput(lines)
+      setOutput(finalLines)
     } catch (err: any) {
       try {
         const localRes = await fetch('http://localhost:5000/api/v1/compile', {
@@ -371,29 +442,48 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
           body: JSON.stringify({ language, code, fileName: fullFileName, stdin: activeStdin }),
         })
         const localData = await localRes.json()
-        setExecTime(localData.execTime || 50)
-        setMemUsage(`${(Math.random() * 4 + 2).toFixed(1)} MB`)
+        finalExecTime = localData.execTime || 50
+        finalMemUsage = `${(Math.random() * 4 + 2).toFixed(1)} MB`
+        setExecTime(finalExecTime)
+        setMemUsage(finalMemUsage)
 
-        const lines: OutputLine[] = []
+        finalLines = []
         if (localData.stdout) {
-          localData.stdout.trim().split('\n').forEach((l: string) => lines.push({ type: 'stdout', text: l }))
+          localData.stdout.trim().split('\n').forEach((l: string) => finalLines.push({ type: 'stdout', text: l }))
         }
         if (localData.stderr) {
-          localData.stderr.trim().split('\n').forEach((l: string) => lines.push({ type: 'error', text: l }))
+          localData.stderr.trim().split('\n').forEach((l: string) => finalLines.push({ type: 'error', text: l }))
         }
-        if (lines.length === 0) {
-          lines.push({ type: 'info', text: 'Program finished with exit code 0.' })
+        if (finalLines.length === 0) {
+          finalLines.push({ type: 'info', text: 'Program finished with exit code 0.' })
         }
-        setOutput(lines)
+        setOutput(finalLines)
       } catch (localErr: any) {
-        setOutput([{ type: 'error', text: `Compiler Execution Error: ${err.message}` }])
+        finalLines = [{ type: 'error', text: `Compiler Execution Error: ${err.message}` }]
+        setOutput(finalLines)
       }
     } finally {
       setIsRunning(false)
+      if (s && roomId) {
+        s.emit('code-execution-finish', {
+          roomId,
+          output: finalLines,
+          execTime: finalExecTime,
+          memUsage: finalMemUsage,
+        })
+      }
     }
   }
 
-  const clearOutput = () => { setOutput([]); setExecTime(null); setMemUsage(null) }
+  const clearOutput = () => {
+    setOutput([])
+    setExecTime(null)
+    setMemUsage(null)
+    const s = socket || socketRef?.current
+    if (s && roomId) {
+      s.emit('code-execution-clear', { roomId })
+    }
+  }
   const copyOutput = () => navigator.clipboard.writeText(output.map((o) => o.text).join('\n'))
   const lineNumbers = code.split('\n').length
 
@@ -547,6 +637,7 @@ export default function CodeSandbox({ socketRef, roomId }: CodeSandboxProps) {
           ))}
         </div>
         <textarea
+          ref={textareaRef}
           value={code}
           onChange={(e) => handleLocalCodeChange(e.target.value)}
           spellCheck={false}

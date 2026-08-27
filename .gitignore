@@ -40,3 +40,7 @@ __pycache__/
 *.venv/
 venv/
 
+# Graphify
+graphify-out/
+.graphify*
+

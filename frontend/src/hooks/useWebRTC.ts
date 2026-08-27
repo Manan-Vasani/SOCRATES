@@ -46,12 +46,51 @@ const ICE_SERVERS: RTCConfiguration = {
 
 const SOCKET_URL =
   (import.meta.env.VITE_SOCKET_URL as string) ||
-  (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/v1', '') : 'http://localhost:5000')
+  (import.meta.env.VITE_API_URL
+    ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
+    : typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : typeof window !== 'undefined'
+    ? window.location.origin
+    : 'http://localhost:5000')
 
 export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
-  const [participants, setParticipants] = useState<Participant[]>([])
+  const [isMediaReady, setIsMediaReady] = useState(false)
+  const [socket, setSocket] = useState<Socket | null>(null)
+  const currentUserRef = useRef(currentUser)
+  useEffect(() => {
+    currentUserRef.current = currentUser
+  }, [currentUser])
+
+  const [participants, setParticipants] = useState<Participant[]>(() => {
+    try {
+      const cached = sessionStorage.getItem(`socrates_room_participants_${roomId}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((p: any) => ({ ...p, stream: undefined }))
+        }
+      }
+    } catch {}
+    return [
+      {
+        id: currentUser.id,
+        socketId: 'local-self',
+        name: `${currentUser.name} (You)`,
+        role: currentUser.role,
+        avatar: currentUser.avatar,
+        isMuted: true,
+        isCameraOff: true,
+        isSpeaking: false,
+        isPinned: false,
+        isHandRaised: false,
+        isScreenSharing: false,
+      },
+    ]
+  })
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'sys-init',
@@ -61,13 +100,16 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       time: 'Now',
     },
   ])
-  const [isMicOn, setIsMicOn] = useState(true)
+  const [isMicOn, setIsMicOn] = useState(false)
   const [isCameraOn, setIsCameraOn] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [isHandRaised, setIsHandRaised] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<
     'connecting' | 'connected' | 'disconnected' | 'reconnecting'
   >('connecting')
+  const [permissionDeniedType, setPermissionDeniedType] = useState<
+    'microphone' | 'camera' | 'media' | null
+  >(null)
 
   // Whiteboard Permission States
   const [hasWhiteboardPermission, setHasWhiteboardPermission] = useState<boolean>(
@@ -81,9 +123,32 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   >({})
 
   const socketRef = useRef<Socket | null>(null)
+  const hasJoinedRoomRef = useRef<boolean>(false)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const iceCandidateQueuesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
   const screenTrackRef = useRef<MediaStreamTrack | null>(null)
+
+  // Cache participants list in sessionStorage so refresh maintains all participants without pop-in
+  useEffect(() => {
+    if (participants && participants.length > 0) {
+      try {
+        const toSave = participants.map((p) => ({
+          id: p.id,
+          socketId: p.socketId,
+          name: p.name,
+          role: p.role,
+          avatar: p.avatar,
+          isMuted: p.isMuted,
+          isCameraOff: p.isCameraOff,
+          isSpeaking: p.isSpeaking,
+          isPinned: p.isPinned,
+          isHandRaised: p.isHandRaised,
+          isScreenSharing: p.isScreenSharing,
+        }))
+        sessionStorage.setItem(`socrates_room_participants_${roomId}`, JSON.stringify(toSave))
+      } catch {}
+    }
+  }, [participants, roomId])
 
   const processIceCandidateQueue = useCallback(async (socketId: string, pc: RTCPeerConnection) => {
     const queue = iceCandidateQueuesRef.current.get(socketId)
@@ -106,8 +171,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
 
     async function initLocalStream() {
       let stream: MediaStream | null = null
-      let camOk = false
-      let micOk = false
 
       try {
         console.log('[WebRTC] Requesting local camera & microphone access...')
@@ -115,8 +178,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
           audio: { echoCancellation: true, noiseSuppression: true },
         })
-        camOk = true
-        micOk = true
         console.log('[WebRTC] Camera & microphone acquired successfully.')
       } catch (videoErr) {
         console.warn('[WebRTC] Camera unavailable or denied, attempting audio only...', videoErr)
@@ -124,7 +185,6 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           stream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true },
           })
-          micOk = true
           console.log('[WebRTC] Microphone acquired successfully (camera off).')
         } catch (audioErr) {
           console.warn('[WebRTC] Audio access denied or unavailable:', audioErr)
@@ -136,22 +196,33 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         return
       }
 
+      if (stream) {
+        // Start with audio and video tracks disabled in lobby by default so buttons remain OFF
+        stream.getAudioTracks().forEach((track) => {
+          track.enabled = false
+        })
+        stream.getVideoTracks().forEach((track) => {
+          track.enabled = false
+        })
+      }
+
       localStreamRef.current = stream
       setLocalStream(stream)
-      setIsCameraOn(camOk)
-      setIsMicOn(micOk)
+      setIsCameraOn(false)
+      setIsMicOn(false)
+      setIsMediaReady(true)
 
       setParticipants((prev) => {
-        const exists = prev.some((p) => p.id === currentUser.id || p.name.includes('(You)'))
+        const exists = prev.some((p) => p.id === currentUserRef.current.id || p.name.includes('(You)'))
         const selfParticipant: Participant = {
-          id: currentUser.id,
+          id: currentUserRef.current.id,
           socketId: socketRef.current?.id || 'local-self',
-          name: `${currentUser.name} (You)`,
-          role: currentUser.role,
-          avatar: currentUser.avatar,
+          name: `${currentUserRef.current.name} (You)`,
+          role: currentUserRef.current.role,
+          avatar: currentUserRef.current.avatar,
           stream: stream || undefined,
-          isMuted: !micOk,
-          isCameraOff: !camOk,
+          isMuted: true,
+          isCameraOff: true,
           isSpeaking: false,
           isPinned: false,
           isHandRaised: false,
@@ -159,11 +230,12 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         }
 
         if (!exists) {
-          return [selfParticipant]
+          const others = prev.filter((p) => p.id !== currentUserRef.current.id && !p.name.includes('(You)'))
+          return [selfParticipant, ...others]
         }
         return prev.map((p) =>
-          p.id === currentUser.id || p.name.includes('(You)')
-            ? { ...p, stream: stream || undefined, isCameraOff: !camOk, isMuted: !micOk }
+          p.id === currentUserRef.current.id || p.name.includes('(You)')
+            ? { ...p, stream: stream || undefined, isCameraOff: true, isMuted: true }
             : p
         )
       })
@@ -191,7 +263,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       const pc = new RTCPeerConnection(ICE_SERVERS)
 
       // Add local media tracks to peer connection if available
-      if (localStreamRef.current) {
+      if (localStreamRef.current && localStreamRef.current.getTracks().length > 0) {
         localStreamRef.current.getTracks().forEach((track) => {
           try {
             pc.addTrack(track, localStreamRef.current!)
@@ -216,16 +288,19 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         }
       }
 
-      // Handle incoming remote media stream track (robustly merge tracks into remote stream)
+      // Handle incoming remote media stream track (robustly merge audio and video tracks into remote stream)
       pc.ontrack = (event) => {
         console.log(`[WebRTC] Received remote stream track (${event.track.kind}) from ${targetSocketId}`)
-        const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track])
-        const hasLiveVideo = stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live')
-
+        
         setParticipants((prev) =>
           prev.map((p) => {
             if (p.socketId === targetSocketId || p.id === targetSocketId) {
-              return { ...p, stream, isCameraOff: !hasLiveVideo }
+              const currentMediaStream = p.stream ? p.stream : (event.streams && event.streams[0] ? event.streams[0] : new MediaStream())
+              if (!currentMediaStream.getTracks().some((t) => t.id === event.track.id)) {
+                currentMediaStream.addTrack(event.track)
+              }
+              const hasLiveVideo = currentMediaStream.getVideoTracks().some((t) => t.readyState === 'live')
+              return { ...p, stream: currentMediaStream, isCameraOff: p.isCameraOff ?? !hasLiveVideo }
             }
             return p
           })
@@ -275,68 +350,89 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     })
   }, [localStream])
 
+  // Helper to emit join-room once socket is connected and local media is initialized
+  const emitJoinRoom = useCallback(() => {
+    const activeSocket = socketRef.current
+    if (!activeSocket || !activeSocket.connected || hasJoinedRoomRef.current) return
+    hasJoinedRoomRef.current = true
+    console.log(`[Meeting Socket] Emitting join-room for room ${roomId}...`)
+
+    setParticipants((prev) => {
+      const selfStream = localStreamRef.current || localStream || undefined
+      const existingSelf = prev.find((p) => p.id === currentUserRef.current.id || p.name.includes('(You)'))
+      const selfItem: Participant = {
+        id: currentUserRef.current.id,
+        socketId: activeSocket.id!,
+        name: `${currentUserRef.current.name} (You)`,
+        role: currentUserRef.current.role,
+        avatar: currentUserRef.current.avatar,
+        stream: selfStream,
+        isMuted: !isMicOn,
+        isCameraOff: !isCameraOn,
+        isSpeaking: false,
+        isPinned: existingSelf?.isPinned || false,
+        isHandRaised: isHandRaised,
+        isScreenSharing: isScreenSharing,
+      }
+      const others = prev.filter((p) => p.id !== currentUserRef.current.id && !p.name.includes('(You)'))
+      return [selfItem, ...others]
+    })
+
+    activeSocket.emit('join-room', {
+      roomId,
+      user: {
+        ...currentUserRef.current,
+        isCameraOff: !isCameraOn,
+        isMuted: !isMicOn,
+      },
+    })
+  }, [roomId, isCameraOn, isMicOn, isHandRaised, isScreenSharing, localStream])
+
+  // Trigger join-room whenever media becomes ready (or on reconnect)
+  useEffect(() => {
+    if (isMediaReady && socketRef.current?.connected && !hasJoinedRoomRef.current) {
+      emitJoinRoom()
+    }
+  }, [isMediaReady, emitJoinRoom])
+
   // 2. Connect Socket.IO & Listen for Signaling Events
   useEffect(() => {
     console.log(`[Meeting Socket] Connecting to ${SOCKET_URL}...`)
-    const socket = io(SOCKET_URL, {
+    const socketInstance = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
     })
 
-    socketRef.current = socket
+    socketRef.current = socketInstance
 
-    socket.on('connect', () => {
-      console.log(`[Meeting Socket] Connected with Socket ID: ${socket.id}`)
+    socketInstance.on('connect', () => {
+      console.log(`[Meeting Socket] Connected with Socket ID: ${socketInstance.id}`)
       setConnectionStatus('connected')
+      setSocket(socketInstance)
+      hasJoinedRoomRef.current = false
 
-      // Add/update self entry in participants list
-      setParticipants((prev) => {
-        const selfStream = localStreamRef.current || localStream || undefined
-        const existingSelf = prev.find((p) => p.id === currentUser.id || p.name.includes('(You)'))
-        const selfItem: Participant = {
-          id: currentUser.id,
-          socketId: socket.id!,
-          name: `${currentUser.name} (You)`,
-          role: currentUser.role,
-          avatar: currentUser.avatar,
-          stream: selfStream,
-          isMuted: !isMicOn,
-          isCameraOff: !isCameraOn,
-          isSpeaking: false,
-          isPinned: existingSelf?.isPinned || false,
-          isHandRaised: isHandRaised,
-          isScreenSharing: isScreenSharing,
-        }
-        const others = prev.filter((p) => p.id !== currentUser.id && !p.name.includes('(You)'))
-        return [selfItem, ...others]
-      })
-
-      // Join room signaling channel
-      socket.emit('join-room', {
-        roomId,
-        user: {
-          ...currentUser,
-          isCameraOff: !isCameraOn,
-          isMuted: !isMicOn,
-        },
-      })
+      if (isMediaReady) {
+        emitJoinRoom()
+      }
     })
 
-    socket.on('disconnect', () => {
+    socketInstance.on('disconnect', () => {
       console.warn('[Meeting Socket] Disconnected from server.')
       setConnectionStatus('disconnected')
+      hasJoinedRoomRef.current = false
+      setSocket(null)
     })
 
-    socket.on('reconnect_attempt', () => {
+    socketInstance.on('reconnect_attempt', () => {
       setConnectionStatus('reconnecting')
     })
 
     // Received existing participants from server upon joining
-    socket.on('existing-participants', async (existingList: any[]) => {
+    socketInstance.on('existing-participants', async (existingList: any[]) => {
       console.log(`[Meeting Socket] Received ${existingList.length} existing participants:`, existingList)
 
       setParticipants((prev) => {
-        const self = prev.find((p) => p.socketId === socket.id || p.name.includes('(You)'))
+        const self = prev.find((p) => p.socketId === socketInstance.id || p.name.includes('(You)'))
         const updated = existingList.map((p) => ({
           id: p.id,
           socketId: p.socketId,
@@ -356,12 +452,12 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       // Initiate WebRTC connection (Offer) to each existing participant
       for (const peerData of existingList) {
         try {
-          const pc = createPeerConnection(peerData.socketId, socket)
+          const pc = createPeerConnection(peerData.socketId, socketInstance)
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
 
           console.log(`[WebRTC] Sending SDP Offer to ${peerData.socketId}`)
-          socket.emit('offer', {
+          socketInstance.emit('offer', {
             targetSocketId: peerData.socketId,
             offer,
           })
@@ -372,7 +468,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     })
 
     // New user joined room
-    socket.on('user-joined', (newParticipant: any) => {
+    socketInstance.on('user-joined', (newParticipant: any) => {
       console.log(`[Meeting Socket] New participant joined: ${newParticipant.name} (${newParticipant.socketId})`)
 
       setParticipants((prev) => {
@@ -385,8 +481,8 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
             name: newParticipant.name,
             role: newParticipant.role,
             avatar: newParticipant.avatar,
-            isMuted: false,
-            isCameraOff: false,
+            isMuted: newParticipant.isMuted ?? true,
+            isCameraOff: newParticipant.isCameraOff ?? true,
             isSpeaking: false,
             isPinned: false,
             isHandRaised: false,
@@ -395,23 +491,52 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         ]
       })
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          sender: 'System',
-          role: 'system',
-          text: `${newParticipant.name} joined the room.`,
-          time: 'Now',
-        },
-      ])
+      setMessages((prev) => {
+        const text = `${newParticipant.name} joined the room.`
+        const last = prev[prev.length - 1]
+        if (last && last.role === 'system' && last.text === text) return prev
+        return [
+          ...prev,
+          {
+            id: String(Date.now()),
+            sender: 'System',
+            role: 'system',
+            text,
+            time: 'Now',
+          },
+        ]
+      })
+    })
+
+    // Remote peer reconnected seamlessly (e.g. page refresh)
+    socketInstance.on('user-reconnected', (reconnectedUser: any) => {
+      console.log(`[Meeting Socket] Remote peer reconnected seamlessly: ${reconnectedUser.name} (${reconnectedUser.socketId})`)
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.id === reconnectedUser.id
+            ? { ...p, socketId: reconnectedUser.socketId }
+            : p
+        )
+      )
+
+      // Re-negotiate WebRTC with the new socket ID
+      if (currentUser.role === 'tutor' || currentUser.id < reconnectedUser.id) {
+        const pc = createPeerConnection(reconnectedUser.socketId, socketInstance)
+        pc.createOffer().then(async (offer) => {
+          await pc.setLocalDescription(offer)
+          socketInstance.emit('offer', {
+            targetSocketId: reconnectedUser.socketId,
+            offer,
+          })
+        }).catch((err) => console.warn('[WebRTC] Reconnect offer error:', err))
+      }
     })
 
     // Received SDP Offer from a remote peer
-    socket.on('offer', async ({ senderSocketId, offer }: { senderSocketId: string; offer: RTCSessionDescriptionInit }) => {
+    socketInstance.on('offer', async ({ senderSocketId, offer }: { senderSocketId: string; offer: RTCSessionDescriptionInit }) => {
       console.log(`[WebRTC] Received SDP Offer from ${senderSocketId}`)
       try {
-        const pc = createPeerConnection(senderSocketId, socket)
+        const pc = createPeerConnection(senderSocketId, socketInstance)
         await pc.setRemoteDescription(new RTCSessionDescription(offer))
         await processIceCandidateQueue(senderSocketId, pc)
 
@@ -419,7 +544,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         await pc.setLocalDescription(answer)
 
         console.log(`[WebRTC] Sending SDP Answer to ${senderSocketId}`)
-        socket.emit('answer', {
+        socketInstance.emit('answer', {
           targetSocketId: senderSocketId,
           answer,
         })
@@ -429,7 +554,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     })
 
     // Received SDP Answer from a remote peer
-    socket.on('answer', async ({ senderSocketId, answer }: { senderSocketId: string; answer: RTCSessionDescriptionInit }) => {
+    socketInstance.on('answer', async ({ senderSocketId, answer }: { senderSocketId: string; answer: RTCSessionDescriptionInit }) => {
       console.log(`[WebRTC] Received SDP Answer from ${senderSocketId}`)
       try {
         const pc = peerConnectionsRef.current.get(senderSocketId)
@@ -443,7 +568,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     })
 
     // Received ICE Candidate from remote peer
-    socket.on('ice-candidate', async ({ senderSocketId, candidate }: { senderSocketId: string; candidate: RTCIceCandidateInit }) => {
+    socketInstance.on('ice-candidate', async ({ senderSocketId, candidate }: { senderSocketId: string; candidate: RTCIceCandidateInit }) => {
       try {
         const pc = peerConnectionsRef.current.get(senderSocketId)
         if (pc && pc.remoteDescription && pc.remoteDescription.type) {
@@ -459,14 +584,14 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     })
 
     // Participant State Update (Mic, Camera, Screen Share, Hand Raise)
-    socket.on('participant-state-updated', ({ socketId, state }: { socketId: string; state: any }) => {
+    socketInstance.on('participant-state-updated', ({ socketId, state }: { socketId: string; state: any }) => {
       setParticipants((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, ...state } : p))
       )
     })
 
     // Remote Muted By Tutor Event
-    socket.on('remote-muted-by-tutor', () => {
+    socketInstance.on('remote-muted-by-tutor', () => {
       if (localStreamRef.current) {
         const audioTrack = localStreamRef.current.getAudioTracks()[0]
         if (audioTrack) {
@@ -482,15 +607,39 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       }
       setParticipants((prev) =>
         prev.map((p) =>
-          p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socket.id
+          p.id === currentUserRef.current.id || p.name.includes('(You)') || p.socketId === socketInstance.id
             ? { ...p, isMuted: true }
             : p
         )
       )
     })
 
+    // Remote Unmuted By Tutor Event
+    socketInstance.on('remote-unmuted-by-tutor', () => {
+      if (localStreamRef.current) {
+        const audioTrack = localStreamRef.current.getAudioTracks()[0]
+        if (audioTrack) {
+          audioTrack.enabled = true
+        }
+      }
+      setIsMicOn(true)
+      if (socketRef.current) {
+        socketRef.current.emit('participant-state-change', {
+          roomId,
+          state: { isMuted: false },
+        })
+      }
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.id === currentUserRef.current.id || p.name.includes('(You)') || p.socketId === socketInstance.id
+            ? { ...p, isMuted: false }
+            : p
+        )
+      )
+    })
+
     // Whiteboard Permission Events
-    socket.on('tutor-whiteboard-request-received', (req: { socketId: string; name: string; time: string }) => {
+    socketInstance.on('tutor-whiteboard-request-received', (req: { socketId: string; name: string; time: string }) => {
       setWhiteboardRequests((prev) => {
         const idx = prev.findIndex((r) => r.socketId === req.socketId || r.name === req.name)
         if (idx !== -1) {
@@ -502,21 +651,21 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       })
     })
 
-    socket.on('whiteboard-permission-updated', ({ hasAccess }: { hasAccess: boolean }) => {
+    socketInstance.on('whiteboard-permission-updated', ({ hasAccess }: { hasAccess: boolean }) => {
       setHasWhiteboardPermission(hasAccess)
     })
 
-    socket.on('room-whiteboard-permissions-updated', (permissions: Record<string, boolean>) => {
+    socketInstance.on('room-whiteboard-permissions-updated', (permissions: Record<string, boolean>) => {
       setWhiteboardPermissionsMap(permissions)
     })
 
     // Real-Time Room Message Received
-    socket.on('room-message-received', (msg: ChatMessage) => {
+    socketInstance.on('room-message-received', (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg])
     })
 
     // User left room
-    socket.on('user-left', ({ socketId, userId }: { socketId: string; userId: string }) => {
+    socketInstance.on('user-left', ({ socketId, userId }: { socketId: string; userId: string }) => {
       console.log(`[Meeting Socket] User left room: ${socketId}`)
 
       // Close and cleanup RTCPeerConnection for leaving user
@@ -529,16 +678,21 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       setParticipants((prev) => {
         const leaving = prev.find((p) => p.socketId === socketId)
         if (leaving) {
-          setMessages((m) => [
-            ...m,
-            {
-              id: String(Date.now()),
-              sender: 'System',
-              role: 'system',
-              text: `${leaving.name.replace(' (You)', '')} left the room.`,
-              time: 'Now',
-            },
-          ])
+          setMessages((m) => {
+            const text = `${leaving.name.replace(' (You)', '')} left the room.`
+            const last = m[m.length - 1]
+            if (last && last.role === 'system' && last.text === text) return m
+            return [
+              ...m,
+              {
+                id: String(Date.now()),
+                sender: 'System',
+                role: 'system',
+                text,
+                time: 'Now',
+              },
+            ]
+          })
         }
         return prev.filter((p) => p.socketId !== socketId)
       })
@@ -546,14 +700,16 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
 
     return () => {
       console.log('[Meeting Socket] Cleaning up socket and peer connections...')
-      socket.emit('leave-room', { roomId })
+      hasJoinedRoomRef.current = false
+      socketInstance.emit('leave-room', { roomId })
 
       peerConnectionsRef.current.forEach((pc) => pc.close())
       peerConnectionsRef.current.clear()
 
-      socket.disconnect()
+      socketInstance.disconnect()
+      setSocket(null)
     }
-  }, [roomId, currentUser.id, currentUser.name, currentUser.role, currentUser.avatar, createPeerConnection])
+  }, [roomId, currentUser.id, createPeerConnection])
 
   // Continually sync localStream to self entry in participants
   useEffect(() => {
@@ -614,6 +770,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         localStreamRef.current = combinedStream
         setLocalStream(combinedStream)
         setIsMicOn(true)
+        setPermissionDeniedType(null)
 
         // Replace or add audio track to all active peer connections
         peerConnectionsRef.current.forEach((pc) => {
@@ -643,7 +800,12 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       }
     } catch (err: any) {
       console.error('[WebRTC] Microphone access error:', err)
-      toast.error(err.message?.includes('Permission') ? 'Microphone permission denied' : 'Could not access microphone')
+      const isPerm = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message?.toLowerCase().includes('permission') || err.message?.toLowerCase().includes('denied')
+      if (isPerm) {
+        setPermissionDeniedType('microphone')
+      } else {
+        toast.error('Could not access microphone')
+      }
       setIsMicOn(false)
     }
   }, [roomId, currentUser.id])
@@ -693,6 +855,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         localStreamRef.current = combinedStream
         setLocalStream(combinedStream)
         setIsCameraOn(true)
+        setPermissionDeniedType(null)
 
         // Replace or add video track to all active peer connections
         peerConnectionsRef.current.forEach((pc) => {
@@ -722,19 +885,25 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       }
     } catch (err: any) {
       console.error('[WebRTC] Camera access error:', err)
-      toast.error(err.message?.includes('Permission') ? 'Camera permission denied' : 'Could not access camera')
+      const isPerm = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message?.toLowerCase().includes('permission') || err.message?.toLowerCase().includes('denied')
+      if (isPerm) {
+        setPermissionDeniedType('camera')
+      } else {
+        toast.error('Could not access camera')
+      }
       setIsCameraOn(false)
     }
   }, [roomId, currentUser.id])
 
-  // Tutor Mute Remote Participant Handler
+  // Tutor Remote Mute / Unmute Participant Handler
   const muteParticipant = useCallback(
-    (targetSocketId: string) => {
+    (targetSocketId: string, shouldMute = true) => {
       if (socketRef.current) {
-        socketRef.current.emit('tutor-mute-participant', { roomId, targetSocketId })
+        const eventName = shouldMute ? 'tutor-mute-participant' : 'tutor-unmute-participant'
+        socketRef.current.emit(eventName, { roomId, targetSocketId })
       }
       setParticipants((prev) =>
-        prev.map((p) => (p.socketId === targetSocketId || p.id === targetSocketId ? { ...p, isMuted: true } : p))
+        prev.map((p) => (p.socketId === targetSocketId || p.id === targetSocketId ? { ...p, isMuted: shouldMute } : p))
       )
     },
     [roomId]
@@ -910,6 +1079,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   }, [roomId])
 
   return {
+    socket,
     localStream,
     participants,
     messages,
@@ -935,5 +1105,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     leaveRoom,
     setParticipants,
     setMessages,
+    permissionDeniedType,
+    setPermissionDeniedType,
   }
 }

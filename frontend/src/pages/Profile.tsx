@@ -43,6 +43,7 @@ import { toast } from 'sonner'
 import CustomDropdown, { DropdownOption } from '../components/CustomDropdown'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { useScrollLock } from '../hooks/useScrollLock'
 import { updateUserProfileApi } from '../services/api'
 import { logoutAuthUser } from '../services/authService'
 import { ProfilePerspective, useAuthStore } from '../store/useAuthStore'
@@ -518,6 +519,7 @@ export default function Profile() {
   const [sessions, setSessions] = useState<ProfileSessionItem[]>(() => getStoredProfileSessions())
   const [sessionFilter, setSessionFilter] = useState<'Upcoming' | 'Completed'>('Upcoming')
   const [cancellingSession, setCancellingSession] = useState<ProfileSessionItem | null>(null)
+  useScrollLock(Boolean(isEditModalOpen || cancellingSession))
   const sessionSliderRef = useRef<HTMLDivElement>(null)
 
   const handleSlideSessionsUp = () => {

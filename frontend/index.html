@@ -1,18 +1,256 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #fafafc;">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SOCRATES — AI + Human Tutoring Marketplace</title>
     <meta name="description" content="Master every subject through personalized tutoring, AI-powered guidance, live video sessions, and collaborative learning—all in one platform." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+    <style>
+      /* Critical First-Paint Shell — Zero Blank Screen & Zero Scrollbar Jump on Refresh */
+      html {
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+      }
+      ::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
+      }
+      ::-webkit-scrollbar-button {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent !important;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.25) !important;
+        border-radius: 9999px !important;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #0066cc !important;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #fafafc;
+        color: #1d1d1f;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+      #root {
+        width: 100%;
+        min-height: 100vh;
+      }
+      .shell-root-layout {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background-color: #fafafc;
+        overflow-x: clip;
+      }
+      .shell-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background-color: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(224, 224, 224, 0.6);
+        user-select: none;
+        -webkit-user-select: none;
+        box-sizing: border-box;
+        width: 100%;
+      }
+      .shell-nav {
+        max-width: 72rem;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        height: 3.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        font-weight: 400;
+        color: #1d1d1f;
+        box-sizing: border-box;
+      }
+      .shell-logo-link {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        border-radius: 0.5rem;
+      }
+      .shell-logo-wrap {
+        display: inline-flex;
+        align-items: center;
+        user-select: none;
+      }
+      .shell-logo-text {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1d1d1f;
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+      .shell-logo-dot {
+        color: #0066cc;
+        font-weight: 900;
+        line-height: 1;
+        margin-left: 0.125rem;
+        font-size: 1.25rem;
+      }
+      .shell-links {
+        display: flex;
+        align-items: center;
+        gap: 1.75rem;
+      }
+      @media (max-width: 767px) {
+        .shell-links {
+          display: none !important;
+        }
+      }
+      .shell-link {
+        font-size: 0.75rem;
+        line-height: 1rem;
+        font-weight: 600;
+        color: rgba(29, 29, 31, 0.8);
+        text-decoration: none;
+        user-select: none;
+        -webkit-user-select: none;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        box-sizing: border-box;
+        transition: color 0.15s ease;
+      }
+      .shell-link.active {
+        color: #0066cc;
+      }
+      .shell-auth-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-height: 36px;
+        box-sizing: border-box;
+      }
+    </style>
   </head>
-  <body class="bg-white text-[#1d1d1f] antialiased selection:bg-[#0066cc]/10 selection:text-[#0066cc]">
-    <div id="root"></div>
+  <body class="bg-[#fafafc] text-[#1d1d1f] antialiased selection:bg-[#0066cc]/10 selection:text-[#0066cc]" style="background-color: #fafafc; margin: 0; padding: 0;">
+    <div id="root">
+      <div class="shell-root-layout">
+        <header id="initial-nav-shell" class="shell-header">
+          <nav class="shell-nav">
+            <a href="/" class="shell-logo-link">
+              <div class="shell-logo-wrap">
+                <span class="shell-logo-text">SOCRATES</span><span class="shell-logo-dot">.</span>
+              </div>
+            </a>
+            <div class="shell-links" id="shell-nav-links">
+              <a href="/practice" class="shell-link" id="nav-link-practice">AI Practice</a>
+              <a href="/community" class="shell-link" id="nav-link-community">Community</a>
+              <a href="/recordings" class="shell-link" id="nav-link-recordings">AI Recaps</a>
+              <a href="/tutors" class="shell-link" id="nav-link-tutors">Tutors</a>
+              <a href="/#pricing" class="shell-link" id="nav-link-pricing">Pricing</a>
+            </div>
+            <div class="shell-auth-container" id="shell-auth"></div>
+          </nav>
+        </header>
+        <!-- Body placeholder ensuring height > 100vh so the scrollbar slider stays visible on refresh -->
+        <div id="shell-body" style="flex: 1; min-height: calc(125vh - 53px); width: 100%;"></div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname;
+          // If user is already in active study room call, lock dark background and hide navbar shell so React mounts complete study room
+          if (p.startsWith('/study-room') || p.startsWith('/meeting')) {
+            var rId = p.split('/')[2] || 'demo-101';
+            var isAlreadyJoined = sessionStorage.getItem('socrates_room_joined_' + rId) === 'true';
+            if (isAlreadyJoined) {
+              document.documentElement.style.backgroundColor = '#0a0a0c';
+              document.body.style.backgroundColor = '#0a0a0c';
+              document.documentElement.style.scrollbarGutter = 'auto';
+              document.documentElement.classList.add('no-scrollbar');
+              document.body.classList.add('no-scrollbar');
+
+              var nav = document.getElementById('initial-nav-shell');
+              if (nav) nav.style.display = 'none';
+              var sb = document.getElementById('shell-body');
+              if (sb) sb.style.display = 'none';
+              return;
+            }
+          }
+
+          // Hide navbar shell and body placeholder on auth pages (study-room and meeting in lobby use MeetingLobby with Navbar)
+          if (p === '/login' || p === '/signup' || p === '/forgot-password' || p === '/reset-password' || p === '/verify-otp') {
+            var nav = document.getElementById('initial-nav-shell');
+            if (nav) nav.style.display = 'none';
+            var sb = document.getElementById('shell-body');
+            if (sb) sb.style.display = 'none';
+            return;
+          }
+
+          // Highlight active navigation link
+          var linkMap = {
+            '/practice': 'nav-link-practice',
+            '/community': 'nav-link-community',
+            '/recordings': 'nav-link-recordings',
+            '/tutors': 'nav-link-tutors'
+          };
+          if (linkMap[p]) {
+            var activeEl = document.getElementById(linkMap[p]);
+            if (activeEl) activeEl.className += ' active';
+          }
+
+          // Instant user auth hydration from localStorage
+          var authEl = document.getElementById('shell-auth');
+          if (authEl) {
+            var raw = localStorage.getItem('socrates_user');
+            if (raw) {
+              var u = JSON.parse(raw);
+              var name = u.fullName || u.name || 'User';
+              var img = u.profileImage || u.avatar;
+              if (!img) {
+                img = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=0066cc&color=fff&size=128&bold=true';
+              }
+              var isProfile = (p === '/profile' || p === '/dashboard');
+              var borderStyle = isProfile ? 'border: 1px solid #0066cc;' : 'border: 1px solid transparent;';
+              var textColor = isProfile ? '#0066cc' : '#1d1d1f';
+              authEl.innerHTML = '<div style="display:flex;align-items:center;gap:0.75rem;">' +
+                '<a href="/profile" style="display:flex;align-items:center;gap:0.625rem;color:#1d1d1f;text-decoration:none;cursor:pointer;user-select:none;">' +
+                '<img src="' + img + '" width="32" height="32" style="width:32px;height:32px;border-radius:9999px;object-fit:cover;flex-shrink:0;background-color:#e5e5ea;box-sizing:border-box;' + borderStyle + '" alt="' + name + '" />' +
+                '<span style="font-size:0.75rem;line-height:1rem;font-weight:600;color:' + textColor + ';max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</span>' +
+                '</a>' +
+                '</div>';
+            } else {
+              authEl.innerHTML = '<div style="display:flex;align-items:center;gap:1rem;">' +
+                '<a href="/login" style="font-size:0.75rem;line-height:1rem;font-weight:600;color:#1d1d1f;text-decoration:none;">Sign In</a>' +
+                '<a href="/signup" style="padding:0.375rem 0.875rem;border-radius:9999px;background-color:#0066cc;color:#ffffff;font-size:0.75rem;line-height:1rem;font-weight:600;text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,0.05);">Get Started</a>' +
+                '</div>';
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

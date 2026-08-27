@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { useScrollLock } from '../hooks/useScrollLock'
 import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
@@ -147,6 +148,7 @@ export default function RecordingsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSubject, setActiveSubject] = useState('All')
   const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
+  useScrollLock(Boolean(selectedRecord))
   const [isPlayingVideo, setIsPlayingVideo] = useState(false)
   const [selectedDateFilter, setSelectedDateFilter] = useState('All')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')

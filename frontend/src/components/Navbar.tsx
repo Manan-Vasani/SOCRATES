@@ -21,7 +21,7 @@ export default function Navbar() {
   const isProfileActive = location.pathname === '/profile' || location.pathname === '/dashboard'
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#e0e0e0]/60 select-none transform-gpu translate-z-0">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#e0e0e0]/60 select-none">
       <nav 
         className="max-w-6xl mx-auto px-6 h-13 flex items-center justify-between text-xs font-normal text-[#1d1d1f]"
         aria-label="Global navigation"
@@ -69,7 +69,7 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-h-[36px]">
           {user ? (
             <div className="flex items-center gap-3">
               <Link
@@ -80,10 +80,12 @@ export default function Navbar() {
                 <img
                   src={user.profileImage || user.avatar || getInitialsAvatar(user.fullName || user.name)}
                   alt={user.fullName || user.name}
+                  width={32}
+                  height={32}
                   onError={(e) => {
                     e.currentTarget.src = getInitialsAvatar(user.fullName || user.name)
                   }}
-                  className={`w-8 h-8 rounded-full object-cover shrink-0 border ${
+                  className={`w-8 h-8 rounded-full object-cover shrink-0 bg-[#e5e5ea] border ${
                     isProfileActive ? 'border-[#0066cc]' : 'border-transparent'
                   }`}
                 />

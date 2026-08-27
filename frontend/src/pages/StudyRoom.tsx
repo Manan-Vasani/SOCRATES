@@ -9,6 +9,8 @@ import CodeSandbox from '../components/study/CodeSandbox'
 import StudyRoomChat from '../components/study/StudyRoomChat'
 import AIAssistantDrawer from '../components/study/AIAssistantDrawer'
 import MeetingLobby from '../components/study/MeetingLobby'
+import PermissionGuideModal from '../components/study/PermissionGuideModal'
+import { useScrollLock } from '../hooks/useScrollLock'
 import { useWebRTC } from '../hooks/useWebRTC'
 import { useAuthStore } from '../store/useAuthStore'
 import {
@@ -17,7 +19,37 @@ import {
   leaveStudyRoom,
   endStudyRoom,
   fetchStudyRoomMessages,
+  fetchStudyRoomTranscript,
 } from '../services/api'
+import { useSpeechTranscription, type TranscriptEntry } from '../hooks/useSpeechTranscription'
+import LiveTranscriptDrawer from '../components/study/LiveTranscriptDrawer'
+
+function resolveSessionTypeAndDuration(data: any, activeRoomId: string): { sessionType: 'quick-doubt' | 'concept-review' | 'full-session'; sessionTypeLabel: string; duration: 20 | 30 | 60 } {
+  const rawDuration = Number(data?.duration)
+  if (!isNaN(rawDuration) && rawDuration > 0) {
+    if (rawDuration <= 25) return { sessionType: 'quick-doubt', sessionTypeLabel: 'Quick Doubt', duration: 20 }
+    if (rawDuration <= 45) return { sessionType: 'concept-review', sessionTypeLabel: 'Concept Review', duration: 30 }
+    return { sessionType: 'full-session', sessionTypeLabel: 'Full Session', duration: 60 }
+  }
+
+  const tag = (data?.tag || '').toLowerCase()
+  const topic = (data?.topic || data?.title || '').toLowerCase()
+  const subject = (data?.subject || '').toLowerCase()
+  const combined = `${tag} ${topic} ${subject}`
+
+  if (combined.includes('quick') || combined.includes('doubt') || combined.includes('20 min') || combined.includes('lightning')) {
+    return { sessionType: 'quick-doubt', sessionTypeLabel: 'Quick Doubt', duration: 20 }
+  }
+  if (combined.includes('concept') || combined.includes('review') || combined.includes('30 min') || combined.includes('consultation')) {
+    return { sessionType: 'concept-review', sessionTypeLabel: 'Concept Review', duration: 30 }
+  }
+
+  if (activeRoomId === 'sess-103') {
+    return { sessionType: 'concept-review', sessionTypeLabel: 'Concept Review', duration: 30 }
+  }
+
+  return { sessionType: 'full-session', sessionTypeLabel: 'Full Session', duration: 60 }
+}
 
 export default function StudyRoom() {
   const { roomId, meetingId } = useParams<{ roomId?: string; meetingId?: string }>()
@@ -25,10 +57,31 @@ export default function StudyRoom() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
-  const [hasJoined, setHasJoined] = useState(false)
+  const [hasJoined, setHasJoined] = useState(() => {
+    try {
+      return sessionStorage.getItem(`socrates_room_joined_${activeRoomId}`) === 'true'
+    } catch {
+      return false
+    }
+  })
   const [guestName, setGuestName] = useState('')
-  const [sessionDetails, setSessionDetails] = useState<any>(null)
-  const [isDetailsLoading, setIsDetailsLoading] = useState(true)
+  const [sessionDetails, setSessionDetails] = useState<any>(() => {
+    try {
+      const cached = sessionStorage.getItem(`socrates_room_details_${activeRoomId}`)
+      if (cached) return JSON.parse(cached)
+      const stored = localStorage.getItem('socrates_profile_sessions')
+      if (stored) {
+        const list = JSON.parse(stored)
+        const matched = list.find((s: any) => s.id === activeRoomId || s.meetingId === activeRoomId)
+        if (matched) {
+          const typeInfo = resolveSessionTypeAndDuration(matched, activeRoomId)
+          return { ...matched, duration: typeInfo.duration, sessionTypeLabel: typeInfo.sessionTypeLabel }
+        }
+      }
+    } catch {}
+    return null
+  })
+  const [isDetailsLoading, setIsDetailsLoading] = useState(!sessionDetails)
   const [authorization, setAuthorization] = useState<{
     isAuthorized?: boolean
     reason?: string
@@ -44,17 +97,19 @@ export default function StudyRoom() {
   })
 
   useEffect(() => {
-    document.documentElement.classList.add('no-scrollbar')
-    document.body.classList.add('no-scrollbar')
-    const originalGutter = document.documentElement.style.scrollbarGutter
-    document.documentElement.style.scrollbarGutter = 'auto'
+    if (hasJoined) {
+      document.documentElement.classList.add('no-scrollbar')
+      document.body.classList.add('no-scrollbar')
+      const originalGutter = document.documentElement.style.scrollbarGutter
+      document.documentElement.style.scrollbarGutter = 'auto'
 
-    return () => {
-      document.documentElement.classList.remove('no-scrollbar')
-      document.body.classList.remove('no-scrollbar')
-      document.documentElement.style.scrollbarGutter = originalGutter
+      return () => {
+        document.documentElement.classList.remove('no-scrollbar')
+        document.body.classList.remove('no-scrollbar')
+        document.documentElement.style.scrollbarGutter = originalGutter
+      }
     }
-  }, [])
+  }, [hasJoined])
 
   useEffect(() => {
     if (user && !hasInitializedName.current) {
@@ -81,7 +136,25 @@ export default function StudyRoom() {
     }
   }, [user, displayName, guestName])
 
+  // Persistent session start timestamp: remains stable across page refreshes
+  const sessionStartTime = useMemo(() => {
+    try {
+      const key = `socrates_session_start_${activeRoomId}`
+      const existing = sessionStorage.getItem(key)
+      if (existing) {
+        const parsed = parseInt(existing, 10)
+        if (!isNaN(parsed)) return parsed
+      }
+      const now = Date.now()
+      sessionStorage.setItem(key, String(now))
+      return now
+    } catch {
+      return Date.now()
+    }
+  }, [activeRoomId])
+
   const {
+    socket,
     localStream,
     participants,
     messages,
@@ -107,6 +180,8 @@ export default function StudyRoom() {
     leaveRoom,
     setParticipants,
     setMessages,
+    permissionDeniedType,
+    setPermissionDeniedType,
   } = useWebRTC({
     roomId: activeRoomId,
     currentUser,
@@ -135,7 +210,12 @@ export default function StudyRoom() {
           setAuthorization(apiData.authorization)
         }
 
-        setSessionDetails({
+        const typeInfo = resolveSessionTypeAndDuration(
+          matchedLocalSession || apiData,
+          activeRoomId
+        )
+
+        const finalDetails = {
           subject:
             matchedLocalSession?.subject ||
             (apiData.subject && apiData.subject !== 'Tutoring Session' ? apiData.subject : 'Linear Algebra'),
@@ -149,8 +229,14 @@ export default function StudyRoom() {
           dateStr: matchedLocalSession?.dateStr || apiData.dateStr || 'Mon, Aug 17, 2026',
           timeStr: matchedLocalSession?.timeStr || apiData.timeStr || '04:30 PM',
           fee: matchedLocalSession?.fee || apiData.fee || 55,
-          duration: matchedLocalSession?.duration || apiData.duration || 60,
-        })
+          duration: typeInfo.duration,
+          sessionType: typeInfo.sessionType,
+          sessionTypeLabel: typeInfo.sessionTypeLabel,
+        }
+        setSessionDetails(finalDetails)
+        try {
+          sessionStorage.setItem(`socrates_room_details_${activeRoomId}`, JSON.stringify(finalDetails))
+        } catch {}
         setIsDetailsLoading(false)
       })
       .catch(() => {
@@ -161,7 +247,7 @@ export default function StudyRoom() {
     fetchStudyRoomMessages(activeRoomId)
       .then((res) => {
         if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-          const loadedMessages = res.data.map((m: any) => ({
+          const rawMessages = res.data.map((m: any) => ({
             id: m._id || String(Date.now()),
             sender: m.sender?.fullName || m.sender?.name || 'Participant',
             senderId: m.sender?._id || m.sender,
@@ -169,10 +255,19 @@ export default function StudyRoom() {
             text: m.text,
             time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }))
+          // Deduplicate consecutive identical system messages
+          const dedupedMessages: any[] = []
+          rawMessages.forEach((msg: any) => {
+            const last = dedupedMessages[dedupedMessages.length - 1]
+            if (msg.role === 'system' && last && last.role === 'system' && last.text === msg.text) {
+              return
+            }
+            dedupedMessages.push(msg)
+          })
+
           setMessages((prev) => {
-            // Keep unique messages
             const existingIds = new Set(prev.map((p) => p.id))
-            const filtered = loadedMessages.filter((m: any) => !existingIds.has(m.id))
+            const filtered = dedupedMessages.filter((m: any) => !existingIds.has(m.id))
             return [...filtered, ...prev]
           })
         }
@@ -181,9 +276,72 @@ export default function StudyRoom() {
   }, [activeRoomId, user, setMessages])
 
   const [stageMode, setStageMode] = useState<StageMode>('split')
-  const [isAIOpen, setIsAIOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(true)
+  const [sidebarTab, setSidebarTab] = useState<'chat' | 'ai' | 'transcript'>('chat')
+  const [isCCOn, setIsCCOn] = useState(true)
+  const [transcriptEntries, setTranscriptEntries] = useState<TranscriptEntry[]>([])
+  const [activeCCEntry, setActiveCCEntry] = useState<TranscriptEntry | null>(null)
+  const ccTimeoutRef = useRef<any>(null)
   const [showLeaveModal, setShowLeaveModal] = useState(false)
+  useScrollLock(showLeaveModal)
+
+  // Fetch initial room transcript from MongoDB
+  useEffect(() => {
+    if (!activeRoomId) return
+    fetchStudyRoomTranscript(activeRoomId).then((res) => {
+      if (res?.success && Array.isArray(res.data)) {
+        setTranscriptEntries(res.data)
+      }
+    })
+  }, [activeRoomId])
+
+  // Handle new local speech transcription
+  const handleNewLocalTranscript = useCallback((entry: TranscriptEntry) => {
+    setTranscriptEntries((prev) => [...prev, entry])
+    setActiveCCEntry(entry)
+    if (ccTimeoutRef.current) clearTimeout(ccTimeoutRef.current)
+    ccTimeoutRef.current = setTimeout(() => setActiveCCEntry(null), 5000)
+  }, [])
+
+  // Hook into browser SpeechRecognition whenever mic is unmuted
+  const {
+    isListening: isSpeechListening,
+    interimText,
+    speechError,
+    isSoundDetected,
+    micVolume,
+    restartRecognition,
+  } = useSpeechTranscription({
+    roomId: activeRoomId,
+    isMicOn,
+    currentUser: {
+      id: currentUser.id,
+      name: currentUser.name,
+      role: (currentUser.role as any) || 'student',
+    },
+    socket,
+    onNewLocalTranscript: handleNewLocalTranscript,
+    localStream,
+  })
+
+  // Listen for speech transcript segments from other members via Socket.IO
+  useEffect(() => {
+    if (!socket) return
+
+    const handleRemoteTranscript = (entry: TranscriptEntry) => {
+      if (entry.speakerName !== currentUser.name) {
+        setTranscriptEntries((prev) => [...prev, entry])
+      }
+      setActiveCCEntry(entry)
+      if (ccTimeoutRef.current) clearTimeout(ccTimeoutRef.current)
+      ccTimeoutRef.current = setTimeout(() => setActiveCCEntry(null), 5000)
+    }
+
+    socket.on('live-transcript-entry', handleRemoteTranscript)
+    return () => {
+      socket.off('live-transcript-entry', handleRemoteTranscript)
+    }
+  }, [socket, currentUser.name])
 
   const [leftPanelWidth, setLeftPanelWidth] = useState(340)
   const [rightPanelWidth, setRightPanelWidth] = useState(340)
@@ -248,6 +406,10 @@ export default function StudyRoom() {
 
   const handleLeave = () => setShowLeaveModal(true)
   const confirmLeave = () => {
+    try {
+      sessionStorage.removeItem(`socrates_room_joined_${activeRoomId}`)
+      sessionStorage.removeItem(`socrates_room_details_${activeRoomId}`)
+    } catch {}
     leaveStudyRoom(activeRoomId).catch(() => {})
     leaveRoom()
     setShowLeaveModal(false)
@@ -321,10 +483,15 @@ export default function StudyRoom() {
         isCameraOn={isCameraOn}
         onCameraToggle={toggleCamera}
         localStream={localStream}
+        permissionDeniedType={permissionDeniedType}
+        onClearPermissionDenied={() => setPermissionDeniedType(null)}
         onJoinMeeting={async () => {
           if (user) {
             await joinStudyRoom(activeRoomId).catch(() => {})
           }
+          try {
+            sessionStorage.setItem(`socrates_room_joined_${activeRoomId}`, 'true')
+          } catch {}
           setHasJoined(true)
         }}
       />
@@ -339,6 +506,7 @@ export default function StudyRoom() {
             <Whiteboard
               canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
               isTutor={currentUser.role === 'tutor'}
+              socket={socket}
               socketRef={socketRef}
               roomId={activeRoomId}
               onRequestPermission={requestWhiteboardPermission}
@@ -352,7 +520,12 @@ export default function StudyRoom() {
       case 'code':
         return (
           <div className="flex-1 min-h-0 flex">
-            <CodeSandbox socketRef={socketRef} roomId={activeRoomId} />
+            <CodeSandbox
+              socket={socket}
+              socketRef={socketRef}
+              roomId={activeRoomId}
+              runnerName={currentUser.name}
+            />
           </div>
         )
       case 'grid':
@@ -412,6 +585,7 @@ export default function StudyRoom() {
               <Whiteboard
                 canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
                 isTutor={currentUser.role === 'tutor'}
+                socket={socket}
                 socketRef={socketRef}
                 roomId={activeRoomId}
                 onRequestPermission={requestWhiteboardPermission}
@@ -426,23 +600,141 @@ export default function StudyRoom() {
     }
   }
 
+  // Listen for live session duration updates from tutor
+  useEffect(() => {
+    if (!socket) return
+
+    const handleDurationChange = (data: { duration: number; sessionTypeLabel?: string; updatedBy?: string }) => {
+      setSessionDetails((prev: any) => {
+        if (!prev) return prev
+        const updated = {
+          ...prev,
+          duration: data.duration,
+          sessionTypeLabel: data.sessionTypeLabel || `${data.duration}m Session`,
+        }
+        try {
+          sessionStorage.setItem(`socrates_room_details_${activeRoomId}`, JSON.stringify(updated))
+        } catch {}
+        return updated
+      })
+      toast.info(
+        data.updatedBy
+          ? `${data.updatedBy} updated session to ${data.duration} min (${data.sessionTypeLabel || 'Session'})`
+          : `Session duration updated to ${data.duration} min`
+      )
+    }
+
+    socket.on('session-duration-change', handleDurationChange)
+    return () => {
+      socket.off('session-duration-change', handleDurationChange)
+    }
+  }, [socket, activeRoomId])
+
+  const handleUpdateDuration = useCallback((newDuration: number, newLabel: string) => {
+    setSessionDetails((prev: any) => {
+      if (!prev) return prev
+      const updated = { ...prev, duration: newDuration, sessionTypeLabel: newLabel }
+      try {
+        sessionStorage.setItem(`socrates_room_details_${activeRoomId}`, JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
+
+    if (socket) {
+      socket.emit('session-duration-change', {
+        roomId: activeRoomId,
+        duration: newDuration,
+        sessionTypeLabel: newLabel,
+        updatedBy: currentUser.name,
+      })
+    }
+    toast.success(`Session updated to ${newDuration} min (${newLabel})`)
+  }, [socket, activeRoomId, currentUser.name])
+
+  // Listen for session ended broadcast from tutor or server auto-end
+  useEffect(() => {
+    if (!socket) return
+
+    const handleSessionEnded = (data?: { reason?: string }) => {
+      try {
+        sessionStorage.removeItem(`socrates_room_joined_${activeRoomId}`)
+        sessionStorage.removeItem(`socrates_room_details_${activeRoomId}`)
+        sessionStorage.removeItem(`socrates_session_start_${activeRoomId}`)
+      } catch {}
+
+      toast.info(data?.reason ? `Session concluded: ${data.reason}` : 'Study session officially concluded by tutor.')
+      leaveRoom()
+      navigate('/profile')
+    }
+
+    socket.on('study-session-ended-by-tutor', handleSessionEnded)
+    return () => {
+      socket.off('study-session-ended-by-tutor', handleSessionEnded)
+    }
+  }, [socket, activeRoomId, leaveRoom, navigate])
+
+  const handleAutoEndSession = useCallback(async () => {
+    try {
+      sessionStorage.removeItem(`socrates_room_joined_${activeRoomId}`)
+      sessionStorage.removeItem(`socrates_room_details_${activeRoomId}`)
+      sessionStorage.removeItem(`socrates_session_start_${activeRoomId}`)
+    } catch {}
+
+    toast.warning('Session concluded. The 1-minute wrap-up window has ended.', {
+      duration: 5000,
+    })
+
+    if (currentUser.role === 'tutor') {
+      try {
+        await endStudyRoom(activeRoomId)
+      } catch {}
+      if (socket) {
+        socket.emit('end-study-session', {
+          roomId: activeRoomId,
+          reason: '1-minute wrap-up window completed',
+        })
+      }
+    }
+
+    leaveRoom()
+    navigate('/profile')
+  }, [activeRoomId, currentUser.role, socket, leaveRoom, navigate])
+
   const handleEndSession = async () => {
+    try {
+      sessionStorage.removeItem(`socrates_room_joined_${activeRoomId}`)
+      sessionStorage.removeItem(`socrates_room_details_${activeRoomId}`)
+      sessionStorage.removeItem(`socrates_session_start_${activeRoomId}`)
+    } catch {}
     try {
       await endStudyRoom(activeRoomId)
       toast.success('Study session ended. Session recaps dispatched to all participants!')
     } catch (e) {}
+    if (socket) {
+      socket.emit('end-study-session', {
+        roomId: activeRoomId,
+        reason: 'Concluded by tutor',
+      })
+    }
     leaveRoom()
     setShowLeaveModal(false)
     navigate('/profile')
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0a0a0c] overflow-hidden select-none">
+    <div className="h-screen w-full flex flex-col bg-[#0a0a0c] overflow-hidden select-none">
       {/* Top Header Bar */}
       <RoomHeader
-        roomTitle={sessionDetails?.topic || `Study Room — ${activeRoomId}`}
-        subject={sessionDetails?.subject || 'Mathematics'}
+        roomTitle={sessionDetails?.topic || ''}
+        subject={sessionDetails?.subject || ''}
+        isLoading={isDetailsLoading && !sessionDetails}
         participantCount={participants.length}
+        plannedDuration={sessionDetails?.duration || 60}
+        sessionTypeLabel={sessionDetails?.sessionTypeLabel}
+        plannedTimeStr={sessionDetails?.timeStr}
+        plannedDateStr={sessionDetails?.dateStr}
+        sessionStartTime={sessionStartTime}
+        onAutoEndSession={handleAutoEndSession}
         stageMode={stageMode}
         onStageModeChange={setStageMode}
         isMicOn={isMicOn}
@@ -453,32 +745,69 @@ export default function StudyRoom() {
         onScreenShareToggle={toggleScreenShare}
         isHandRaised={isHandRaised}
         onHandRaise={toggleHandRaise}
+        isAIOpen={isChatOpen && sidebarTab === 'ai'}
         onAIToggle={() => {
-          if (!isAIOpen) {
-            setIsAIOpen(true)
-            setIsChatOpen(true)
+          if (isChatOpen && sidebarTab === 'ai') {
+            setIsChatOpen(false)
           } else {
-            setIsAIOpen(false)
+            setSidebarTab('ai')
+            setIsChatOpen(true)
           }
         }}
         onLeave={handleLeave}
-        isChatOpen={isChatOpen}
+        isChatOpen={isChatOpen && sidebarTab === 'chat'}
         onChatToggle={() => {
-          if (!isChatOpen) {
-            setIsChatOpen(true)
-            setIsAIOpen(false)
-          } else {
+          if (isChatOpen && sidebarTab === 'chat') {
             setIsChatOpen(false)
+          } else {
+            setSidebarTab('chat')
+            setIsChatOpen(true)
           }
         }}
+        isTranscriptOpen={isChatOpen && sidebarTab === 'transcript'}
+        onTranscriptToggle={() => {
+          if (isChatOpen && sidebarTab === 'transcript') {
+            setIsChatOpen(false)
+          } else {
+            setSidebarTab('transcript')
+            setIsChatOpen(true)
+          }
+        }}
+        isCCOn={isCCOn}
+        onCCToggle={() => setIsCCOn((v) => !v)}
         onShareLink={activeRoomId.startsWith('sess-') ? undefined : handleShareLink}
         currentUserRole={currentUser.role}
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex min-h-0 relative">
+      <div className="flex-1 flex min-h-0 relative z-0">
         {/* Stage Area */}
-        <div className="flex-1 min-w-0 flex flex-col">{renderStage()}</div>
+        <div className="flex-1 min-w-0 flex flex-col relative">
+          {renderStage()}
+
+          {/* Floating Closed Captions (Live Subtitles) */}
+          {isCCOn && (Boolean(interimText) || Boolean(activeCCEntry)) && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-xl px-4 py-2.5 rounded-2xl bg-black/85 backdrop-blur-md border border-white/15 shadow-2xl text-center pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-150 select-none">
+              <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                <span
+                  className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${
+                    (interimText ? currentUser.role === 'tutor' : activeCCEntry?.role === 'tutor')
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                  }`}
+                >
+                  {interimText ? (currentUser.role === 'tutor' ? 'Tutor' : 'Student') : (activeCCEntry?.role === 'tutor' ? 'Tutor' : 'Student')}
+                </span>
+                <span className="text-xs font-bold text-white/90">
+                  {interimText ? `${currentUser.name} (Speaking)` : activeCCEntry?.speakerName}
+                </span>
+              </div>
+              <p className="text-xs text-white/95 font-medium leading-relaxed">
+                "{interimText || activeCCEntry?.text}"
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Right Resizer Handle */}
         {isChatOpen && (
@@ -493,18 +822,54 @@ export default function StudyRoom() {
           </div>
         )}
 
-        {/* Right Sidebar: Chat / Socrates AI */}
+        {/* Right Sidebar: Chat / Socrates AI / Transcript */}
         {isChatOpen && (
           <div
             style={{ width: `${rightPanelWidth}px` }}
             className="shrink-0 flex flex-col h-full overflow-hidden border-l border-[#e5e5e7] bg-white relative max-w-full z-30"
           >
-            {isAIOpen ? (
+            {sidebarTab === 'ai' ? (
               <AIAssistantDrawer
                 isOpen={true}
-                onClose={() => setIsAIOpen(false)}
+                onClose={() => setSidebarTab('chat')}
                 roomId={activeRoomId}
                 activeTopic={sessionDetails?.topic || sessionDetails?.subject || 'Mathematics'}
+                isHandRaised={isHandRaised}
+                onHandRaise={toggleHandRaise}
+                currentUserRole={currentUser.role}
+              />
+            ) : sidebarTab === 'transcript' ? (
+              <LiveTranscriptDrawer
+                isOpen={true}
+                onClose={() => setSidebarTab('chat')}
+                entries={transcriptEntries}
+                interimText={interimText}
+                currentUserName={currentUser.name}
+                isMicOn={isMicOn}
+                speechError={speechError}
+                isSoundDetected={isSoundDetected}
+                micVolume={micVolume}
+                onRestartSpeech={restartRecognition}
+                onAddManualTranscript={(text) => {
+                  const entry: TranscriptEntry = {
+                    speakerId: currentUser.id,
+                    speakerName: currentUser.name,
+                    role: (currentUser.role as any) || 'student',
+                    text,
+                    timeFormatted: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: new Date().toISOString(),
+                  }
+                  if (socket) {
+                    socket.emit('speech-transcript-segment', {
+                      roomId: activeRoomId,
+                      speakerId: currentUser.id,
+                      speakerName: currentUser.name,
+                      role: currentUser.role,
+                      text,
+                    })
+                  }
+                  handleNewLocalTranscript(entry)
+                }}
               />
             ) : (
               <StudyRoomChat
@@ -515,6 +880,9 @@ export default function StudyRoom() {
                 onGrantWhiteboardPermission={grantWhiteboardPermission}
                 onRevokeWhiteboardPermission={revokeWhiteboardPermission}
                 whiteboardPermissionsMap={whiteboardPermissionsMap}
+                isHandRaised={isHandRaised}
+                onHandRaise={toggleHandRaise}
+                onMuteParticipant={muteParticipant}
               />
             )}
           </div>
@@ -568,6 +936,20 @@ export default function StudyRoom() {
           </div>
         </div>
       )}
+
+      {/* Google Meet / Apple Style Browser Permission Block Guidance Modal */}
+      <PermissionGuideModal
+        isOpen={Boolean(permissionDeniedType)}
+        deviceType={permissionDeniedType}
+        onClose={() => setPermissionDeniedType(null)}
+        onRetry={() => {
+          if (permissionDeniedType === 'camera') {
+            toggleCamera()
+          } else {
+            toggleMic()
+          }
+        }}
+      />
     </div>
   )
 }

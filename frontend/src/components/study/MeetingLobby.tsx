@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Navbar from '../Navbar'
+import Footer from '../Footer'
+import PermissionGuideModal from './PermissionGuideModal'
 import { useAuthStore } from '../../store/useAuthStore'
 
 interface MeetingLobbyProps {
@@ -42,6 +44,8 @@ interface MeetingLobbyProps {
   onCameraToggle: () => void
   localStream: MediaStream | null
   onJoinMeeting: () => void
+  permissionDeniedType?: 'microphone' | 'camera' | 'media' | null
+  onClearPermissionDenied?: () => void
 }
 
 /**
@@ -73,6 +77,8 @@ export default function MeetingLobby({
   onCameraToggle,
   localStream,
   onJoinMeeting,
+  permissionDeniedType = null,
+  onClearPermissionDenied,
 }: MeetingLobbyProps) {
   const [copied, setCopied] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
@@ -191,16 +197,16 @@ export default function MeetingLobby({
   )
 
   return (
-    <div className="min-h-screen w-full bg-[#f5f5f7] text-[#1d1d1f] flex flex-col justify-between select-none antialiased">
+    <div className="min-h-screen w-full bg-[#fafafc] text-[#1d1d1f] flex flex-col justify-between select-none antialiased overflow-x-clip">
       {/* Standard Platform Navigation Bar */}
       <Navbar />
 
       {/* Main Center Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 md:py-14 w-full">
-        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Left: Device Camera & Audio Viewport (7 cols) - Matches Right Card Height Exactly */}
-          <div className="lg:col-span-7 flex flex-col">
-            <div className="relative w-full h-full min-h-[380px] sm:min-h-[410px] rounded-3xl overflow-hidden bg-[#1c1c1e] border border-[#e5e5e7] shadow-xl shadow-black/8 group flex flex-col items-center justify-center">
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* Left: Device Camera & Audio Viewport (6 cols) - Matches Right Card Height Exactly */}
+          <div className="lg:col-span-6 flex flex-col">
+            <div className="relative w-full h-full min-h-[410px] sm:min-h-[430px] rounded-3xl overflow-hidden bg-[#1c1c1e] border border-[#e5e5e7] shadow-xl shadow-black/8 group flex flex-col items-center justify-center">
               {/* Video Element (Live Real Camera Feed) */}
               {hasActiveCamera ? (
                 <video
@@ -305,23 +311,32 @@ export default function MeetingLobby({
             </div>
           </div>
 
-          {/* Right: Clean White Join Card (5 cols) - Matches Left Viewport Height Exactly */}
-          <div className="lg:col-span-5 bg-white rounded-3xl border border-[#e5e5e7] p-7 sm:p-8 shadow-sm space-y-6 flex flex-col justify-between h-full min-h-[380px] sm:min-h-[410px]">
-            {/* Header / Session Details */}
-            <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f] truncate">
-                {heroTitle}
-              </h1>
-
-              {sessionDetails?.tutorName ? (
-                <p className="text-xs text-[#7a7a7a] truncate">
-                  Hosted by{' '}
-                  <strong className="text-[#1d1d1f] font-semibold">
-                    {sessionDetails.tutorName}
-                  </strong>
-                </p>
+          {/* Right: Clean White Join Card (6 cols) - Wider with Perfect Proportion */}
+          <div className="lg:col-span-6 bg-white rounded-3xl border border-[#e5e5e7] p-7 sm:p-8 shadow-sm space-y-6 flex flex-col justify-between h-full min-h-[410px] sm:min-h-[430px]">
+            {/* Header / Session Details with Matching Skeleton */}
+            <div className="space-y-1.5 min-h-[58px] flex flex-col justify-center">
+              {isDetailsLoading ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-7 w-4/5 max-w-[320px] rounded-lg bg-[#e5e5e7]/80" />
+                  <div className="h-3.5 w-1/3 max-w-[140px] rounded-md bg-[#f0f0f2]" />
+                </div>
               ) : (
-                <p className="text-xs text-[#7a7a7a]">Live Tutoring Session</p>
+                <>
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1d1d1f] line-clamp-1" title={heroTitle}>
+                    {heroTitle}
+                  </h1>
+
+                  {sessionDetails?.tutorName ? (
+                    <p className="text-xs text-[#7a7a7a] truncate">
+                      Hosted by{' '}
+                      <strong className="text-[#1d1d1f] font-semibold">
+                        {sessionDetails.tutorName}
+                      </strong>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-[#7a7a7a]">Live Tutoring Session</p>
+                  )}
+                </>
               )}
             </div>
 
@@ -331,19 +346,19 @@ export default function MeetingLobby({
                 {/* Top Row matching h-7 (28px) */}
                 <div className="flex items-center justify-between gap-2 h-7">
                   <div className="w-28 h-6 rounded-full bg-[#f0f0f2]" />
-                  <div className="w-20 h-6 rounded-full bg-[#f0f0f2]" />
+                  <div className="w-24 h-6 rounded-full bg-[#f0f0f2]" />
                 </div>
 
                 {/* Topic Heading & Date Subtext */}
-                <div className="space-y-1 py-0.5">
-                  <div className="w-3/4 h-4 rounded-md bg-[#e5e5e7]/80" />
-                  <div className="w-1/2 h-3.5 rounded-md bg-[#f0f0f2] mt-1" />
+                <div className="space-y-1.5 py-0.5">
+                  <div className="w-4/5 h-4 rounded-md bg-[#e5e5e7]/80" />
+                  <div className="w-2/5 h-3 rounded-md bg-[#f0f0f2]" />
                 </div>
 
                 {/* Footer matching pt-2.5 border-t h-6 (34px) */}
                 <div className="pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between h-6">
-                  <div className="w-28 h-3.5 rounded-md bg-[#f0f0f2]" />
-                  <div className="w-8 h-3.5 rounded-md bg-[#f0f0f2]" />
+                  <div className="w-36 h-3.5 rounded-md bg-[#f0f0f2]" />
+                  <div className="w-10 h-3.5 rounded-md bg-[#f0f0f2]" />
                 </div>
               </div>
             ) : (
@@ -435,10 +450,22 @@ export default function MeetingLobby({
         </div>
       </main>
 
-      {/* Clean Minimalist Platform Footer */}
-      <footer className="h-12 px-6 flex items-center justify-center text-xs text-[#7a7a7a] border-t border-[#e0e0e0]/60 bg-white/60 backdrop-blur-md shrink-0">
-        <span>© {new Date().getFullYear()} SOCRATES. All rights reserved.</span>
-      </footer>
+      {/* Standard Platform Footer */}
+      <Footer />
+
+      {/* Google Meet / Apple Style Browser Permission Block Guidance Modal */}
+      <PermissionGuideModal
+        isOpen={Boolean(permissionDeniedType)}
+        deviceType={permissionDeniedType}
+        onClose={() => onClearPermissionDenied?.()}
+        onRetry={() => {
+          if (permissionDeniedType === 'camera') {
+            onCameraToggle()
+          } else {
+            onMicToggle()
+          }
+        }}
+      />
     </div>
   )
 }

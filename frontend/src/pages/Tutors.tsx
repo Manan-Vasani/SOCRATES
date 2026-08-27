@@ -37,6 +37,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { fetchAllTutors, TutorItem } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
+import { useScrollLock } from '../hooks/useScrollLock'
 import { getUnifiedSubjectList } from '../utils/subjectRegistry'
 import { getInitialsAvatar } from '../services/authService'
 
@@ -203,6 +204,7 @@ export default function Tutors() {
   const [minRating, setMinRating] = useState(0)
   const [maxPrice, setMaxPrice] = useState(300)
   const [selectedTutorForBooking, setSelectedTutorForBooking] = useState<ExtendedTutor | null>(null)
+  useScrollLock(Boolean(selectedTutorForBooking))
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('14:00')
   const [bookingTopic, setBookingTopic] = useState('')

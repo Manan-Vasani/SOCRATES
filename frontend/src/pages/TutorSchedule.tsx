@@ -37,6 +37,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { createTutorBookingApi, fetchTutorBookingsApi, fetchTutorDetailsApi } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
+import { useScrollLock } from '../hooks/useScrollLock'
 import { getStoredProfileSessions, ProfileSessionItem, saveStoredProfileSessions } from './Profile'
 
 function TutorScheduleSkeleton() {
@@ -417,17 +418,8 @@ export default function TutorSchedule() {
   const [joinedSlotKeys, setJoinedSlotKeys] = useState<Set<string>>(new Set())
   const hoverTimeoutRef = React.useRef<any>(null)
 
-  // Prevent background page scrolling when modal is open
-  useEffect(() => {
-    if (selectedDay || groupSplitModalSlot) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [selectedDay, groupSplitModalSlot])
+  // Prevent background page scrolling and remove slider when modal is open
+  useScrollLock(Boolean(selectedDay || groupSplitModalSlot))
 
   useEffect(() => {
     let isMounted = true

@@ -84,6 +84,7 @@ function isShapeTool(t: Tool): boolean {
 export interface WhiteboardProps {
   canDraw?: boolean
   isTutor?: boolean
+  socket?: import('socket.io-client').Socket | null
   socketRef?: React.RefObject<import('socket.io-client').Socket | null>
   roomId?: string
   onRequestPermission?: () => void
@@ -96,6 +97,7 @@ export interface WhiteboardProps {
 export default function Whiteboard({
   canDraw = true,
   isTutor = false,
+  socket,
   socketRef,
   roomId,
   onRequestPermission,
@@ -104,6 +106,12 @@ export default function Whiteboard({
   whiteboardRequests = [],
   onDenyRequest,
 }: WhiteboardProps) {
+  const activeSocket = socket || socketRef?.current
+  const [remoteLiveStrokes, setRemoteLiveStrokes] = useState<Record<string, Stroke>>({})
+  const [remoteLiveText, setRemoteLiveText] = useState<Record<string, TextItem>>({})
+  const currentEditingIdRef = useRef<string | null>(null)
+  const lastEmitTimeRef = useRef<number>(0)
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const textInputRef = useRef<HTMLTextAreaElement>(null)
@@ -453,9 +461,12 @@ export default function Whiteboard({
 
     drawBackground(ctx, w, h)
 
-    const allStrokes = currentStroke && currentStroke.tool !== 'eraser'
-      ? [...strokes, currentStroke]
-      : strokes
+    const liveList = Object.values(remoteLiveStrokes)
+    const allStrokes = [
+      ...strokes,
+      ...liveList,
+      ...(currentStroke && currentStroke.tool !== 'eraser' ? [currentStroke] : []),
+    ]
     for (const s of allStrokes) {
       if (s.points.length < 2 || s.tool === 'eraser') continue
       ctx.strokeStyle = s.color
@@ -479,8 +490,11 @@ export default function Whiteboard({
       }
     }
 
-    // Draw text items
-    for (const t of textItems) {
+    // Draw text items (both permanent text items and remote live typing previews)
+    const liveTextList = Object.values(remoteLiveText)
+    const allTextItems = [...textItems, ...liveTextList]
+    for (const t of allTextItems) {
+      if (!t.text) continue
       ctx.fillStyle = t.color
       ctx.font = `${t.fontSize}px Inter, system-ui, sans-serif`
       ctx.textBaseline = 'top'
@@ -488,6 +502,16 @@ export default function Whiteboard({
       lines.forEach((line, i) => {
         ctx.fillText(line, t.x, t.y + i * (t.fontSize * 1.3))
       })
+
+      // If this is a live text preview from a remote peer typing, render a live blinking cursor
+      if (remoteLiveText[t.id]) {
+        const lastLine = lines[lines.length - 1] || ''
+        const textMetrics = ctx.measureText(lastLine)
+        const cursorX = t.x + textMetrics.width + 2
+        const cursorY = t.y + (lines.length - 1) * (t.fontSize * 1.3)
+        ctx.fillStyle = t.color
+        ctx.fillRect(cursorX, cursorY, 2.5, t.fontSize)
+      }
     }
 
     // Draw Selection Bounding Box & Transform Handles
@@ -520,7 +544,7 @@ export default function Whiteboard({
       }
     }
     ctx.restore()
-  }, [strokes, currentStroke, drawBackground, textItems, selectedId, selectedKind, getElementBBox])
+  }, [strokes, remoteLiveStrokes, currentStroke, drawBackground, textItems, remoteLiveText, selectedId, selectedKind, getElementBBox])
 
   useEffect(() => { redraw() }, [redraw])
 
@@ -546,9 +570,23 @@ export default function Whiteboard({
     const handleMouseMove = (e: MouseEvent) => {
       const canvasRect = canvasRef.current?.getBoundingClientRect()
       if (!canvasRect) return
-      const newX = e.clientX - canvasRect.left - dragStartOffset.current.x
-      const newY = e.clientY - canvasRect.top - dragStartOffset.current.y
-      setEditingText({ x: Math.max(0, newX), y: Math.max(0, newY) })
+      const newX = Math.max(0, e.clientX - canvasRect.left - dragStartOffset.current.x)
+      const newY = Math.max(0, e.clientY - canvasRect.top - dragStartOffset.current.y)
+      setEditingText({ x: newX, y: newY })
+      if (activeSocket && roomId && currentEditingIdRef.current && editingValue) {
+        const fontSize = 14 + strokeWidth * 2
+        activeSocket.emit('whiteboard-text-progress', {
+          roomId,
+          textItem: {
+            id: currentEditingIdRef.current,
+            x: newX,
+            y: newY,
+            text: editingValue,
+            color,
+            fontSize,
+          },
+        })
+      }
     }
     const handleMouseUp = () => {
       setIsDraggingText(false)
@@ -559,7 +597,7 @@ export default function Whiteboard({
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDraggingText, editingText])
+  }, [isDraggingText, editingText, activeSocket, roomId, editingValue, color, strokeWidth])
 
   const getPos = (e: React.MouseEvent): Point => {
     const rect = canvasRef.current?.getBoundingClientRect()
@@ -605,8 +643,28 @@ export default function Whiteboard({
         setTextRedoStack([])
         eraserSavedRef.current = true
       }
-      if (strokesChanged) setStrokes(remaining)
-      if (textChanged) setTextItems(remainingText)
+      if (strokesChanged) {
+        setStrokes(remaining)
+        const erased = strokes.filter((s) => !remaining.some((r) => r.id === s.id))
+        if (activeSocket && roomId) {
+          erased.forEach((s) => {
+            if (s.id) {
+              activeSocket.emit('whiteboard-erase-stroke', { roomId, strokeId: s.id })
+            }
+          })
+        }
+      }
+      if (textChanged) {
+        setTextItems(remainingText)
+        const erasedText = textItems.filter((t) => !remainingText.some((r) => r.id === t.id))
+        if (activeSocket && roomId) {
+          erasedText.forEach((t) => {
+            if (t.id) {
+              activeSocket.emit('whiteboard-text-item-delete', { roomId, textItemId: t.id })
+            }
+          })
+        }
+      }
     }
   }
 
@@ -615,14 +673,19 @@ export default function Whiteboard({
 
   // Commit active text input to canvas
   const commitText = () => {
+    const activeId = currentEditingIdRef.current
     if (!editingText || !editingValue.trim()) {
+      if (activeId && activeSocket && roomId) {
+        activeSocket.emit('whiteboard-text-progress-end', { roomId, textItemId: activeId })
+      }
       setEditingText(null)
       setEditingValue('')
+      currentEditingIdRef.current = null
       return
     }
     const fontSize = 14 + strokeWidth * 2
     const newItem: TextItem = {
-      id: String(Date.now()),
+      id: activeId || String(Date.now()),
       x: editingText.x,
       y: editingText.y,
       text: editingValue.trim(),
@@ -631,9 +694,38 @@ export default function Whiteboard({
     }
     setTextUndoStack((prev) => [...prev, textItems])
     setTextRedoStack([])
-    setTextItems((prev) => [...prev, newItem])
+    setTextItems((prev) => [...prev.filter((t) => t.id !== newItem.id), newItem])
+    if (activeSocket && roomId) {
+      activeSocket.emit('whiteboard-text-item-add', { roomId, textItem: newItem })
+      if (activeId) {
+        activeSocket.emit('whiteboard-text-progress-end', { roomId, textItemId: activeId })
+      }
+    }
     setEditingText(null)
     setEditingValue('')
+    currentEditingIdRef.current = null
+  }
+
+  // Handle word-by-word and character-by-character live text changes
+  const handleTextChange = (val: string) => {
+    setEditingValue(val)
+    if (!editingText) return
+    const activeId = currentEditingIdRef.current || `txt-${Date.now()}`
+    currentEditingIdRef.current = activeId
+    const fontSize = 14 + strokeWidth * 2
+    if (activeSocket && roomId) {
+      activeSocket.emit('whiteboard-text-progress', {
+        roomId,
+        textItem: {
+          id: activeId,
+          x: editingText.x,
+          y: editingText.y,
+          text: val,
+          color,
+          fontSize,
+        },
+      })
+    }
   }
 
   // Bounding box calculation
@@ -659,7 +751,18 @@ export default function Whiteboard({
       if (selectedKind === 'stroke') {
         setStrokes((prev) => prev.map((s) => (s.id === selectedId ? { ...s, color: newColor } : s)))
       } else if (selectedKind === 'text') {
-        setTextItems((prev) => prev.map((t) => (t.id === selectedId ? { ...t, color: newColor } : t)))
+        setTextItems((prev) =>
+          prev.map((t) => {
+            if (t.id === selectedId) {
+              const updated = { ...t, color: newColor }
+              if (activeSocket && roomId) {
+                activeSocket.emit('whiteboard-text-item-update', { roomId, textItem: updated })
+              }
+              return updated
+            }
+            return t
+          })
+        )
       }
     }
   }
@@ -671,7 +774,18 @@ export default function Whiteboard({
         setStrokes((prev) => prev.map((s) => (s.id === selectedId ? { ...s, width: newWidth } : s)))
       } else if (selectedKind === 'text') {
         const newFontSize = 14 + newWidth * 2
-        setTextItems((prev) => prev.map((t) => (t.id === selectedId ? { ...t, fontSize: newFontSize } : t)))
+        setTextItems((prev) =>
+          prev.map((t) => {
+            if (t.id === selectedId) {
+              const updated = { ...t, fontSize: newFontSize }
+              if (activeSocket && roomId) {
+                activeSocket.emit('whiteboard-text-item-update', { roomId, textItem: updated })
+              }
+              return updated
+            }
+            return t
+          })
+        )
       }
     }
   }
@@ -684,8 +798,14 @@ export default function Whiteboard({
         e.preventDefault()
         if (selectedKind === 'stroke') {
           setStrokes((prev) => prev.filter((s) => s.id !== selectedId))
+          if (activeSocket && roomId) {
+            activeSocket.emit('whiteboard-erase-stroke', { roomId, strokeId: selectedId })
+          }
         } else if (selectedKind === 'text') {
           setTextItems((prev) => prev.filter((t) => t.id !== selectedId))
+          if (activeSocket && roomId) {
+            activeSocket.emit('whiteboard-text-item-delete', { roomId, textItemId: selectedId })
+          }
         }
         setSelectedId(null)
         setSelectedKind(null)
@@ -714,10 +834,25 @@ export default function Whiteboard({
     const existingText = findTextAt(p)
     if (existingText) {
       if (editingText) commitText()
+      currentEditingIdRef.current = existingText.id
       setEditingText({ x: existingText.x, y: existingText.y })
       setEditingValue(existingText.text)
       setColor(existingText.color)
       setTextItems((prev) => prev.filter((t) => t.id !== existingText.id))
+      if (activeSocket && roomId) {
+        activeSocket.emit('whiteboard-text-item-delete', { roomId, textItemId: existingText.id })
+        activeSocket.emit('whiteboard-text-progress', {
+          roomId,
+          textItem: {
+            id: existingText.id,
+            x: existingText.x,
+            y: existingText.y,
+            text: existingText.text,
+            color: existingText.color,
+            fontSize: existingText.fontSize,
+          },
+        })
+      }
       textCreatedAtRef.current = Date.now()
       setSelectedId(null)
       setSelectedKind(null)
@@ -838,6 +973,8 @@ export default function Whiteboard({
         commitText()
         return
       }
+      const textId = `txt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      currentEditingIdRef.current = textId
       setEditingText(p)
       setEditingValue('')
       textCreatedAtRef.current = Date.now()
@@ -946,15 +1083,30 @@ export default function Whiteboard({
       return
     }
     if (!currentStroke) return
+    let updated: Stroke
     if (isShapeTool(currentStroke.tool)) {
-      setCurrentStroke({ ...currentStroke, points: [currentStroke.points[0], p] })
+      updated = { ...currentStroke, points: [currentStroke.points[0], p] }
     } else {
-      setCurrentStroke({ ...currentStroke, points: [...currentStroke.points, p] })
+      updated = { ...currentStroke, points: [...currentStroke.points, p] }
+    }
+    setCurrentStroke(updated)
+
+    // Stream real-time drawing coordinates to other participants (throttled ~25ms)
+    const now = Date.now()
+    if (now - lastEmitTimeRef.current > 25 && activeSocket && roomId) {
+      lastEmitTimeRef.current = now
+      activeSocket.emit('whiteboard-stroke-progress', { roomId, stroke: updated })
     }
   }
 
   const handleMouseUp = () => {
     if (transformHandle) {
+      if (selectedId && selectedKind === 'text') {
+        const item = textItems.find((t) => t.id === selectedId)
+        if (item && activeSocket && roomId) {
+          activeSocket.emit('whiteboard-text-item-update', { roomId, textItem: item })
+        }
+      }
       setTransformHandle(null)
       transformInitialBBox.current = null
       return
@@ -969,8 +1121,10 @@ export default function Whiteboard({
     setUndoStack((prev) => [...prev, strokes])
     setRedoStack([])
     setStrokes((prev) => [...prev, currentStroke])
-    if (socketRef?.current && roomId) {
-      socketRef.current.emit('whiteboard-stroke', { roomId, stroke: currentStroke })
+
+    if (activeSocket && roomId) {
+      activeSocket.emit('whiteboard-stroke', { roomId, stroke: currentStroke })
+      activeSocket.emit('whiteboard-stroke-end', { roomId, strokeId: currentStroke.id })
     }
     setCurrentStroke(null)
   }
@@ -1023,59 +1177,201 @@ export default function Whiteboard({
     setTextRedoStack([])
     setStrokes([])
     setTextItems([])
-    if (socketRef?.current && roomId) {
-      socketRef.current.emit('whiteboard-clear', { roomId })
+    setSelectedId(null)
+    setSelectedKind(null)
+    if (activeSocket && roomId) {
+      activeSocket.emit('whiteboard-clear', { roomId })
     }
   }
 
   // ─── Socket Synchronization for Whiteboard ───
   useEffect(() => {
-    const socket = socketRef?.current
-    if (!socket || !roomId) return
+    const s = activeSocket
+    if (!s || !roomId) return
 
+    console.log('[Whiteboard Socket] Setting up socket listeners for room:', roomId)
     // Request full whiteboard history upon joining
-    socket.emit('request-whiteboard-history', { roomId })
+    s.emit('request-whiteboard-history', { roomId })
 
     const handleRemoteStroke = (remoteStroke: Stroke) => {
       if (!remoteStroke || !remoteStroke.points) return
+      setRemoteLiveStrokes((prev) => {
+        if (!prev[remoteStroke.id || '']) return prev
+        const next = { ...prev }
+        delete next[remoteStroke.id || '']
+        return next
+      })
       setStrokes((prev) => {
-        if (remoteStroke.id && prev.some((s) => s.id === remoteStroke.id)) {
+        if (remoteStroke.id && prev.some((st) => st.id === remoteStroke.id)) {
           return prev
         }
         return [...prev, remoteStroke]
       })
     }
 
+    const handleStrokeProgress = (liveStroke: Stroke) => {
+      if (!liveStroke || !liveStroke.points) return
+      setRemoteLiveStrokes((prev) => ({
+        ...prev,
+        [liveStroke.id || 'temp']: liveStroke,
+      }))
+    }
+
+    const handleStrokeEnd = ({ strokeId }: { strokeId?: string }) => {
+      if (!strokeId) return
+      setRemoteLiveStrokes((prev) => {
+        if (!prev[strokeId]) return prev
+        const next = { ...prev }
+        delete next[strokeId]
+        return next
+      })
+    }
+
+    const handleEraseStroke = ({ strokeId }: { strokeId?: string }) => {
+      if (!strokeId) return
+      setStrokes((prev) => prev.filter((st) => st.id !== strokeId))
+      setRemoteLiveStrokes((prev) => {
+        if (!prev[strokeId]) return prev
+        const next = { ...prev }
+        delete next[strokeId]
+        return next
+      })
+    }
+
     const handleRemoteClear = () => {
       setStrokes([])
       setTextItems([])
+      setRemoteLiveStrokes({})
+      setRemoteLiveText({})
     }
 
     const handleRemoteUndo = ({ strokeId }: { strokeId?: string }) => {
       setStrokes((prev) => {
-        if (strokeId) return prev.filter((s) => s.id !== strokeId)
+        if (strokeId) return prev.filter((st) => st.id !== strokeId)
         return prev.slice(0, -1)
       })
     }
 
-    const handleHistory = (historyStrokes: Stroke[]) => {
-      if (Array.isArray(historyStrokes) && historyStrokes.length > 0) {
-        setStrokes(historyStrokes)
+    const handleRemoteBgUpdate = ({ bgType: newBg }: { bgType: BgType }) => {
+      if (newBg) {
+        console.log('[Whiteboard Socket] Remote background update:', newBg)
+        setBgType(newBg)
       }
     }
 
-    socket.on('whiteboard-stroke', handleRemoteStroke)
-    socket.on('whiteboard-cleared', handleRemoteClear)
-    socket.on('whiteboard-undo-applied', handleRemoteUndo)
-    socket.on('whiteboard-history', handleHistory)
+    const handleRemoteTextProgress = (item: TextItem) => {
+      if (!item || !item.id) return
+      setRemoteLiveText((prev) => ({
+        ...prev,
+        [item.id]: item,
+      }))
+    }
+
+    const handleRemoteTextProgressEnd = ({ textItemId }: { textItemId?: string }) => {
+      if (!textItemId) return
+      setRemoteLiveText((prev) => {
+        if (!prev[textItemId]) return prev
+        const next = { ...prev }
+        delete next[textItemId]
+        return next
+      })
+    }
+
+    const handleRemoteTextItemAdd = (item: TextItem) => {
+      if (!item) return
+      setRemoteLiveText((prev) => {
+        if (!prev[item.id]) return prev
+        const next = { ...prev }
+        delete next[item.id]
+        return next
+      })
+      setTextItems((prev) => {
+        const idx = prev.findIndex((t) => t.id === item.id)
+        if (idx !== -1) {
+          const updated = [...prev]
+          updated[idx] = item
+          return updated
+        }
+        return [...prev, item]
+      })
+    }
+
+    const handleRemoteTextItemUpdate = (item: TextItem) => {
+      if (!item) return
+      setRemoteLiveText((prev) => {
+        if (!prev[item.id]) return prev
+        const next = { ...prev }
+        delete next[item.id]
+        return next
+      })
+      setTextItems((prev) => {
+        const idx = prev.findIndex((t) => t.id === item.id)
+        if (idx !== -1) {
+          const updated = [...prev]
+          updated[idx] = item
+          return updated
+        }
+        return [...prev, item]
+      })
+    }
+
+    const handleRemoteTextItemDelete = ({ textItemId }: { textItemId?: string }) => {
+      if (!textItemId) return
+      setRemoteLiveText((prev) => {
+        if (!prev[textItemId]) return prev
+        const next = { ...prev }
+        delete next[textItemId]
+        return next
+      })
+      setTextItems((prev) => prev.filter((t) => t.id !== textItemId))
+    }
+
+    const handleHistory = (data: any) => {
+      if (Array.isArray(data)) {
+        if (data.length > 0) setStrokes(data)
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.strokes) && data.strokes.length > 0) {
+          setStrokes(data.strokes)
+        }
+        if (data.bgType) {
+          setBgType(data.bgType)
+        }
+        if (Array.isArray(data.textItems) && data.textItems.length > 0) {
+          setTextItems(data.textItems)
+        }
+      }
+    }
+
+    s.on('whiteboard-stroke', handleRemoteStroke)
+    s.on('whiteboard-stroke-progress', handleStrokeProgress)
+    s.on('whiteboard-stroke-end', handleStrokeEnd)
+    s.on('whiteboard-erase-stroke', handleEraseStroke)
+    s.on('whiteboard-bg-updated', handleRemoteBgUpdate)
+    s.on('whiteboard-text-progress', handleRemoteTextProgress)
+    s.on('whiteboard-text-progress-end', handleRemoteTextProgressEnd)
+    s.on('whiteboard-text-item-added', handleRemoteTextItemAdd)
+    s.on('whiteboard-text-item-updated', handleRemoteTextItemUpdate)
+    s.on('whiteboard-text-item-deleted', handleRemoteTextItemDelete)
+    s.on('whiteboard-cleared', handleRemoteClear)
+    s.on('whiteboard-undo-applied', handleRemoteUndo)
+    s.on('whiteboard-history', handleHistory)
 
     return () => {
-      socket.off('whiteboard-stroke', handleRemoteStroke)
-      socket.off('whiteboard-cleared', handleRemoteClear)
-      socket.off('whiteboard-undo-applied', handleRemoteUndo)
-      socket.off('whiteboard-history', handleHistory)
+      s.off('whiteboard-stroke', handleRemoteStroke)
+      s.off('whiteboard-stroke-progress', handleStrokeProgress)
+      s.off('whiteboard-stroke-end', handleStrokeEnd)
+      s.off('whiteboard-erase-stroke', handleEraseStroke)
+      s.off('whiteboard-bg-updated', handleRemoteBgUpdate)
+      s.off('whiteboard-text-progress', handleRemoteTextProgress)
+      s.off('whiteboard-text-progress-end', handleRemoteTextProgressEnd)
+      s.off('whiteboard-text-item-added', handleRemoteTextItemAdd)
+      s.off('whiteboard-text-item-updated', handleRemoteTextItemUpdate)
+      s.off('whiteboard-text-item-deleted', handleRemoteTextItemDelete)
+      s.off('whiteboard-cleared', handleRemoteClear)
+      s.off('whiteboard-undo-applied', handleRemoteUndo)
+      s.off('whiteboard-history', handleHistory)
     }
-  }, [socketRef?.current, roomId])
+  }, [activeSocket, roomId])
 
   const exportPng = () => {
     const canvas = canvasRef.current
@@ -1304,8 +1600,12 @@ export default function Whiteboard({
                     <button
                       key={bg.key}
                       onClick={() => {
-                        setBgType(bg.key as BgType)
+                        const newBg = bg.key as BgType
+                        setBgType(newBg)
                         setShowBgMenu(false)
+                        if (activeSocket && roomId) {
+                          activeSocket.emit('whiteboard-bg-change', { roomId, bgType: newBg })
+                        }
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                         bgType === bg.key
@@ -1379,15 +1679,39 @@ export default function Whiteboard({
       <div ref={containerRef} className="flex-1 min-w-0 relative overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="absolute inset-0"
+          className="absolute inset-0 touch-none select-none"
           style={{
             cursor: hoverCursor || (tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : tool === 'select' ? 'default' : 'crosshair'),
+            touchAction: 'none',
           }}
           onMouseDown={handleMouseDown}
           onDoubleClick={handleDoubleClick}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={(e) => {
+            if (e.touches.length === 1) {
+              const touch = e.touches[0]
+              handleMouseDown({
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                target: e.target,
+                preventDefault: () => e.preventDefault(),
+              } as any)
+            }
+          }}
+          onTouchMove={(e) => {
+            if (e.touches.length === 1) {
+              const touch = e.touches[0]
+              handleMouseMove({
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                target: e.target,
+                preventDefault: () => e.preventDefault(),
+              } as any)
+            }
+          }}
+          onTouchEnd={() => handleMouseUp()}
         />
 
         {/* Seamless Transparent Text Input */}
@@ -1395,15 +1719,22 @@ export default function Whiteboard({
           <textarea
             ref={textInputRef}
             value={editingValue}
-            onChange={(e) => setEditingValue(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
                 commitText()
               }
               if (e.key === 'Escape') {
+                if (currentEditingIdRef.current && activeSocket && roomId) {
+                  activeSocket.emit('whiteboard-text-progress-end', {
+                    roomId,
+                    textItemId: currentEditingIdRef.current,
+                  })
+                }
                 setEditingText(null)
                 setEditingValue('')
+                currentEditingIdRef.current = null
               }
             }}
             onBlur={() => {

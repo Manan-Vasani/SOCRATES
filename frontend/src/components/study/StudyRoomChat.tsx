@@ -9,6 +9,8 @@ import {
   Hand,
   Mic,
   MicOff,
+  PenLine,
+  PencilOff,
   Image as ImageIcon,
   FileText,
   Sparkles,
@@ -25,6 +27,8 @@ import {
 type ChatTab = 'chat' | 'ai' | 'participants' | 'resources'
 
 import type { ChatMessage } from '../../hooks/useWebRTC'
+import { useScrollLock } from '../../hooks/useScrollLock'
+import { HiHandRaised, HiOutlineHandRaised } from 'react-icons/hi2'
 export type { ChatMessage }
 
 interface AIMessage {
@@ -68,6 +72,9 @@ interface StudyRoomChatProps {
   onGrantWhiteboardPermission?: (socketId: string) => void
   onRevokeWhiteboardPermission?: (socketId: string) => void
   whiteboardPermissionsMap?: Record<string, boolean>
+  isHandRaised?: boolean
+  onHandRaise?: () => void
+  onMuteParticipant?: (id: string, shouldMute?: boolean) => void
 }
 
 const QUICK_REACTIONS = ['👍', '👏', '💡', '❓', '🔥', '❤️']
@@ -88,6 +95,9 @@ export default function StudyRoomChat({
   onGrantWhiteboardPermission,
   onRevokeWhiteboardPermission,
   whiteboardPermissionsMap,
+  isHandRaised,
+  onHandRaise,
+  onMuteParticipant,
 }: StudyRoomChatProps) {
   const [internalTab, setInternalTab] = useState<ChatTab>(activeTab)
   const tab = onTabChange ? activeTab : internalTab
@@ -119,6 +129,7 @@ export default function StudyRoomChat({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewFile, setPreviewFile] = useState<SharedResource | null>(null)
+  useScrollLock(Boolean(previewFile))
   const [resources, setResources] = useState<SharedResource[]>([
     { id: '1', name: 'Calculus_Chapter_4.pdf', type: 'pdf', uploadedBy: 'Dr. Alex Vance', time: '5m ago', size: '2.4 MB' },
     { id: '2', name: 'whiteboard_export.png', type: 'image', uploadedBy: 'You', time: '2m ago', size: '340 KB' },
@@ -245,17 +256,17 @@ export default function StudyRoomChat({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-semibold tracking-wide transition-all cursor-pointer select-none border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-semibold tracking-wide transition-colors duration-150 cursor-pointer select-none border-b-2 ${
               tab === t.key
                 ? 'text-[#0066cc] border-[#0066cc]'
                 : 'text-[#a1a1a6] border-transparent hover:text-[#525252]'
             }`}
           >
-            {t.icon}
-            {t.label}
+            <span className="shrink-0">{t.icon}</span>
+            <span className="shrink-0">{t.label}</span>
             {t.count !== undefined && (
               <span
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] text-[9px] font-bold px-1 rounded-full tabular-nums shrink-0 select-none ${
                   tab === t.key ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#f0f0f2] text-[#a1a1a6]'
                 }`}
               >
@@ -399,9 +410,9 @@ export default function StudyRoomChat({
                 key={p.id}
                 className="flex items-center justify-between p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0 ${
                       p.role === 'tutor'
                         ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
                         : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
@@ -409,8 +420,8 @@ export default function StudyRoomChat({
                   >
                     {p.name.charAt(0)}
                   </div>
-                  <div>
-                    <div className="text-xs font-semibold text-[#1d1d1f]">{p.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-[#1d1d1f] truncate">{p.name}</div>
                     <div
                       className={`text-[9px] font-bold uppercase tracking-wider ${
                         p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
@@ -420,7 +431,7 @@ export default function StudyRoomChat({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {currentUserRole === 'tutor' && p.role === 'student' && (
                     <button
                       type="button"
@@ -433,29 +444,65 @@ export default function StudyRoomChat({
                           onGrantWhiteboardPermission?.(targetId)
                         }
                       }}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 ${
+                      className={`h-7 w-[98px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
                         whiteboardPermissionsMap?.[p.socketId || p.id]
-                          ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                          : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                          : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20 hover:border-[#0066cc]/30'
                       }`}
                       title={whiteboardPermissionsMap?.[p.socketId || p.id] ? 'Revoke Draw Access' : 'Grant Draw Access'}
                     >
-                      {whiteboardPermissionsMap?.[p.socketId || p.id] ? 'Revoke Draw' : 'Allow Draw'}
+                      {whiteboardPermissionsMap?.[p.socketId || p.id] ? (
+                        <>
+                          <PencilOff size={11} className="shrink-0 text-amber-600" />
+                          <span>Revoke Draw</span>
+                        </>
+                      ) : (
+                        <>
+                          <PenLine size={11} className="shrink-0 text-[#0066cc]" />
+                          <span>Allow Draw</span>
+                        </>
+                      )}
                     </button>
                   )}
 
                   {p.isHandRaised && p.role !== 'tutor' && (
-                    <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200" title="Hand Raised">
-                      <Hand size={11} className="text-amber-600" />
+                    <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 shrink-0" title="Hand Raised">
+                      <HiHandRaised size={12} className="text-yellow-500" />
                     </span>
                   )}
-                  {p.isMuted ? (
-                    <span className="p-1.5 rounded-xl bg-red-50 border border-red-200 text-red-500 flex items-center justify-center shrink-0" title="Muted">
-                      <MicOff size={13} className="text-red-500" />
-                    </span>
+                  {currentUserRole === 'tutor' && p.role === 'student' && onMuteParticipant ? (
+                    <button
+                      type="button"
+                      onClick={() => onMuteParticipant(p.socketId || p.id, !p.isMuted)}
+                      className={`h-7 w-[78px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
+                        p.isMuted
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                          : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                      }`}
+                      title={p.isMuted ? 'Click to Unmute Student' : 'Click to Mute Student'}
+                    >
+                      {p.isMuted ? (
+                        <>
+                          <Mic size={11} className="shrink-0 text-emerald-600" />
+                          <span>Unmute</span>
+                        </>
+                      ) : (
+                        <>
+                          <MicOff size={11} className="shrink-0 text-red-500" />
+                          <span>Mute</span>
+                        </>
+                      )}
+                    </button>
                   ) : (
-                    <span className="p-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0" title="Unmuted">
-                      <Mic size={13} className="text-emerald-600" />
+                    <span
+                      className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                        p.isMuted
+                          ? 'bg-red-50 border-red-200 text-red-500'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      }`}
+                      title={p.isMuted ? 'Muted' : 'Unmuted'}
+                    >
+                      {p.isMuted ? <MicOff size={13} className="text-red-500" /> : <Mic size={13} className="text-emerald-600" />}
                     </span>
                   )}
                 </div>
@@ -539,6 +586,20 @@ export default function StudyRoomChat({
               >
                 <SmilePlus size={15} />
               </button>
+              {currentUserRole !== 'tutor' && onHandRaise && (
+                <button
+                  type="button"
+                  onClick={onHandRaise}
+                  className="p-2 rounded-xl text-[#a1a1a6] hover:text-[#1d1d1f] hover:bg-white transition-all cursor-pointer flex items-center justify-center select-none"
+                  title={isHandRaised ? 'Hand Raised: Click to lower hand' : 'Raise hand to tutor'}
+                >
+                  {isHandRaised ? (
+                    <HiHandRaised size={18} className="text-yellow-400 drop-shadow-sm transition-transform scale-110" />
+                  ) : (
+                    <HiOutlineHandRaised size={18} className="text-[#a1a1a6] hover:text-[#525252] transition-colors" />
+                  )}
+                </button>
+              )}
               {showReactions && (
                 <div className="absolute bottom-full left-0 mb-2 flex gap-1 bg-white border border-[#e5e5e7] rounded-2xl shadow-xl shadow-black/8 p-2 z-50">
                   {QUICK_REACTIONS.map((emoji) => (
@@ -576,6 +637,20 @@ export default function StudyRoomChat({
       {tab === 'ai' && (
         <div className="p-3 border-t border-[#e5e5e7] shrink-0 bg-white">
           <div className="flex items-center gap-1.5 bg-[#f5f5f7] rounded-2xl border border-[#e0e0e2] p-1.5 focus-within:border-[#0066cc]/30 focus-within:ring-2 focus-within:ring-[#0066cc]/8 transition-all">
+            {currentUserRole !== 'tutor' && onHandRaise && (
+              <button
+                type="button"
+                onClick={onHandRaise}
+                className="p-2 rounded-xl text-[#a1a1a6] hover:text-[#1d1d1f] hover:bg-white transition-all cursor-pointer flex items-center justify-center select-none shrink-0"
+                title={isHandRaised ? 'Hand Raised: Click to lower hand' : 'Raise hand to tutor'}
+              >
+                {isHandRaised ? (
+                  <HiHandRaised size={18} className="text-yellow-400 drop-shadow-sm transition-transform scale-110" />
+                ) : (
+                  <HiOutlineHandRaised size={18} className="text-[#a1a1a6] hover:text-[#525252] transition-colors" />
+                )}
+              </button>
+            )}
             <input
               type="text"
               value={aiInput}

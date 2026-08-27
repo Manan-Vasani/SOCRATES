@@ -40,6 +40,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { useScrollLock } from '../hooks/useScrollLock'
 import {
   createCommunityComment,
   createCommunityThread,
@@ -823,22 +824,7 @@ export default function CommunityPage() {
   const [lightbox, setLightbox] = useState<{ items: MediaItem[]; index: number } | null>(null)
 
   // Prevent page vertical scrollbar ("slider") and layout shift when Lightbox or Post Modal is open
-  React.useEffect(() => {
-    if (lightbox || isPostModalOpen) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-      document.body.style.overflow = 'hidden'
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`
-      }
-    } else {
-      document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-      document.body.style.paddingRight = ''
-    }
-  }, [lightbox, isPostModalOpen])
+  useScrollLock(Boolean(lightbox || isPostModalOpen))
 
   // Keyboard Navigation for Lightbox Modal (Left/Right Arrow keys, '<' / '>', Escape)
   React.useEffect(() => {

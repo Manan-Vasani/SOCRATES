@@ -10,6 +10,7 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react'
+import { HiHandRaised, HiOutlineHandRaised } from 'react-icons/hi2'
 import { askStudyRoomAICopilot } from '../../services/api'
 
 interface AIMessage {
@@ -24,6 +25,9 @@ interface AIAssistantDrawerProps {
   roomId?: string
   activeTopic?: string
   currentCode?: string
+  isHandRaised?: boolean
+  onHandRaise?: () => void
+  currentUserRole?: 'tutor' | 'student'
 }
 
 const QUICK_ACTIONS = [
@@ -39,6 +43,9 @@ export default function AIAssistantDrawer({
   roomId = 'demo-101',
   activeTopic = 'General Tutoring',
   currentCode = '',
+  isHandRaised,
+  onHandRaise,
+  currentUserRole,
 }: AIAssistantDrawerProps) {
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
@@ -103,12 +110,28 @@ export default function AIAssistantDrawer({
             <span className="text-[10px] text-[#7a7a7a] font-medium">Study Copilot</span>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-[#f0f0f2] text-[#7a7a7a] hover:text-[#1d1d1f] transition-all cursor-pointer"
-        >
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {currentUserRole !== 'tutor' && onHandRaise && (
+            <button
+              type="button"
+              onClick={onHandRaise}
+              className="p-1.5 rounded-lg text-[#7a7a7a] hover:text-[#1d1d1f] hover:bg-[#f0f0f2] transition-all flex items-center justify-center cursor-pointer select-none"
+              title={isHandRaised ? 'Hand Raised: Click to lower hand' : 'Raise hand to tutor'}
+            >
+              {isHandRaised ? (
+                <HiHandRaised size={17} className="text-yellow-400 drop-shadow-sm transition-transform scale-110" />
+              ) : (
+                <HiOutlineHandRaised size={17} className="text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors" />
+              )}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-[#f0f0f2] text-[#7a7a7a] hover:text-[#1d1d1f] transition-all cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Quick Actions */}

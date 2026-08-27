@@ -20,7 +20,7 @@ import { fetchAuthenticatedUser } from './services/authService'
 import './App.css'
 
 function AuthSync() {
-  const { token, setAuth, user } = useAuthStore()
+  const { token } = useAuthStore()
   const hasSyncedRef = useRef(false)
 
   useEffect(() => {
@@ -28,15 +28,22 @@ function AuthSync() {
       hasSyncedRef.current = true
       fetchAuthenticatedUser().then((newUser) => {
         if (newUser) {
-          // Avoid re-rendering Navbar if cached user matches fetched user
-          const hasDiff = !user || newUser._id !== user._id || newUser.avatar !== user.avatar || newUser.fullName !== user.fullName
+          const currentUser = useAuthStore.getState().user
+          // Deep compare all fields that affect UI rendering to avoid any re-render flash
+          const hasDiff =
+            !currentUser ||
+            String(newUser._id) !== String(currentUser._id) ||
+            (newUser.profileImage || newUser.avatar || '') !== (currentUser.profileImage || currentUser.avatar || '') ||
+            (newUser.fullName || newUser.name || '') !== (currentUser.fullName || currentUser.name || '') ||
+            newUser.role !== currentUser.role ||
+            newUser.email !== currentUser.email
           if (hasDiff) {
-            setAuth(newUser, token)
+            useAuthStore.getState().setAuth(newUser, token)
           }
         }
       })
     }
-  }, [token, setAuth, user])
+  }, [token])
 
   return null
 }
@@ -83,7 +90,7 @@ import Footer from './components/Footer'
 
 function RootLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafc] selection:bg-[#0066cc]/10 transform-gpu overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#fafafc] selection:bg-[#0066cc]/10 overflow-x-clip">
       <Navbar />
       <main className="flex-1 w-full flex flex-col min-h-[calc(100vh-180px)]">
         <Outlet />
