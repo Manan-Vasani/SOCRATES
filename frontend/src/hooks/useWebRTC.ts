@@ -75,6 +75,81 @@ const SOCKET_URL =
     ? window.location.origin
     : 'http://localhost:5000')
 
+function createFallbackVideoTrack(name: string, role: string): MediaStreamTrack {
+  const canvas = document.createElement('canvas')
+  canvas.width = 640
+  canvas.height = 480
+  const ctx = canvas.getContext('2d')
+  const hue = role === 'tutor' ? 160 : 215
+
+  const draw = () => {
+    if (!ctx) return
+    ctx.fillStyle = '#0f172a'
+    ctx.fillRect(0, 0, 640, 480)
+
+    // Glowing dynamic gradient aura
+    const grad = ctx.createRadialGradient(320, 240, 20, 320, 240, 220)
+    grad.addColorStop(0, `hsla(${hue}, 80%, 45%, 0.9)`)
+    grad.addColorStop(0.7, `hsla(${hue + 30}, 70%, 25%, 0.4)`)
+    grad.addColorStop(1, '#020617')
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    ctx.arc(320, 240, 220, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Clean avatar circle
+    ctx.fillStyle = '#1e293b'
+    ctx.beginPath()
+    ctx.arc(320, 210, 85, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = `hsl(${hue}, 80%, 60%)`
+    ctx.lineWidth = 4
+    ctx.stroke()
+
+    // Initials
+    const initials =
+      name
+        .replace(/\s*\(You\)\s*/gi, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase() || 'U'
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 52px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(initials, 320, 210)
+
+    // Name label
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 22px sans-serif'
+    ctx.fillText(name.replace(' (You)', ''), 320, 340)
+
+    // Live video badge
+    ctx.fillStyle = '#38bdf8'
+    ctx.font = '600 14px sans-serif'
+    ctx.fillText(`● LIVE FEED • ${role.toUpperCase()}`, 320, 375)
+
+    requestAnimationFrame(draw)
+  }
+  draw()
+
+  const captureMethod = (canvas as any).captureStream || (canvas as any).mozCaptureStream
+  if (captureMethod) {
+    const s = captureMethod.call(canvas, 30)
+    if (s && s.getVideoTracks().length > 0) {
+      return s.getVideoTracks()[0]
+    }
+  }
+
+  const dummy = document.createElement('canvas')
+  dummy.width = 2
+  dummy.height = 2
+  return (dummy as any).captureStream(1).getVideoTracks()[0]
+}
+
 export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -201,14 +276,22 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         })
         console.log('[WebRTC] Camera & microphone acquired successfully.')
       } catch (videoErr) {
-        console.warn('[WebRTC] Camera unavailable or denied, attempting audio only...', videoErr)
+        console.warn('[WebRTC] Hardware camera unavailable or in use by another tab, creating fallback video track...', videoErr)
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true },
           })
-          console.log('[WebRTC] Microphone acquired successfully (camera off).')
         } catch (audioErr) {
           console.warn('[WebRTC] Audio access denied or unavailable:', audioErr)
+        }
+        const fallbackVideoTrack = createFallbackVideoTrack(
+          currentUserRef.current.name,
+          currentUserRef.current.role
+        )
+        if (stream) {
+          stream.addTrack(fallbackVideoTrack)
+        } else {
+          stream = new MediaStream([fallbackVideoTrack])
         }
       }
 
@@ -981,12 +1064,18 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         }
       }
 
-      // If no active video track exists, dynamically acquire camera stream
+      // If no active video track exists, dynamically acquire camera stream or fallback
       console.log('[WebRTC] Requesting camera access on toggle...')
-      const newVideoStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-      })
-      const newVideoTrack = newVideoStream.getVideoTracks()[0]
+      let newVideoTrack: MediaStreamTrack | null = null
+      try {
+        const newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        })
+        newVideoTrack = newVideoStream.getVideoTracks()[0]
+      } catch (camErr: any) {
+        console.warn('[WebRTC] Hardware camera locked or in use, activating virtual video feed:', camErr)
+        newVideoTrack = createFallbackVideoTrack(currentUser.name, currentUser.role)
+      }
 
       if (newVideoTrack) {
         let combinedStream: MediaStream
