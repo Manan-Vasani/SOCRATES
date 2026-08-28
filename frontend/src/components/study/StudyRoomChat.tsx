@@ -412,148 +412,153 @@ export default function StudyRoomChat({
             <div className="text-[10px] font-bold text-[#a1a1a6] uppercase tracking-wider px-1 mb-3">
               In this session ({participants.length})
             </div>
-            {participants.map((p) => (
-              <div
-                key={p.id}
-                className="p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-colors space-y-2.5"
-              >
-                {/* Top Row: Avatar, Name, Role & Mic / Mute */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0 ${
-                        p.role === 'tutor'
-                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
-                          : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
-                      }`}
-                    >
-                      {p.name.charAt(0)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold text-[#1d1d1f] truncate">{p.name}</div>
+            {participants.map((p) => {
+              const isTutorViewingStudent = currentUserRole === 'tutor' && p.role === 'student'
+              const hasDrawAccess = whiteboardPermissionsMap?.[p.socketId || p.id]
+              const hasCodeAccess = codePermissionsMap?.[p.socketId || p.id]
+              const targetId = p.socketId || p.id
+
+              return (
+                <div
+                  key={p.id}
+                  className="p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-all space-y-2.5"
+                >
+                  {/* Top Row: User Avatar, Name/Role, Hand Raised & Mute Button */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div
-                        className={`text-[9px] font-bold uppercase tracking-wider ${
-                          p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0 ${
+                          p.role === 'tutor'
+                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                            : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
                         }`}
                       >
-                        {p.role}
+                        {p.name.charAt(0)}
                       </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-[#1d1d1f] truncate" title={p.name}>
+                          {p.name}
+                        </div>
+                        <div
+                          className={`text-[9px] font-bold uppercase tracking-wider ${
+                            p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
+                          }`}
+                        >
+                          {p.role}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {p.isHandRaised && p.role !== 'tutor' && (
+                        <span className="p-1 rounded-lg bg-amber-50 border border-amber-200 shrink-0" title="Hand Raised">
+                          <HiHandRaised size={12} className="text-yellow-500" />
+                        </span>
+                      )}
+
+                      {isTutorViewingStudent && onMuteParticipant ? (
+                        <button
+                          type="button"
+                          onClick={() => onMuteParticipant(targetId, !p.isMuted)}
+                          className={`h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center gap-1 shadow-xs ${
+                            p.isMuted
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                          }`}
+                          title={p.isMuted ? 'Click to Unmute Student' : 'Click to Mute Student'}
+                        >
+                          {p.isMuted ? (
+                            <>
+                              <Mic size={11} className="shrink-0 text-emerald-600" />
+                              <span>Unmute</span>
+                            </>
+                          ) : (
+                            <>
+                              <MicOff size={11} className="shrink-0 text-red-500" />
+                              <span>Mute</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <span
+                          className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                            p.isMuted
+                              ? 'bg-red-50 border-red-200 text-red-500'
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                          }`}
+                          title={p.isMuted ? 'Muted' : 'Unmuted'}
+                        >
+                          {p.isMuted ? <MicOff size={13} className="text-red-500" /> : <Mic size={13} className="text-emerald-600" />}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {p.isHandRaised && p.role !== 'tutor' && (
-                      <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 shrink-0" title="Hand Raised">
-                        <HiHandRaised size={12} className="text-yellow-500" />
-                      </span>
-                    )}
-
-                    {currentUserRole === 'tutor' && p.role === 'student' && onMuteParticipant ? (
+                  {/* Bottom Row: Dedicated Permission Action Buttons for Tutor */}
+                  {isTutorViewingStudent && (
+                    <div className="flex items-center gap-2 pt-0.5">
                       <button
                         type="button"
-                        onClick={() => onMuteParticipant(p.socketId || p.id, !p.isMuted)}
-                        className={`h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
-                          p.isMuted
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
-                            : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                        onClick={() => {
+                          if (hasDrawAccess) {
+                            onRevokeWhiteboardPermission?.(targetId)
+                          } else {
+                            onGrantWhiteboardPermission?.(targetId)
+                          }
+                        }}
+                        className={`flex-1 h-7 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none flex items-center justify-center gap-1 shadow-xs ${
+                          hasDrawAccess
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                            : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20'
                         }`}
-                        title={p.isMuted ? 'Click to Unmute Student' : 'Click to Mute Student'}
+                        title={hasDrawAccess ? 'Revoke Draw Access' : 'Grant Draw Access'}
                       >
-                        {p.isMuted ? (
+                        {hasDrawAccess ? (
                           <>
-                            <Mic size={11} className="shrink-0 text-emerald-600" />
-                            <span>Unmute</span>
+                            <PencilOff size={11} className="shrink-0 text-amber-600" />
+                            <span>Revoke Draw</span>
                           </>
                         ) : (
                           <>
-                            <MicOff size={11} className="shrink-0 text-red-500" />
-                            <span>Mute</span>
+                            <PenLine size={11} className="shrink-0 text-[#0066cc]" />
+                            <span>Allow Draw</span>
                           </>
                         )}
                       </button>
-                    ) : (
-                      <span
-                        className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 ${
-                          p.isMuted
-                            ? 'bg-red-50 border-red-200 text-red-500'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (hasCodeAccess) {
+                            onRevokeCodePermission?.(targetId)
+                          } else {
+                            onGrantCodePermission?.(targetId)
+                          }
+                        }}
+                        className={`flex-1 h-7 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none flex items-center justify-center gap-1 shadow-xs ${
+                          hasCodeAccess
+                            ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                         }`}
-                        title={p.isMuted ? 'Muted' : 'Unmuted'}
+                        title={hasCodeAccess ? 'Revoke Code Access' : 'Grant Code Access'}
                       >
-                        {p.isMuted ? <MicOff size={13} className="text-red-500" /> : <Mic size={13} className="text-emerald-600" />}
-                      </span>
-                    )}
-                  </div>
+                        {hasCodeAccess ? (
+                          <>
+                            <Code2 size={11} className="shrink-0 text-purple-600" />
+                            <span>Revoke Code</span>
+                          </>
+                        ) : (
+                          <>
+                            <Code2 size={11} className="shrink-0 text-emerald-600" />
+                            <span>Allow Code</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
-
-                {/* Bottom Row: Tutor Controls (Allow Draw & Allow Code buttons) */}
-                {currentUserRole === 'tutor' && p.role === 'student' && (
-                  <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0f2]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetId = p.socketId || p.id
-                        const hasAccess = whiteboardPermissionsMap?.[targetId]
-                        if (hasAccess) {
-                          onRevokeWhiteboardPermission?.(targetId)
-                        } else {
-                          onGrantWhiteboardPermission?.(targetId)
-                        }
-                      }}
-                      className={`flex-1 h-7 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none flex items-center justify-center gap-1 shadow-xs ${
-                        whiteboardPermissionsMap?.[p.socketId || p.id]
-                          ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
-                          : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20 hover:border-[#0066cc]/30'
-                      }`}
-                      title={whiteboardPermissionsMap?.[p.socketId || p.id] ? 'Revoke Draw Access' : 'Grant Draw Access'}
-                    >
-                      {whiteboardPermissionsMap?.[p.socketId || p.id] ? (
-                        <>
-                          <PencilOff size={11} className="shrink-0 text-amber-600" />
-                          <span>Revoke Draw</span>
-                        </>
-                      ) : (
-                        <>
-                          <PenLine size={11} className="shrink-0 text-[#0066cc]" />
-                          <span>Allow Draw</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetId = p.socketId || p.id
-                        const hasAccess = codePermissionsMap?.[targetId]
-                        if (hasAccess) {
-                          onRevokeCodePermission?.(targetId)
-                        } else {
-                          onGrantCodePermission?.(targetId)
-                        }
-                      }}
-                      className={`flex-1 h-7 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none flex items-center justify-center gap-1 shadow-xs ${
-                        codePermissionsMap?.[p.socketId || p.id]
-                          ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
-                      }`}
-                      title={codePermissionsMap?.[p.socketId || p.id] ? 'Revoke Code Access' : 'Grant Code Access'}
-                    >
-                      {codePermissionsMap?.[p.socketId || p.id] ? (
-                        <>
-                          <Code2 size={11} className="shrink-0 text-purple-600" />
-                          <span>Revoke Code</span>
-                        </>
-                      ) : (
-                        <>
-                          <Code2 size={11} className="shrink-0 text-emerald-600" />
-                          <span>Allow Code</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
