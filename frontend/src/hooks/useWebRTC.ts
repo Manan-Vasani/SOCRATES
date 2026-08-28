@@ -153,6 +153,7 @@ function createFallbackVideoTrack(name: string, role: string): MediaStreamTrack 
 export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
+  const remoteStreamsRef = useRef<Map<string, MediaStream>>(new Map())
   const [isMediaReady, setIsMediaReady] = useState(false)
   const [socket, setSocket] = useState<Socket | null>(null)
   const currentUserRef = useRef(currentUser)
@@ -396,39 +397,29 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       pc.ontrack = (event) => {
         console.log(`[WebRTC] Received remote stream track (${event.track.kind}) from ${targetSocketId}`)
 
-        const updateRemoteStream = () => {
-          setParticipants((prev) =>
-            prev.map((p) => {
-              if (p.socketId === targetSocketId || p.id === targetSocketId) {
-                const incomingStream = event.streams && event.streams[0] ? event.streams[0] : null
-                const currentTracks = incomingStream ? incomingStream.getTracks() : (p.stream ? p.stream.getTracks() : [])
-                const mergedTracks = [...currentTracks]
-                if (!mergedTracks.some((t) => t.id === event.track.id)) {
-                  mergedTracks.push(event.track)
-                }
-                const newStream = new MediaStream(mergedTracks)
-                const hasLiveVideo = newStream.getVideoTracks().length > 0
-                return {
-                  ...p,
-                  stream: newStream,
-                  isCameraOff: !hasLiveVideo,
-                }
+        let stream = remoteStreamsRef.current.get(targetSocketId)
+        if (!stream) {
+          stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream()
+          remoteStreamsRef.current.set(targetSocketId, stream)
+        }
+        if (!stream.getTracks().some((t) => t.id === event.track.id)) {
+          stream.addTrack(event.track)
+        }
+
+        const stableStream = stream
+        setParticipants((prev) =>
+          prev.map((p) => {
+            if (p.socketId === targetSocketId || p.id === targetSocketId) {
+              const hasLiveVideo = stableStream.getVideoTracks().some((t) => t.readyState === 'live')
+              return {
+                ...p,
+                stream: stableStream,
+                isCameraOff: !hasLiveVideo,
               }
-              return p
-            })
-          )
-        }
-
-        updateRemoteStream()
-
-        event.track.onunmute = () => {
-          console.log(`[WebRTC] Remote track unmuted (${event.track.kind}) from ${targetSocketId}`)
-          updateRemoteStream()
-        }
-        event.track.onmute = () => {
-          console.log(`[WebRTC] Remote track muted (${event.track.kind}) from ${targetSocketId}`)
-          updateRemoteStream()
-        }
+            }
+            return p
+          })
+        )
       }
 
       pc.onconnectionstatechange = () => {
@@ -911,6 +902,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
 
       peerConnectionsRef.current.forEach((pc) => pc.close())
       peerConnectionsRef.current.clear()
+      remoteStreamsRef.current.clear()
 
       socketInstance.disconnect()
       setSocket(null)

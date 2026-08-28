@@ -70,52 +70,35 @@ function VideoTile({
       videoTracks.length > 0
   )
 
-  // Callback ref guarantees srcObject is attached the EXACT moment the <video> DOM node mounts!
-  const setVideoNode = useCallback(
-    (el: HTMLVideoElement | null) => {
-      videoRef.current = el
-      if (el && p.stream) {
-        if (el.srcObject !== p.stream) {
-          el.srcObject = p.stream
-        }
-        el.play().catch((err) => {
-          console.warn('[VideoTile] Video play error:', err)
-        })
-      }
-    },
-    [p.stream]
-  )
-
-  const setAudioNode = useCallback(
-    (el: HTMLAudioElement | null) => {
-      audioRef.current = el
-      if (el && p.stream && !isSelf) {
-        if (el.srcObject !== p.stream) {
-          el.srcObject = p.stream
-        }
-        el.play().catch((err) => {
-          console.warn('[VideoTile] Audio play error:', err)
-        })
-      }
-    },
-    [p.stream, isSelf]
-  )
-
   useEffect(() => {
-    if (videoRef.current && p.stream) {
-      if (videoRef.current.srcObject !== p.stream) {
-        videoRef.current.srcObject = p.stream
-      }
-      videoRef.current.play().catch(() => {})
+    const video = videoRef.current
+    if (!video || !p.stream || !hasActiveVideo) return
+    if (video.srcObject !== p.stream) {
+      video.srcObject = p.stream
+    }
+    const playPromise = video.play()
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.warn('[VideoTile] Video play error:', err)
+        }
+      })
     }
   }, [p.stream, hasActiveVideo])
 
   useEffect(() => {
-    if (!isSelf && audioRef.current && p.stream) {
-      if (audioRef.current.srcObject !== p.stream) {
-        audioRef.current.srcObject = p.stream
-      }
-      audioRef.current.play().catch(() => {})
+    const audio = audioRef.current
+    if (isSelf || !audio || !p.stream) return
+    if (audio.srcObject !== p.stream) {
+      audio.srcObject = p.stream
+    }
+    const playPromise = audio.play()
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.warn('[VideoTile] Audio play error:', err)
+        }
+      })
     }
   }, [p.stream, isSelf])
 
@@ -144,13 +127,10 @@ function VideoTile({
       {/* Real Live Video Feed or Authentic Camera Off Avatar View */}
       {hasActiveVideo ? (
         <video
-          ref={setVideoNode}
+          ref={videoRef}
           autoPlay
           playsInline
           muted // Muted on video tag allows instant 60fps rendering without browser autoplay block
-          onLoadedMetadata={(e) => {
-            e.currentTarget.play().catch(() => {})
-          }}
           className={`w-full h-full ${
             p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
           } ${isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
@@ -189,7 +169,7 @@ function VideoTile({
       {/* Dedicated Remote Audio element */}
       {!isSelf && p.stream && (
         <audio
-          ref={setAudioNode}
+          ref={audioRef}
           autoPlay
           playsInline
         />
