@@ -67,7 +67,8 @@ function VideoTile({
   const hasActiveVideo = Boolean(
     p.stream &&
       !p.isCameraOff &&
-      videoTracks.length > 0
+      videoTracks.length > 0 &&
+      videoTracks.some((t) => t.enabled && t.readyState === 'live')
   )
 
   useEffect(() => {
@@ -78,11 +79,7 @@ function VideoTile({
     }
     const playPromise = video.play()
     if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.warn('[VideoTile] Video play error:', err)
-        }
-      })
+      playPromise.catch(() => {})
     }
   }, [p.stream, hasActiveVideo])
 
@@ -94,11 +91,7 @@ function VideoTile({
     }
     const playPromise = audio.play()
     if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.warn('[VideoTile] Audio play error:', err)
-        }
-      })
+      playPromise.catch(() => {})
     }
   }, [p.stream, isSelf])
 
@@ -127,7 +120,13 @@ function VideoTile({
       {/* Real Live Video Feed or Authentic Camera Off Avatar View */}
       {hasActiveVideo ? (
         <video
-          ref={videoRef}
+          ref={(el) => {
+            videoRef.current = el
+            if (el && p.stream && el.srcObject !== p.stream) {
+              el.srcObject = p.stream
+              el.play().catch(() => {})
+            }
+          }}
           autoPlay
           playsInline
           muted // Muted on video tag allows instant 60fps rendering without browser autoplay block
@@ -169,7 +168,13 @@ function VideoTile({
       {/* Dedicated Remote Audio element */}
       {!isSelf && p.stream && (
         <audio
-          ref={audioRef}
+          ref={(el) => {
+            audioRef.current = el
+            if (el && p.stream && el.srcObject !== p.stream) {
+              el.srcObject = p.stream
+              el.play().catch(() => {})
+            }
+          }}
           autoPlay
           playsInline
         />
