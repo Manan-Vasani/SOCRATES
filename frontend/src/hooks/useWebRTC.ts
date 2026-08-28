@@ -229,6 +229,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     Record<string, boolean>
   >({})
 
+  // Server-Synchronized Session Clock
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null)
+
   const socketRef = useRef<Socket | null>(null)
   const hasJoinedRoomRef = useRef<boolean>(false)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
@@ -872,6 +875,14 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       setCodePermissionsMap(permissions)
     })
 
+    // Server-Synchronized Session Start Time
+    socketInstance.on('room-session-info', (info: { sessionStartTime?: number }) => {
+      if (info?.sessionStartTime) {
+        console.log(`[Meeting Socket] Synchronized session start time received: ${info.sessionStartTime}`)
+        setSessionStartTime(info.sessionStartTime)
+      }
+    })
+
     // Real-Time Room Message Received
     socketInstance.on('room-message-received', (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg])
@@ -1389,6 +1400,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     hasCodePermission,
     codeRequests,
     codePermissionsMap,
+    sessionStartTime,
     toggleMic,
     toggleCamera,
     toggleHandRaise,

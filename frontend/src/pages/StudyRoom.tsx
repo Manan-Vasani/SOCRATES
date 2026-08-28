@@ -170,6 +170,7 @@ export default function StudyRoom() {
     hasCodePermission,
     codeRequests,
     codePermissionsMap,
+    sessionStartTime: serverSessionStartTime,
     toggleMic,
     toggleCamera,
     toggleHandRaise,
@@ -747,7 +748,7 @@ export default function StudyRoom() {
         sessionTypeLabel={sessionDetails?.sessionTypeLabel}
         plannedTimeStr={sessionDetails?.timeStr}
         plannedDateStr={sessionDetails?.dateStr}
-        sessionStartTime={sessionStartTime}
+        sessionStartTime={serverSessionStartTime || sessionStartTime}
         onAutoEndSession={handleAutoEndSession}
         stageMode={stageMode}
         onStageModeChange={setStageMode}

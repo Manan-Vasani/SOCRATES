@@ -27,6 +27,7 @@ function createSocketServer(server) {
   const roomWhiteboardBg = {}; // roomId -> bgType ('dots' | 'grid' | 'blank' | 'dark' | 'chalkboard')
   const roomWhiteboardTextItems = {}; // roomId -> TextItem[]
   const roomCodeState = {}; // roomId -> { code, language, fileName }
+  const roomStartTimes = {}; // roomId -> number (epoch ms timestamp of session start)
   const disconnectTimers = {}; // `${roomId}:${userId}` -> NodeJS.Timeout
   const roomCleanupTimers = {}; // roomId -> NodeJS.Timeout
 
@@ -57,6 +58,11 @@ function createSocketServer(server) {
       if (roomCleanupTimers[roomId]) {
         clearTimeout(roomCleanupTimers[roomId]);
         delete roomCleanupTimers[roomId];
+      }
+
+      // Initialize authoritative room session start timestamp if not set
+      if (!roomStartTimes[roomId]) {
+        roomStartTimes[roomId] = Date.now();
       }
 
       const participantData = {
@@ -95,13 +101,17 @@ function createSocketServer(server) {
         roomCodePermissions[roomId][socket.id] = true;
       }
 
-      // Send existing participants list and permissions to joining user
+      // Send existing participants list, permissions and synchronized session start time to joining user
       const existingParticipants = Object.values(roomParticipants[roomId]).filter(
         (p) => p.socketId !== socket.id
       );
       socket.emit('existing-participants', existingParticipants);
       socket.emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
       socket.emit('room-code-permissions-updated', roomCodePermissions[roomId]);
+      socket.emit('room-session-info', {
+        roomId,
+        sessionStartTime: roomStartTimes[roomId],
+      });
 
       if (isReconnecting) {
         // Reconnected seamlessly on page refresh: notify peers for WebRTC without chat spam
@@ -592,6 +602,8 @@ function createSocketServer(server) {
               delete roomWhiteboardTextItems[roomId];
               delete roomCodeState[roomId];
               delete roomWhiteboardPermissions[roomId];
+              delete roomCodePermissions[roomId];
+              delete roomStartTimes[roomId];
             }
           }, 300000); // 5 minutes grace
         }
