@@ -41,7 +41,27 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.services.mozilla.com' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    {
+      urls: 'turn:standard.relay.metered.ca:80',
+      username: 'e0158df3bb3c9c99ec1ef974',
+      credential: '7nN6/2N56+xKqK2g',
+    },
+    {
+      urls: 'turn:standard.relay.metered.ca:443',
+      username: 'e0158df3bb3c9c99ec1ef974',
+      credential: '7nN6/2N56+xKqK2g',
+    },
+    {
+      urls: 'turn:standard.relay.metered.ca:443?transport=tcp',
+      username: 'e0158df3bb3c9c99ec1ef974',
+      credential: '7nN6/2N56+xKqK2g',
+    },
   ],
+  iceCandidatePoolSize: 10,
 }
 
 const SOCKET_URL =
@@ -297,17 +317,18 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           setParticipants((prev) =>
             prev.map((p) => {
               if (p.socketId === targetSocketId || p.id === targetSocketId) {
-                const currentTracks = p.stream ? p.stream.getTracks() : []
+                const incomingStream = event.streams && event.streams[0] ? event.streams[0] : null
+                const currentTracks = incomingStream ? incomingStream.getTracks() : (p.stream ? p.stream.getTracks() : [])
                 const mergedTracks = [...currentTracks]
                 if (!mergedTracks.some((t) => t.id === event.track.id)) {
                   mergedTracks.push(event.track)
                 }
                 const newStream = new MediaStream(mergedTracks)
-                const hasLiveVideo = newStream.getVideoTracks().some((t) => t.readyState === 'live' && !t.muted)
+                const hasLiveVideo = newStream.getVideoTracks().length > 0
                 return {
                   ...p,
                   stream: newStream,
-                  isCameraOff: p.isCameraOff !== undefined ? p.isCameraOff : !hasLiveVideo,
+                  isCameraOff: !hasLiveVideo,
                 }
               }
               return p

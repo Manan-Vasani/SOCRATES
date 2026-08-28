@@ -67,8 +67,38 @@ function VideoTile({
   const hasActiveVideo = Boolean(
     p.stream &&
       !p.isCameraOff &&
-      videoTracks.length > 0 &&
-      videoTracks.some((t) => t.readyState === 'live')
+      videoTracks.length > 0
+  )
+
+  // Callback ref guarantees srcObject is attached the EXACT moment the <video> DOM node mounts!
+  const setVideoNode = useCallback(
+    (el: HTMLVideoElement | null) => {
+      videoRef.current = el
+      if (el && p.stream) {
+        if (el.srcObject !== p.stream) {
+          el.srcObject = p.stream
+        }
+        el.play().catch((err) => {
+          console.warn('[VideoTile] Video play error:', err)
+        })
+      }
+    },
+    [p.stream]
+  )
+
+  const setAudioNode = useCallback(
+    (el: HTMLAudioElement | null) => {
+      audioRef.current = el
+      if (el && p.stream && !isSelf) {
+        if (el.srcObject !== p.stream) {
+          el.srcObject = p.stream
+        }
+        el.play().catch((err) => {
+          console.warn('[VideoTile] Audio play error:', err)
+        })
+      }
+    },
+    [p.stream, isSelf]
   )
 
   useEffect(() => {
@@ -76,9 +106,7 @@ function VideoTile({
       if (videoRef.current.srcObject !== p.stream) {
         videoRef.current.srcObject = p.stream
       }
-      videoRef.current.play().catch((err) => {
-        console.warn('[VideoTile] Video play:', err)
-      })
+      videoRef.current.play().catch(() => {})
     }
   }, [p.stream, hasActiveVideo])
 
@@ -87,9 +115,7 @@ function VideoTile({
       if (audioRef.current.srcObject !== p.stream) {
         audioRef.current.srcObject = p.stream
       }
-      audioRef.current.play().catch((err) => {
-        console.warn('[VideoTile] Audio play:', err)
-      })
+      audioRef.current.play().catch(() => {})
     }
   }, [p.stream, isSelf])
 
@@ -118,10 +144,13 @@ function VideoTile({
       {/* Real Live Video Feed or Authentic Camera Off Avatar View */}
       {hasActiveVideo ? (
         <video
-          ref={videoRef}
+          ref={setVideoNode}
           autoPlay
           playsInline
           muted // Muted on video tag allows instant 60fps rendering without browser autoplay block
+          onLoadedMetadata={(e) => {
+            e.currentTarget.play().catch(() => {})
+          }}
           className={`w-full h-full ${
             p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
           } ${isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
@@ -160,7 +189,7 @@ function VideoTile({
       {/* Dedicated Remote Audio element */}
       {!isSelf && p.stream && (
         <audio
-          ref={audioRef}
+          ref={setAudioNode}
           autoPlay
           playsInline
         />
