@@ -415,31 +415,80 @@ export default function StudyRoomChat({
             {participants.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-colors"
+                className="p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#e0e0e2] transition-colors space-y-2.5"
               >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0 ${
-                      p.role === 'tutor'
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
-                        : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
-                    }`}
-                  >
-                    {p.name.charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-[#1d1d1f] truncate">{p.name}</div>
+                {/* Top Row: Avatar, Name, Role & Mic / Mute */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div
-                      className={`text-[9px] font-bold uppercase tracking-wider ${
-                        p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0 ${
+                        p.role === 'tutor'
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                          : 'bg-gradient-to-br from-[#0066cc] to-indigo-600'
                       }`}
                     >
-                      {p.role}
+                      {p.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold text-[#1d1d1f] truncate">{p.name}</div>
+                      <div
+                        className={`text-[9px] font-bold uppercase tracking-wider ${
+                          p.role === 'tutor' ? 'text-emerald-600' : 'text-[#0066cc]'
+                        }`}
+                      >
+                        {p.role}
+                      </div>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p.isHandRaised && p.role !== 'tutor' && (
+                      <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 shrink-0" title="Hand Raised">
+                        <HiHandRaised size={12} className="text-yellow-500" />
+                      </span>
+                    )}
+
+                    {currentUserRole === 'tutor' && p.role === 'student' && onMuteParticipant ? (
+                      <button
+                        type="button"
+                        onClick={() => onMuteParticipant(p.socketId || p.id, !p.isMuted)}
+                        className={`h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
+                          p.isMuted
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                            : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                        }`}
+                        title={p.isMuted ? 'Click to Unmute Student' : 'Click to Mute Student'}
+                      >
+                        {p.isMuted ? (
+                          <>
+                            <Mic size={11} className="shrink-0 text-emerald-600" />
+                            <span>Unmute</span>
+                          </>
+                        ) : (
+                          <>
+                            <MicOff size={11} className="shrink-0 text-red-500" />
+                            <span>Mute</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <span
+                        className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 ${
+                          p.isMuted
+                            ? 'bg-red-50 border-red-200 text-red-500'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                        }`}
+                        title={p.isMuted ? 'Muted' : 'Unmuted'}
+                      >
+                        {p.isMuted ? <MicOff size={13} className="text-red-500" /> : <Mic size={13} className="text-emerald-600" />}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {currentUserRole === 'tutor' && p.role === 'student' && (
+
+                {/* Bottom Row: Tutor Controls (Allow Draw & Allow Code buttons) */}
+                {currentUserRole === 'tutor' && p.role === 'student' && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0f2]">
                     <button
                       type="button"
                       onClick={() => {
@@ -451,7 +500,7 @@ export default function StudyRoomChat({
                           onGrantWhiteboardPermission?.(targetId)
                         }
                       }}
-                      className={`h-7 w-[92px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
+                      className={`flex-1 h-7 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none flex items-center justify-center gap-1 shadow-xs ${
                         whiteboardPermissionsMap?.[p.socketId || p.id]
                           ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
                           : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20 hover:border-[#0066cc]/30'
@@ -470,9 +519,7 @@ export default function StudyRoomChat({
                         </>
                       )}
                     </button>
-                  )}
 
-                  {currentUserRole === 'tutor' && p.role === 'student' && (
                     <button
                       type="button"
                       onClick={() => {
@@ -484,7 +531,7 @@ export default function StudyRoomChat({
                           onGrantCodePermission?.(targetId)
                         }
                       }}
-                      className={`h-7 w-[92px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
+                      className={`flex-1 h-7 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none flex items-center justify-center gap-1 shadow-xs ${
                         codePermissionsMap?.[p.socketId || p.id]
                           ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300'
                           : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
@@ -503,49 +550,8 @@ export default function StudyRoomChat({
                         </>
                       )}
                     </button>
-                  )}
-
-                  {p.isHandRaised && p.role !== 'tutor' && (
-                    <span className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 shrink-0" title="Hand Raised">
-                      <HiHandRaised size={12} className="text-yellow-500" />
-                    </span>
-                  )}
-                  {currentUserRole === 'tutor' && p.role === 'student' && onMuteParticipant ? (
-                    <button
-                      type="button"
-                      onClick={() => onMuteParticipant(p.socketId || p.id, !p.isMuted)}
-                      className={`h-7 w-[78px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
-                        p.isMuted
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
-                          : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
-                      }`}
-                      title={p.isMuted ? 'Click to Unmute Student' : 'Click to Mute Student'}
-                    >
-                      {p.isMuted ? (
-                        <>
-                          <Mic size={11} className="shrink-0 text-emerald-600" />
-                          <span>Unmute</span>
-                        </>
-                      ) : (
-                        <>
-                          <MicOff size={11} className="shrink-0 text-red-500" />
-                          <span>Mute</span>
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <span
-                      className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 ${
-                        p.isMuted
-                          ? 'bg-red-50 border-red-200 text-red-500'
-                          : 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                      }`}
-                      title={p.isMuted ? 'Muted' : 'Unmuted'}
-                    >
-                      {p.isMuted ? <MicOff size={13} className="text-red-500" /> : <Mic size={13} className="text-emerald-600" />}
-                    </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
