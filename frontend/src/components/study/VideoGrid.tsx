@@ -68,12 +68,12 @@ function VideoTile({
     p.stream &&
       !p.isCameraOff &&
       videoTracks.length > 0 &&
-      videoTracks.some((t) => t.enabled && t.readyState === 'live')
+      videoTracks.some((t) => t.enabled)
   )
 
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !p.stream || !hasActiveVideo) return
+    if (!video || !p.stream) return
     if (video.srcObject !== p.stream) {
       video.srcObject = p.stream
     }
@@ -117,8 +117,38 @@ function VideoTile({
         }}
       />
 
-      {/* Real Live Video Feed or Authentic Camera Off Avatar View */}
-      {hasActiveVideo ? (
+      {/* Authentic Avatar Layer (Always underneath) */}
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          {p.avatar && !imgError ? (
+            <img
+              src={p.avatar}
+              alt={p.name}
+              onError={() => setImgError(true)}
+              className={`rounded-full object-cover border-2 border-white/10 shadow-2xl ${
+                large ? 'w-28 h-28 md:w-36 md:h-36' : 'w-16 h-16 md:w-20 md:h-20'
+              }`}
+            />
+          ) : (
+            <div
+              className={`rounded-full bg-gradient-to-br ${
+                GRADIENT_AVATARS[p.role] || GRADIENT_AVATARS.student
+              } flex items-center justify-center font-bold text-white shadow-2xl border-2 border-white/10 select-none ${
+                large ? 'w-28 h-28 md:w-36 md:h-36 text-3xl md:text-4xl' : 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl'
+              }`}
+            >
+              {initials}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-white/80 font-medium text-xs sm:text-sm">{p.name}</span>
+            {p.isMuted && <MicOff size={13} className="text-red-400" />}
+          </div>
+        </div>
+      </div>
+
+      {/* Real Live Video Feed Layer (Visible when active) */}
+      {p.stream && (
         <video
           ref={(el) => {
             videoRef.current = el
@@ -130,39 +160,12 @@ function VideoTile({
           autoPlay
           playsInline
           muted // Muted on video tag allows instant 60fps rendering without browser autoplay block
-          className={`w-full h-full ${
-            p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
-          } ${isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
+          className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
+            hasActiveVideo ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          } ${p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'} ${
+            isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''
+          }`}
         />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-3">
-            {p.avatar && !imgError ? (
-              <img
-                src={p.avatar}
-                alt={p.name}
-                onError={() => setImgError(true)}
-                className={`rounded-full object-cover border-2 border-white/10 shadow-2xl ${
-                  large ? 'w-28 h-28 md:w-36 md:h-36' : 'w-16 h-16 md:w-20 md:h-20'
-                }`}
-              />
-            ) : (
-              <div
-                className={`rounded-full bg-gradient-to-br ${
-                  GRADIENT_AVATARS[p.role] || GRADIENT_AVATARS.student
-                } flex items-center justify-center font-bold text-white shadow-2xl border-2 border-white/10 select-none ${
-                  large ? 'w-28 h-28 md:w-36 md:h-36 text-3xl md:text-4xl' : 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl'
-                }`}
-              >
-                {initials}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-white/80 font-medium text-xs sm:text-sm">{p.name}</span>
-              {p.isMuted && <MicOff size={13} className="text-red-400" />}
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Dedicated Remote Audio element */}
