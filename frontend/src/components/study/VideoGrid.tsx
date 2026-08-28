@@ -61,37 +61,37 @@ function VideoTile({
 }) {
   const isSelf = p.name.includes('(You)')
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [imgError, setImgError] = useState(false)
   const videoTracks = p.stream ? p.stream.getVideoTracks() : []
   const hasActiveVideo = Boolean(
     p.stream &&
       !p.isCameraOff &&
       videoTracks.length > 0 &&
-      (isSelf
-        ? videoTracks.some((t) => t.enabled && t.readyState === 'live')
-        : videoTracks.some((t) => t.readyState === 'live'))
-  )
-
-  const playVideo = useCallback(
-    (el: HTMLVideoElement | null) => {
-      if (!el || !p.stream || !hasActiveVideo) return
-      if (el.srcObject !== p.stream) {
-        el.srcObject = p.stream
-      }
-      el.play().catch((err) => {
-        console.warn('[VideoTile] Video play warning, retrying muted:', err)
-        if (!isSelf) {
-          el.muted = true
-          el.play().catch(() => {})
-        }
-      })
-    },
-    [p.stream, hasActiveVideo, isSelf]
+      videoTracks.some((t) => t.readyState === 'live')
   )
 
   useEffect(() => {
-    playVideo(videoRef.current)
-  }, [playVideo])
+    if (videoRef.current && p.stream) {
+      if (videoRef.current.srcObject !== p.stream) {
+        videoRef.current.srcObject = p.stream
+      }
+      videoRef.current.play().catch((err) => {
+        console.warn('[VideoTile] Video play:', err)
+      })
+    }
+  }, [p.stream, hasActiveVideo])
+
+  useEffect(() => {
+    if (!isSelf && audioRef.current && p.stream) {
+      if (audioRef.current.srcObject !== p.stream) {
+        audioRef.current.srcObject = p.stream
+      }
+      audioRef.current.play().catch((err) => {
+        console.warn('[VideoTile] Audio play:', err)
+      })
+    }
+  }, [p.stream, isSelf])
 
   const initials = getCleanInitials(p.name)
 
@@ -118,16 +118,10 @@ function VideoTile({
       {/* Real Live Video Feed or Authentic Camera Off Avatar View */}
       {hasActiveVideo ? (
         <video
-          ref={(node) => {
-            videoRef.current = node
-            playVideo(node)
-          }}
+          ref={videoRef}
           autoPlay
           playsInline
-          muted={isSelf} // Mute self video feed locally to prevent audio echo loop
-          onLoadedMetadata={(e) => {
-            playVideo(e.currentTarget)
-          }}
+          muted // Muted on video tag allows instant 60fps rendering without browser autoplay block
           className={`w-full h-full ${
             p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
           } ${isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''}`}
@@ -161,6 +155,15 @@ function VideoTile({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Dedicated Remote Audio element */}
+      {!isSelf && p.stream && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          playsInline
+        />
       )}
 
       {/* Top badges bar */}

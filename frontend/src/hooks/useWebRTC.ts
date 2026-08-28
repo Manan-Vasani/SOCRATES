@@ -82,7 +82,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         name: `${currentUser.name} (You)`,
         role: currentUser.role,
         avatar: currentUser.avatar,
-        isMuted: true,
+        isMuted: false,
         isCameraOff: true,
         isSpeaking: false,
         isPinned: false,
@@ -100,7 +100,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       time: 'Now',
     },
   ])
-  const [isMicOn, setIsMicOn] = useState(false)
+  const [isMicOn, setIsMicOn] = useState(true)
   const [isCameraOn, setIsCameraOn] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [isHandRaised, setIsHandRaised] = useState(false)
@@ -127,6 +127,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const iceCandidateQueuesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
   const screenTrackRef = useRef<MediaStreamTrack | null>(null)
+  const iceRecoveryRetriesRef = useRef<Map<string, number>>(new Map())
 
   // Cache participants list in sessionStorage so refresh maintains all participants without pop-in
   useEffect(() => {
@@ -197,9 +198,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       }
 
       if (stream) {
-        // Start with audio and video tracks disabled in lobby by default so buttons remain OFF
+        // Keep mic enabled by default while keeping camera disabled
         stream.getAudioTracks().forEach((track) => {
-          track.enabled = false
+          track.enabled = true
         })
         stream.getVideoTracks().forEach((track) => {
           track.enabled = false
@@ -209,7 +210,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       localStreamRef.current = stream
       setLocalStream(stream)
       setIsCameraOn(false)
-      setIsMicOn(false)
+      setIsMicOn(true)
       setIsMediaReady(true)
 
       setParticipants((prev) => {
@@ -221,7 +222,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           role: currentUserRef.current.role,
           avatar: currentUserRef.current.avatar,
           stream: stream || undefined,
-          isMuted: true,
+          isMuted: false,
           isCameraOff: true,
           isSpeaking: false,
           isPinned: false,
@@ -291,24 +292,72 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       // Handle incoming remote media stream track (robustly merge audio and video tracks into remote stream)
       pc.ontrack = (event) => {
         console.log(`[WebRTC] Received remote stream track (${event.track.kind}) from ${targetSocketId}`)
-        
-        setParticipants((prev) =>
-          prev.map((p) => {
-            if (p.socketId === targetSocketId || p.id === targetSocketId) {
-              const currentMediaStream = p.stream ? p.stream : (event.streams && event.streams[0] ? event.streams[0] : new MediaStream())
-              if (!currentMediaStream.getTracks().some((t) => t.id === event.track.id)) {
-                currentMediaStream.addTrack(event.track)
+
+        const updateRemoteStream = () => {
+          setParticipants((prev) =>
+            prev.map((p) => {
+              if (p.socketId === targetSocketId || p.id === targetSocketId) {
+                const currentTracks = p.stream ? p.stream.getTracks() : []
+                const mergedTracks = [...currentTracks]
+                if (!mergedTracks.some((t) => t.id === event.track.id)) {
+                  mergedTracks.push(event.track)
+                }
+                const newStream = new MediaStream(mergedTracks)
+                const hasLiveVideo = newStream.getVideoTracks().some((t) => t.readyState === 'live' && !t.muted)
+                return {
+                  ...p,
+                  stream: newStream,
+                  isCameraOff: p.isCameraOff !== undefined ? p.isCameraOff : !hasLiveVideo,
+                }
               }
-              const hasLiveVideo = currentMediaStream.getVideoTracks().some((t) => t.readyState === 'live')
-              return { ...p, stream: currentMediaStream, isCameraOff: p.isCameraOff ?? !hasLiveVideo }
-            }
-            return p
-          })
-        )
+              return p
+            })
+          )
+        }
+
+        updateRemoteStream()
+
+        event.track.onunmute = () => {
+          console.log(`[WebRTC] Remote track unmuted (${event.track.kind}) from ${targetSocketId}`)
+          updateRemoteStream()
+        }
+        event.track.onmute = () => {
+          console.log(`[WebRTC] Remote track muted (${event.track.kind}) from ${targetSocketId}`)
+          updateRemoteStream()
+        }
       }
 
       pc.onconnectionstatechange = () => {
         console.log(`[WebRTC Peer ${targetSocketId}] State changed: ${pc.connectionState}`)
+
+        if (pc.connectionState === 'connected') {
+          iceRecoveryRetriesRef.current.delete(targetSocketId)
+        }
+
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          const retries = (iceRecoveryRetriesRef.current.get(targetSocketId) || 0) + 1
+          iceRecoveryRetriesRef.current.set(targetSocketId, retries)
+
+          if (retries <= 3) {
+            console.log(`[WebRTC] Connection ${pc.connectionState} for ${targetSocketId}, retry ${retries}/3`)
+            pc.close()
+            peerConnectionsRef.current.delete(targetSocketId)
+            iceCandidateQueuesRef.current.delete(targetSocketId)
+
+            setTimeout(async () => {
+              try {
+                const newPc = createPeerConnection(targetSocketId, socket)
+                const offer = await newPc.createOffer()
+                await newPc.setLocalDescription(offer)
+                socket.emit('offer', { targetSocketId, offer })
+              } catch (err) {
+                console.warn('[WebRTC] ICE recovery offer failed:', err)
+              }
+            }, 2000)
+          } else {
+            console.warn(`[WebRTC] Max ICE retries reached for ${targetSocketId}`)
+          }
+        }
       }
 
       peerConnectionsRef.current.set(targetSocketId, pc)
@@ -449,6 +498,28 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         return self ? [self, ...updated] : updated
       })
 
+      // Wait for localStream to be ready before creating peer connections
+      const waitForStream = () =>
+        new Promise<boolean>((resolve) => {
+          if (localStreamRef.current && localStreamRef.current.getTracks().length > 0) {
+            resolve(true)
+            return
+          }
+          let attempts = 0
+          const check = setInterval(() => {
+            attempts++
+            if (localStreamRef.current && localStreamRef.current.getTracks().length > 0) {
+              clearInterval(check)
+              resolve(true)
+            } else if (attempts >= 30) {
+              clearInterval(check)
+              resolve(false)
+            }
+          }, 100)
+        })
+
+      await waitForStream()
+
       // Initiate WebRTC connection (Offer) to each existing participant
       for (const peerData of existingList) {
         try {
@@ -518,6 +589,21 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
             : p
         )
       )
+
+      // Close and remove any stale peer connection for this user's previous socketId
+      peerConnectionsRef.current.forEach((oldPc, oldSocketId) => {
+        if (oldSocketId !== reconnectedUser.socketId) {
+          const matchedParticipant = participants.find(
+            (pp) => pp.id === reconnectedUser.id && pp.socketId === oldSocketId
+          )
+          if (matchedParticipant) {
+            console.log(`[WebRTC] Closing stale PC for reconnected user: ${oldSocketId}`)
+            oldPc.close()
+            peerConnectionsRef.current.delete(oldSocketId)
+            iceCandidateQueuesRef.current.delete(oldSocketId)
+          }
+        }
+      })
 
       // Re-negotiate WebRTC with the new socket ID
       if (currentUser.role === 'tutor' || currentUser.id < reconnectedUser.id) {
@@ -673,7 +759,23 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       if (pc) {
         pc.close()
         peerConnectionsRef.current.delete(socketId)
+        iceCandidateQueuesRef.current.delete(socketId)
       }
+
+      // Also clean up any stale PC entries with mismatched socketId for the same user
+      peerConnectionsRef.current.forEach((stalePc, staleSocketId) => {
+        if (staleSocketId !== socketId) {
+          const staleParticipant = participants.find(
+            (pp) => pp.id === userId && pp.socketId === staleSocketId
+          )
+          if (staleParticipant) {
+            console.log(`[WebRTC] Cleaning stale PC for leaving user: ${staleSocketId}`)
+            stalePc.close()
+            peerConnectionsRef.current.delete(staleSocketId)
+            iceCandidateQueuesRef.current.delete(staleSocketId)
+          }
+        }
+      })
 
       setParticipants((prev) => {
         const leaving = prev.find((p) => p.socketId === socketId)
@@ -733,6 +835,15 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           audioTrack.enabled = !audioTrack.enabled
           const newMicState = audioTrack.enabled
           setIsMicOn(newMicState)
+
+          // Sync audio track across all active peer connections
+          peerConnectionsRef.current.forEach((pc) => {
+            const senders = pc.getSenders()
+            const audioSender = senders.find((s) => s.track && s.track.kind === 'audio')
+            if (audioSender) {
+              audioSender.replaceTrack(audioTrack).catch(() => {})
+            }
+          })
 
           if (socketRef.current) {
             socketRef.current.emit('participant-state-change', {
@@ -818,6 +929,19 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           videoTrack.enabled = !videoTrack.enabled
           const newCamState = videoTrack.enabled
           setIsCameraOn(newCamState)
+
+          // Sync video track across all active peer connections
+          peerConnectionsRef.current.forEach((pc) => {
+            const senders = pc.getSenders()
+            const videoSender = senders.find((s) => s.track && s.track.kind === 'video')
+            if (videoSender) {
+              videoSender.replaceTrack(videoTrack).catch(() => {})
+            } else {
+              try {
+                pc.addTrack(videoTrack, localStreamRef.current!)
+              } catch {}
+            }
+          })
 
           if (socketRef.current) {
             socketRef.current.emit('participant-state-change', {

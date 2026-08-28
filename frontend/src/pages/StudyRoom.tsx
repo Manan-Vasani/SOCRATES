@@ -416,190 +416,6 @@ export default function StudyRoom() {
     navigate('/profile')
   }
 
-  // Render Access Denied guard if user fails authorization
-  if (authorization && authorization.isAuthorized === false) {
-    return (
-      <div className="min-h-screen w-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-4 select-none">
-        <div className="w-full max-w-md bg-white rounded-3xl border border-[#e5e5e7] p-8 shadow-xl space-y-6 text-center animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
-            <Lock size={32} />
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
-              Authorized Session Only
-            </h2>
-            <p className="text-sm text-[#7a7a7a] leading-relaxed">
-              {authorization.message ||
-                'This session is private. Only the student who booked this appointment and the assigned tutor are authorized to join.'}
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] text-left text-xs space-y-1.5">
-            <div className="flex items-center gap-2 font-semibold text-[#1d1d1f]">
-              <ShieldAlert size={14} className="text-amber-500 shrink-0" />
-              <span>Security Policy</span>
-            </div>
-            <p className="text-[#7a7a7a]">
-              Session links are restricted to authorized participants to protect student privacy and preserve system integrity.
-            </p>
-          </div>
-
-          <div className="space-y-2.5 pt-2">
-            {!user ? (
-              <button
-                onClick={() => navigate('/profile')}
-                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-sm transition-colors duration-150 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <UserCheck size={16} />
-                <span>Sign in with Student Account</span>
-              </button>
-            ) : null}
-
-            <button
-              onClick={() => navigate('/tutors')}
-              className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] font-semibold text-sm transition-colors duration-150 border border-[#e5e5e7] flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <ArrowLeft size={16} />
-              <span>Back to Tutors</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Render Meeting Lobby preview if user has not clicked "Join Meeting"
-  if (!hasJoined) {
-    return (
-      <MeetingLobby
-        meetingId={activeRoomId}
-        sessionDetails={sessionDetails}
-        isDetailsLoading={isDetailsLoading}
-        displayName={displayName}
-        onNameChange={setDisplayName}
-        isMicOn={isMicOn}
-        onMicToggle={toggleMic}
-        isCameraOn={isCameraOn}
-        onCameraToggle={toggleCamera}
-        localStream={localStream}
-        permissionDeniedType={permissionDeniedType}
-        onClearPermissionDenied={() => setPermissionDeniedType(null)}
-        onJoinMeeting={async () => {
-          if (user) {
-            await joinStudyRoom(activeRoomId).catch(() => {})
-          }
-          try {
-            sessionStorage.setItem(`socrates_room_joined_${activeRoomId}`, 'true')
-          } catch {}
-          setHasJoined(true)
-        }}
-      />
-    )
-  }
-
-  const renderStage = () => {
-    switch (stageMode) {
-      case 'whiteboard':
-        return (
-          <div className="flex-1 min-h-0 flex bg-white">
-            <Whiteboard
-              canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
-              isTutor={currentUser.role === 'tutor'}
-              socket={socket}
-              socketRef={socketRef}
-              roomId={activeRoomId}
-              onRequestPermission={requestWhiteboardPermission}
-              onGrantPermission={grantWhiteboardPermission}
-              onRevokePermission={revokeWhiteboardPermission}
-              whiteboardRequests={whiteboardRequests}
-              onDenyRequest={denyWhiteboardRequest}
-            />
-          </div>
-        )
-      case 'code':
-        return (
-          <div className="flex-1 min-h-0 flex">
-            <CodeSandbox
-              socket={socket}
-              socketRef={socketRef}
-              roomId={activeRoomId}
-              runnerName={currentUser.name}
-            />
-          </div>
-        )
-      case 'grid':
-        return (
-          <div className="flex-1 min-h-0 bg-[#0a0a0c]">
-            <VideoGrid
-              participants={participants}
-              onPinParticipant={handlePinParticipant}
-              onMuteParticipant={muteParticipant}
-              currentUserRole={currentUser.role}
-              fullStage
-            />
-          </div>
-        )
-      case 'split':
-      default:
-        return (
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
-            {/* Left: Video feeds */}
-            <div
-              style={{ width: `${leftPanelWidth}px` }}
-              className="bg-[#0a0a0c] shrink-0 flex flex-col border-r border-white/5 relative"
-            >
-              <div className="flex-1 min-h-0">
-                <VideoGrid
-                  participants={participants}
-                  onPinParticipant={handlePinParticipant}
-                  onMuteParticipant={muteParticipant}
-                  currentUserRole={currentUser.role}
-                />
-              </div>
-              {/* Bottom mini status bar */}
-              <div className="h-9 bg-[#0e0e12] border-t border-white/5 flex items-center justify-between px-3">
-                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">
-                  {participants.length} participant{participants.length !== 1 ? 's' : ''} connected
-                </span>
-                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  {connectionStatus}
-                </span>
-              </div>
-            </div>
-
-            {/* Left Resizer Handle */}
-            <div
-              onMouseDown={handleLeftResizeStart}
-              className="w-1 relative z-50 cursor-col-resize group flex items-center justify-center bg-[#0a0a0c] hover:bg-[#0066cc]/50 active:bg-[#0066cc] transition-colors select-none shrink-0"
-              title="Drag to resize video panel"
-            >
-              <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-7 rounded-full bg-[#1d1d1f] border border-white/20 text-white/70 group-hover:text-white group-hover:bg-[#0066cc] flex items-center justify-center shadow-lg transition-colors opacity-90 group-hover:opacity-100 z-50">
-                <ChevronsLeftRight size={10} />
-              </div>
-            </div>
-
-            {/* Right: Active workspace */}
-            <div className="flex-1 min-w-0 flex bg-white">
-              <Whiteboard
-                canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
-                isTutor={currentUser.role === 'tutor'}
-                socket={socket}
-                socketRef={socketRef}
-                roomId={activeRoomId}
-                onRequestPermission={requestWhiteboardPermission}
-                onGrantPermission={grantWhiteboardPermission}
-                onRevokePermission={revokeWhiteboardPermission}
-                whiteboardRequests={whiteboardRequests}
-                onDenyRequest={denyWhiteboardRequest}
-              />
-            </div>
-          </div>
-        )
-    }
-  }
-
   // Listen for live session duration updates from tutor
   useEffect(() => {
     if (!socket) return
@@ -719,6 +535,190 @@ export default function StudyRoom() {
     leaveRoom()
     setShowLeaveModal(false)
     navigate('/profile')
+  }
+
+  const renderStage = () => {
+    switch (stageMode) {
+      case 'whiteboard':
+        return (
+          <div className="flex-1 min-h-0 flex bg-white">
+            <Whiteboard
+              canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
+              isTutor={currentUser.role === 'tutor'}
+              socket={socket}
+              socketRef={socketRef}
+              roomId={activeRoomId}
+              onRequestPermission={requestWhiteboardPermission}
+              onGrantPermission={grantWhiteboardPermission}
+              onRevokePermission={revokeWhiteboardPermission}
+              whiteboardRequests={whiteboardRequests}
+              onDenyRequest={denyWhiteboardRequest}
+            />
+          </div>
+        )
+      case 'code':
+        return (
+          <div className="flex-1 min-h-0 flex">
+            <CodeSandbox
+              socket={socket}
+              socketRef={socketRef}
+              roomId={activeRoomId}
+              runnerName={currentUser.name}
+            />
+          </div>
+        )
+      case 'grid':
+        return (
+          <div className="flex-1 min-h-0 bg-[#0a0a0c]">
+            <VideoGrid
+              participants={participants}
+              onPinParticipant={handlePinParticipant}
+              onMuteParticipant={muteParticipant}
+              currentUserRole={currentUser.role}
+              fullStage
+            />
+          </div>
+        )
+      case 'split':
+      default:
+        return (
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+            {/* Left: Video feeds */}
+            <div
+              style={{ width: `${leftPanelWidth}px` }}
+              className="bg-[#0a0a0c] shrink-0 flex flex-col border-r border-white/5 relative"
+            >
+              <div className="flex-1 min-h-0">
+                <VideoGrid
+                  participants={participants}
+                  onPinParticipant={handlePinParticipant}
+                  onMuteParticipant={muteParticipant}
+                  currentUserRole={currentUser.role}
+                />
+              </div>
+              {/* Bottom mini status bar */}
+              <div className="h-9 bg-[#0e0e12] border-t border-white/5 flex items-center justify-between px-3">
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">
+                  {participants.length} participant{participants.length !== 1 ? 's' : ''} connected
+                </span>
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  {connectionStatus}
+                </span>
+              </div>
+            </div>
+
+            {/* Left Resizer Handle */}
+            <div
+              onMouseDown={handleLeftResizeStart}
+              className="w-1 relative z-50 cursor-col-resize group flex items-center justify-center bg-[#0a0a0c] hover:bg-[#0066cc]/50 active:bg-[#0066cc] transition-colors select-none shrink-0"
+              title="Drag to resize video panel"
+            >
+              <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-7 rounded-full bg-[#1d1d1f] border border-white/20 text-white/70 group-hover:text-white group-hover:bg-[#0066cc] flex items-center justify-center shadow-lg transition-colors opacity-90 group-hover:opacity-100 z-50">
+                <ChevronsLeftRight size={10} />
+              </div>
+            </div>
+
+            {/* Right: Active workspace */}
+            <div className="flex-1 min-w-0 flex bg-white">
+              <Whiteboard
+                canDraw={currentUser.role === 'tutor' || hasWhiteboardPermission}
+                isTutor={currentUser.role === 'tutor'}
+                socket={socket}
+                socketRef={socketRef}
+                roomId={activeRoomId}
+                onRequestPermission={requestWhiteboardPermission}
+                onGrantPermission={grantWhiteboardPermission}
+                onRevokePermission={revokeWhiteboardPermission}
+                whiteboardRequests={whiteboardRequests}
+                onDenyRequest={denyWhiteboardRequest}
+              />
+            </div>
+          </div>
+        )
+    }
+  }
+
+  // Render Access Denied guard if user fails authorization
+  if (authorization && authorization.isAuthorized === false) {
+    return (
+      <div className="min-h-screen w-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-4 select-none">
+        <div className="w-full max-w-md bg-white rounded-3xl border border-[#e5e5e7] p-8 shadow-xl space-y-6 text-center animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
+            <Lock size={32} />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              Authorized Session Only
+            </h2>
+            <p className="text-sm text-[#7a7a7a] leading-relaxed">
+              {authorization.message ||
+                'This session is private. Only the student who booked this appointment and the assigned tutor are authorized to join.'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5e7] text-left text-xs space-y-1.5">
+            <div className="flex items-center gap-2 font-semibold text-[#1d1d1f]">
+              <ShieldAlert size={14} className="text-amber-500 shrink-0" />
+              <span>Security Policy</span>
+            </div>
+            <p className="text-[#7a7a7a]">
+              Session links are restricted to authorized participants to protect student privacy and preserve system integrity.
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-2">
+            {!user ? (
+              <button
+                onClick={() => navigate('/profile')}
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-sm transition-colors duration-150 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserCheck size={16} />
+                <span>Sign in with Student Account</span>
+              </button>
+            ) : null}
+
+            <button
+              onClick={() => navigate('/tutors')}
+              className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] font-semibold text-sm transition-colors duration-150 border border-[#e5e5e7] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Tutors</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render Meeting Lobby preview if user has not clicked "Join Meeting"
+  if (!hasJoined) {
+    return (
+      <MeetingLobby
+        meetingId={activeRoomId}
+        sessionDetails={sessionDetails}
+        isDetailsLoading={isDetailsLoading}
+        displayName={displayName}
+        onNameChange={setDisplayName}
+        isMicOn={isMicOn}
+        onMicToggle={toggleMic}
+        isCameraOn={isCameraOn}
+        onCameraToggle={toggleCamera}
+        localStream={localStream}
+        permissionDeniedType={permissionDeniedType}
+        onClearPermissionDenied={() => setPermissionDeniedType(null)}
+        onJoinMeeting={async () => {
+          if (user) {
+            await joinStudyRoom(activeRoomId).catch(() => {})
+          }
+          try {
+            sessionStorage.setItem(`socrates_room_joined_${activeRoomId}`, 'true')
+          } catch {}
+          setHasJoined(true)
+        }}
+      />
+    )
   }
 
   return (

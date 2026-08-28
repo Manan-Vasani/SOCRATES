@@ -44,6 +44,11 @@ export function useSpeechTranscription({
   const restartTimerRef = useRef<any>(null)
   const silenceTimerRef = useRef<any>(null)
   const currentInterimRef = useRef('')
+  const isPermissionDeniedRef = useRef(false)
+  const pendingSegmentsRef = useRef<
+    { roomId: string; speakerId: string; speakerName: string; role: string; text: string }[]
+  >([])
+  const startRecognitionRef = useRef<any>(null)
 
   // Check browser support for Web Speech API
   useEffect(() => {
@@ -143,6 +148,15 @@ export function useSpeechTranscription({
           role: currentUser.role,
           text: trimmed,
         })
+      } else {
+        // Queue transcript segment while socket is connecting
+        pendingSegmentsRef.current.push({
+          roomId,
+          speakerId: currentUser.id,
+          speakerName: currentUser.name,
+          role: currentUser.role,
+          text: trimmed,
+        })
       }
 
       onNewLocalTranscript?.(entry)
@@ -159,6 +173,8 @@ export function useSpeechTranscription({
       setSpeechError('Speech recognition not supported in this browser. Use Chrome or Edge.')
       return
     }
+
+    isPermissionDeniedRef.current = false
 
     if (recognitionRef.current) {
       try {
@@ -251,6 +267,7 @@ export function useSpeechTranscription({
             'Microphone not detected. Please verify your headphone or microphone is set as the Default Recording Device in Windows Sound Settings.'
           )
         } else if (err === 'not-allowed') {
+          isPermissionDeniedRef.current = true
           setSpeechError(
             'Microphone access blocked. Click the lock/tune icon next to http://localhost in your browser address bar and set Microphone to "Allow".'
           )
@@ -271,12 +288,12 @@ export function useSpeechTranscription({
         setIsListening(false)
         recognitionRef.current = null
 
-        // Auto-restart if microphone is still unmuted
-        if (isMicOnRef.current) {
+        // Auto-restart if microphone is still unmuted and permission was not denied
+        if (isMicOnRef.current && !isPermissionDeniedRef.current) {
           if (restartTimerRef.current) clearTimeout(restartTimerRef.current)
           restartTimerRef.current = setTimeout(() => {
-            if (isMicOnRef.current && !recognitionRef.current) {
-              startRecognition()
+            if (isMicOnRef.current && !isPermissionDeniedRef.current && !recognitionRef.current) {
+              (startRecognitionRef.current || startRecognition)()
             }
           }, 200)
         }
@@ -293,6 +310,9 @@ export function useSpeechTranscription({
       }
     }
   }, [emitFinalTranscript])
+
+  // Keep ref synchronized with the latest startRecognition function across renders
+  startRecognitionRef.current = startRecognition
 
   const stopRecognition = useCallback(() => {
     if (restartTimerRef.current) {
@@ -321,7 +341,7 @@ export function useSpeechTranscription({
     stopRecognition()
     setTimeout(() => {
       if (isMicOnRef.current) {
-        startRecognition()
+        (startRecognitionRef.current || startRecognition)()
       }
     }, 150)
   }, [startRecognition, stopRecognition])
@@ -336,7 +356,18 @@ export function useSpeechTranscription({
     return () => {
       stopRecognition()
     }
-  }, [isMicOn, startRecognition, stopRecognition])
+  }, [isMicOn, startRecognition, stopRecognition, socket])
+
+  // Drain queued transcript segments once socket becomes available
+  useEffect(() => {
+    if (socket && pendingSegmentsRef.current.length > 0) {
+      const pending = [...pendingSegmentsRef.current]
+      pendingSegmentsRef.current = []
+      pending.forEach((segment) => {
+        socket.emit('speech-transcript-segment', segment)
+      })
+    }
+  }, [socket])
 
   return {
     isSupported,
