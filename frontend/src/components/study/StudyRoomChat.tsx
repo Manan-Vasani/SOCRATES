@@ -22,6 +22,7 @@ import {
   Trash2,
   X,
   Paperclip,
+  Code2,
 } from 'lucide-react'
 
 type ChatTab = 'chat' | 'ai' | 'participants' | 'resources'
@@ -72,6 +73,9 @@ interface StudyRoomChatProps {
   onGrantWhiteboardPermission?: (socketId: string) => void
   onRevokeWhiteboardPermission?: (socketId: string) => void
   whiteboardPermissionsMap?: Record<string, boolean>
+  onGrantCodePermission?: (socketId: string) => void
+  onRevokeCodePermission?: (socketId: string) => void
+  codePermissionsMap?: Record<string, boolean>
   isHandRaised?: boolean
   onHandRaise?: () => void
   onMuteParticipant?: (id: string, shouldMute?: boolean) => void
@@ -95,6 +99,9 @@ export default function StudyRoomChat({
   onGrantWhiteboardPermission,
   onRevokeWhiteboardPermission,
   whiteboardPermissionsMap,
+  onGrantCodePermission,
+  onRevokeCodePermission,
+  codePermissionsMap,
   isHandRaised,
   onHandRaise,
   onMuteParticipant,
@@ -444,7 +451,7 @@ export default function StudyRoomChat({
                           onGrantWhiteboardPermission?.(targetId)
                         }
                       }}
-                      className={`h-7 w-[98px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
+                      className={`h-7 w-[92px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
                         whiteboardPermissionsMap?.[p.socketId || p.id]
                           ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
                           : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20 hover:bg-[#0066cc]/20 hover:border-[#0066cc]/30'
@@ -460,6 +467,39 @@ export default function StudyRoomChat({
                         <>
                           <PenLine size={11} className="shrink-0 text-[#0066cc]" />
                           <span>Allow Draw</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {currentUserRole === 'tutor' && p.role === 'student' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetId = p.socketId || p.id
+                        const hasAccess = codePermissionsMap?.[targetId]
+                        if (hasAccess) {
+                          onRevokeCodePermission?.(targetId)
+                        } else {
+                          onGrantCodePermission?.(targetId)
+                        }
+                      }}
+                      className={`h-7 w-[92px] rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none shrink-0 flex items-center justify-center gap-1 shadow-xs ${
+                        codePermissionsMap?.[p.socketId || p.id]
+                          ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                      }`}
+                      title={codePermissionsMap?.[p.socketId || p.id] ? 'Revoke Code Access' : 'Grant Code Access'}
+                    >
+                      {codePermissionsMap?.[p.socketId || p.id] ? (
+                        <>
+                          <Code2 size={11} className="shrink-0 text-purple-600" />
+                          <span>Revoke Code</span>
+                        </>
+                      ) : (
+                        <>
+                          <Code2 size={11} className="shrink-0 text-emerald-600" />
+                          <span>Allow Code</span>
                         </>
                       )}
                     </button>

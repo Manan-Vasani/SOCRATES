@@ -894,6 +894,9 @@ export default function StudyRoom() {
                 onGrantWhiteboardPermission={grantWhiteboardPermission}
                 onRevokeWhiteboardPermission={revokeWhiteboardPermission}
                 whiteboardPermissionsMap={whiteboardPermissionsMap}
+                onGrantCodePermission={grantCodePermission}
+                onRevokeCodePermission={revokeCodePermission}
+                codePermissionsMap={codePermissionsMap}
                 isHandRaised={isHandRaised}
                 onHandRaise={toggleHandRaise}
                 onMuteParticipant={muteParticipant}
