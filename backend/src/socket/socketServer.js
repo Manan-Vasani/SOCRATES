@@ -22,6 +22,7 @@ function createSocketServer(server) {
   const roomParticipants = {}; // roomId -> { socketId: participantData }
   const socketRoomMap = {}; // socketId -> roomId
   const roomWhiteboardPermissions = {}; // roomId -> { socketId: boolean }
+  const roomCodePermissions = {}; // roomId -> { socketId: boolean }
   const roomWhiteboardStrokes = {}; // roomId -> Stroke[]
   const roomWhiteboardBg = {}; // roomId -> bgType ('dots' | 'grid' | 'blank' | 'dark' | 'chalkboard')
   const roomWhiteboardTextItems = {}; // roomId -> TextItem[]
@@ -69,6 +70,7 @@ function createSocketServer(server) {
         isHandRaised: false,
         isScreenSharing: false,
         hasWhiteboardPermission: user.role === 'tutor' ? true : false,
+        hasCodePermission: user.role === 'tutor' ? true : false,
       };
 
       if (!roomParticipants[roomId]) {
@@ -85,8 +87,12 @@ function createSocketServer(server) {
       if (!roomWhiteboardPermissions[roomId]) {
         roomWhiteboardPermissions[roomId] = {};
       }
+      if (!roomCodePermissions[roomId]) {
+        roomCodePermissions[roomId] = {};
+      }
       if (user.role === 'tutor') {
         roomWhiteboardPermissions[roomId][socket.id] = true;
+        roomCodePermissions[roomId][socket.id] = true;
       }
 
       // Send existing participants list and permissions to joining user
@@ -95,6 +101,7 @@ function createSocketServer(server) {
       );
       socket.emit('existing-participants', existingParticipants);
       socket.emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
+      socket.emit('room-code-permissions-updated', roomCodePermissions[roomId]);
 
       if (isReconnecting) {
         // Reconnected seamlessly on page refresh: notify peers for WebRTC without chat spam
@@ -221,6 +228,39 @@ function createSocketServer(server) {
       }
       io.to(targetSocketId).emit('whiteboard-permission-updated', { hasAccess: false });
       io.to(`room:${roomId}`).emit('room-whiteboard-permissions-updated', roomWhiteboardPermissions[roomId]);
+    });
+
+    // ─── Code Sandbox Permission & Collaboration Sync ───
+
+    socket.on('request-code-permission', ({ roomId, socketId, name }) => {
+      if (!roomId) return;
+      socket.to(`room:${roomId}`).emit('tutor-code-request-received', {
+        socketId: socketId || socket.id,
+        name,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
+    });
+
+    socket.on('grant-code-permission', ({ roomId, targetSocketId }) => {
+      if (!roomId || !targetSocketId) return;
+      if (!roomCodePermissions[roomId]) roomCodePermissions[roomId] = {};
+      roomCodePermissions[roomId][targetSocketId] = true;
+      if (roomParticipants[roomId] && roomParticipants[roomId][targetSocketId]) {
+        roomParticipants[roomId][targetSocketId].hasCodePermission = true;
+      }
+      io.to(targetSocketId).emit('code-permission-updated', { hasAccess: true });
+      io.to(`room:${roomId}`).emit('room-code-permissions-updated', roomCodePermissions[roomId]);
+    });
+
+    socket.on('revoke-code-permission', ({ roomId, targetSocketId }) => {
+      if (!roomId || !targetSocketId) return;
+      if (!roomCodePermissions[roomId]) roomCodePermissions[roomId] = {};
+      roomCodePermissions[roomId][targetSocketId] = false;
+      if (roomParticipants[roomId] && roomParticipants[roomId][targetSocketId]) {
+        roomParticipants[roomId][targetSocketId].hasCodePermission = false;
+      }
+      io.to(targetSocketId).emit('code-permission-updated', { hasAccess: false });
+      io.to(`room:${roomId}`).emit('room-code-permissions-updated', roomCodePermissions[roomId]);
     });
 
     // Whiteboard Real-Time Live Stroke Progress (Streamed while dragging)

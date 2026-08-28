@@ -167,6 +167,9 @@ export default function StudyRoom() {
     hasWhiteboardPermission,
     whiteboardRequests,
     whiteboardPermissionsMap,
+    hasCodePermission,
+    codeRequests,
+    codePermissionsMap,
     toggleMic,
     toggleCamera,
     toggleHandRaise,
@@ -176,6 +179,10 @@ export default function StudyRoom() {
     grantWhiteboardPermission,
     revokeWhiteboardPermission,
     denyWhiteboardRequest,
+    requestCodePermission,
+    grantCodePermission,
+    revokeCodePermission,
+    denyCodeRequest,
     sendMessage,
     leaveRoom,
     setParticipants,
@@ -560,10 +567,17 @@ export default function StudyRoom() {
         return (
           <div className="flex-1 min-h-0 flex">
             <CodeSandbox
+              canEdit={currentUser.role === 'tutor' || hasCodePermission}
+              isTutor={currentUser.role === 'tutor'}
               socket={socket}
               socketRef={socketRef}
               roomId={activeRoomId}
               runnerName={currentUser.name}
+              onRequestPermission={requestCodePermission}
+              onGrantPermission={grantCodePermission}
+              onRevokePermission={revokeCodePermission}
+              codeRequests={codeRequests}
+              onDenyRequest={denyCodeRequest}
             />
           </div>
         )

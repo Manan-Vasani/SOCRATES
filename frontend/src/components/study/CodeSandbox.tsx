@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Play,
   Trash2,
@@ -16,6 +16,10 @@ import {
   ChevronsUpDown,
   Sparkles,
   X,
+  Lock,
+  Check,
+  Code2,
+  Shield,
 } from 'lucide-react'
 import { SiJavascript, SiCplusplus, SiHtml5, SiPostgresql } from 'react-icons/si'
 import { FaJava } from 'react-icons/fa6'
@@ -71,13 +75,32 @@ const LANGUAGE_ICONS: Record<Language, React.ReactNode> = {
 interface OutputLine { type: 'stdout' | 'error' | 'info'; text: string }
 
 export interface CodeSandboxProps {
+  canEdit?: boolean
+  isTutor?: boolean
   socket?: import('socket.io-client').Socket | null
   socketRef?: React.RefObject<import('socket.io-client').Socket | null>
   roomId?: string
   runnerName?: string
+  onRequestPermission?: () => void
+  onGrantPermission?: (socketId: string) => void
+  onRevokePermission?: (socketId: string) => void
+  codeRequests?: { socketId: string; name: string; time: string }[]
+  onDenyRequest?: (socketId: string) => void
 }
 
-export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: CodeSandboxProps) {
+export default function CodeSandbox({
+  canEdit = true,
+  isTutor = false,
+  socket,
+  socketRef,
+  roomId,
+  runnerName,
+  onRequestPermission,
+  onGrantPermission,
+  onRevokePermission,
+  codeRequests = [],
+  onDenyRequest,
+}: CodeSandboxProps) {
   const [language, setLanguage] = useState<Language>('python')
   const [fullFileName, setFullFileName] = useState('example.py')
   const [code, setCode] = useState(LANGUAGES[0].boilerplate)
@@ -89,6 +112,16 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
   const [isDark, setIsDark] = useState(true)
   const [outputTab, setOutputTab] = useState<'terminal' | 'preview'>('terminal')
   const [toast, setToast] = useState<{ type: 'success' | 'warning'; text: string } | null>(null)
+  const [isRequestPending, setIsRequestPending] = useState(false)
+  const [isBannerVisible, setIsBannerVisible] = useState(true)
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Reset request pending state when permission is granted
+  useEffect(() => {
+    if (canEdit || isTutor) {
+      setIsRequestPending(false)
+    }
+  }, [canEdit, isTutor])
 
   const isRemoteUpdateRef = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -544,16 +577,24 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
           {/* Language Picker */}
           <div className="relative">
             <button
-              onClick={() => setShowLangPicker(!showLangPicker)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              onClick={() => {
+                if (!canEdit && !isTutor) {
+                  setToast({ type: 'warning', text: 'You are in view-only mode. Ask tutor for edit access.' })
+                  return
+                }
+                setShowLangPicker(!showLangPicker)
+              }}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all select-none ${
+                !canEdit && !isTutor ? 'opacity-80 cursor-default' : 'cursor-pointer'
+              } ${
                 isDark ? 'bg-white/8 text-white/80 hover:bg-white/12 border border-white/8' : 'bg-white border border-[#e5e5e7] text-[#1d1d1f] hover:bg-[#f0f0f2] shadow-sm'
               }`}
             >
               {LANGUAGE_ICONS[currentLang.key]}
               <span>{currentLang.label}</span>
-              <ChevronDown size={12} className="opacity-50" />
+              {(canEdit || isTutor) && <ChevronDown size={12} className="opacity-50" />}
             </button>
-            {showLangPicker && (
+            {showLangPicker && (canEdit || isTutor) && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowLangPicker(false)} />
                 <div className={`absolute top-full left-0 mt-1.5 rounded-2xl shadow-xl z-50 p-1.5 w-48 border ${isDark ? 'bg-[#2a2a2e] border-[#3a3a3e]' : 'bg-white border-[#e5e5e7]'}`}>
@@ -577,8 +618,12 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
           }`}>
             <input
               type="text"
+              readOnly={!canEdit && !isTutor}
               value={fullFileName}
-              onChange={(e) => handleFileNameChange(e.target.value.replace(/\s+/g, ''))}
+              onChange={(e) => {
+                if (!canEdit && !isTutor) return
+                handleFileNameChange(e.target.value.replace(/\s+/g, ''))
+              }}
               onBlur={() => {
                 if (fullFileName.trim() === '') {
                   setFullFileName(`example${currentLang.ext}`)
@@ -589,11 +634,19 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
               placeholder="example.py"
               style={{ width: `${Math.max(1, (fullFileName || 'example.py').length)}ch` }}
               className={`bg-transparent outline-none text-xs font-mono font-semibold text-left transition-all duration-150 ${
-                isDark ? 'placeholder:text-white/40' : 'placeholder:text-[#a1a1a6]'
-              }`}
-              title="Click to edit full file name and extension (e.g. example.py, app.js)"
+                !canEdit && !isTutor ? 'cursor-default' : 'cursor-text'
+              } ${isDark ? 'placeholder:text-white/40' : 'placeholder:text-[#a1a1a6]'}`}
+              title={!canEdit && !isTutor ? 'File name (view-only)' : 'Click to edit full file name and extension'}
             />
           </div>
+
+          {/* Role / Permission Indicator Badge */}
+          {!canEdit && !isTutor && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-medium">
+              <Lock size={11} />
+              <span>View Only</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -618,18 +671,43 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
 
           {/* Run Button */}
           <button
-            onClick={() => runCodeWithStdin()}
-            disabled={isRunning}
-            className="flex items-center justify-center gap-2 w-36 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-70 shadow-md shadow-emerald-600/20 shrink-0 select-none"
+            onClick={() => {
+              if (!canEdit && !isTutor) {
+                setToast({ type: 'warning', text: 'You need edit permission to run code. Click "Ask Edit Access" below.' })
+                return
+              }
+              runCodeWithStdin()
+            }}
+            disabled={isRunning || (!canEdit && !isTutor)}
+            className={`flex items-center justify-center gap-2 w-36 py-2 rounded-xl text-xs font-bold transition-all shrink-0 select-none ${
+              !canEdit && !isTutor
+                ? 'bg-white/5 text-white/40 border border-white/10 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-md shadow-emerald-600/20 active:scale-98'
+            } disabled:opacity-70`}
+            title={!canEdit && !isTutor ? 'Ask tutor for edit permission to run code' : 'Execute code'}
           >
-            {isRunning ? <Loader2 size={14} className="animate-spin shrink-0" /> : <Play size={14} className="shrink-0" />}
-            <span>{isRunning ? 'Running...' : 'Run / Execute'}</span>
+            {!canEdit && !isTutor ? (
+              <>
+                <Lock size={13} className="text-amber-400" />
+                <span>Locked (View)</span>
+              </>
+            ) : isRunning ? (
+              <>
+                <Loader2 size={14} className="animate-spin shrink-0" />
+                <span>Running...</span>
+              </>
+            ) : (
+              <>
+                <Play size={14} className="shrink-0" />
+                <span>Run / Execute</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
       {/* Editor */}
-      <div className={`flex-1 min-h-0 flex ${isDark ? 'bg-[#1e1e22]' : 'bg-white'}`}>
+      <div className={`flex-1 min-h-0 flex relative ${isDark ? 'bg-[#1e1e22]' : 'bg-white'}`}>
         {/* Line Numbers */}
         <div className={`w-12 text-right pr-3 pt-4 text-[11px] font-mono select-none shrink-0 border-r ${isDark ? 'text-[#444] bg-[#191920] border-[#2a2a2e]' : 'text-[#c0c0c4] bg-[#f8f8fa] border-[#e5e5e7]'}`}>
           {Array.from({ length: lineNumbers }, (_, i) => (
@@ -638,12 +716,83 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
         </div>
         <textarea
           ref={textareaRef}
+          readOnly={!canEdit && !isTutor}
           value={code}
-          onChange={(e) => handleLocalCodeChange(e.target.value)}
+          onChange={(e) => {
+            if (!canEdit && !isTutor) return
+            handleLocalCodeChange(e.target.value)
+          }}
           spellCheck={false}
-          className={`flex-1 resize-none p-4 text-[13px] font-mono leading-[22px] outline-none ${isDark ? 'text-[#d4d4d8] bg-[#1e1e22] caret-[#4d9fff]' : 'text-[#1d1d1f] bg-white caret-[#0066cc]'}`}
+          className={`flex-1 resize-none p-4 text-[13px] font-mono leading-[22px] outline-none ${
+            !canEdit && !isTutor ? 'cursor-default' : 'cursor-text'
+          } ${isDark ? 'text-[#d4d4d8] bg-[#1e1e22] caret-[#4d9fff]' : 'text-[#1d1d1f] bg-white caret-[#0066cc]'}`}
           style={{ tabSize: 4 }}
         />
+
+        {/* Permission Banner for Students (When in View-Only mode) */}
+        {!canEdit && !isTutor && isBannerVisible && (
+          <div
+            onMouseEnter={() => {
+              if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+            }}
+            onMouseLeave={() => {
+              if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+              bannerTimerRef.current = setTimeout(() => {
+                setIsBannerVisible(false)
+              }, 2500)
+            }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-2xl bg-[#18181c]/95 backdrop-blur-2xl border border-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/5 text-white flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 select-none"
+          >
+            <div className="flex items-center gap-2 text-white/70">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400">
+                <Lock size={12} />
+              </div>
+              <span className="text-xs font-semibold tracking-tight text-white/90">View-Only Code IDE</span>
+            </div>
+            {onRequestPermission && (
+              <button
+                type="button"
+                disabled={isRequestPending}
+                onClick={() => {
+                  onRequestPermission()
+                  setIsRequestPending(true)
+                  setToast({ type: 'warning', text: 'Edit permission requested! Waiting for tutor approval...' })
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer select-none outline-none shadow-md flex items-center gap-1.5 transform-gpu active:scale-98 ${
+                  isRequestPending
+                    ? 'bg-amber-600/80 cursor-default opacity-90'
+                    : 'bg-[#0066cc] hover:bg-[#0071e3] shadow-[#0066cc]/25'
+                }`}
+              >
+                {isRequestPending ? (
+                  <>
+                    <Clock size={12} className="animate-spin text-amber-200" />
+                    <span>Request Pending</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={12} className="text-sky-200" />
+                    <span>Ask Edit Access</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Tutor Code Permission Request Prompt Overlay */}
+        {isTutor && codeRequests.length > 0 && (
+          <div className="absolute top-4 right-4 z-50 flex flex-col gap-2.5 max-w-[310px] w-full animate-in fade-in slide-in-from-top-3 duration-200">
+            {codeRequests.map((req) => (
+              <CodeRequestCard
+                key={req.socketId || req.name}
+                req={req}
+                onGrantPermission={onGrantPermission}
+                onDenyRequest={onDenyRequest}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Horizontal Resizer Handle Bar */}
@@ -757,6 +906,78 @@ export default function CodeSandbox({ socket, socketRef, roomId, runnerName }: C
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function CodeRequestCard({
+  req,
+  onGrantPermission,
+  onDenyRequest,
+}: {
+  req: { socketId: string; name: string; time?: string }
+  onGrantPermission?: (socketId: string) => void
+  onDenyRequest?: (socketId: string) => void
+}) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const startDismissTimer = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      onDenyRequest?.(req.socketId)
+    }, 4000)
+  }, [onDenyRequest, req.socketId])
+
+  useEffect(() => {
+    startDismissTimer()
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [startDismissTimer])
+
+  return (
+    <div
+      onMouseEnter={() => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      }}
+      onMouseLeave={() => startDismissTimer()}
+      className="p-3.5 rounded-2xl bg-[#18181c]/95 backdrop-blur-2xl border border-white/12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/5 space-y-3 text-white animate-in fade-in slide-in-from-top-3 duration-200 select-none"
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0066cc] to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md ring-1 ring-white/15 shrink-0 uppercase">
+          {req.name.charAt(0)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-bold text-white tracking-tight truncate">{req.name}</div>
+          <div className="text-[10px] font-medium text-emerald-400 flex items-center gap-1">
+            <Terminal size={9} />
+            <span>Code IDE Edit Request</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-white/70 leading-relaxed pl-0.5">
+        Requested permission to write, modify, and execute code in the Code Sandbox.
+      </p>
+
+      <div className="flex items-center gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={() => onGrantPermission?.(req.socketId)}
+          className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 outline-none transform-gpu active:scale-98"
+        >
+          <Check size={13} className="stroke-[2.5]" />
+          <span>Grant Access</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onDenyRequest?.(req.socketId)}
+          className="py-2 px-3.5 rounded-xl bg-white/8 hover:bg-white/14 active:bg-white/20 text-white/75 hover:text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer border border-white/10 outline-none transform-gpu flex items-center gap-1 active:scale-98"
+        >
+          <X size={12} />
+          <span>Deny</span>
+        </button>
       </div>
     </div>
   )

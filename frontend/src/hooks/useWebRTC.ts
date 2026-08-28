@@ -218,6 +218,17 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     Record<string, boolean>
   >({})
 
+  // Code Sandbox Permission States
+  const [hasCodePermission, setHasCodePermission] = useState<boolean>(
+    currentUser.role === 'tutor'
+  )
+  const [codeRequests, setCodeRequests] = useState<
+    { socketId: string; name: string; time: string }[]
+  >([])
+  const [codePermissionsMap, setCodePermissionsMap] = useState<
+    Record<string, boolean>
+  >({})
+
   const socketRef = useRef<Socket | null>(null)
   const hasJoinedRoomRef = useRef<boolean>(false)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
@@ -840,6 +851,27 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       setWhiteboardPermissionsMap(permissions)
     })
 
+    // Code Sandbox Permission Events
+    socketInstance.on('tutor-code-request-received', (req: { socketId: string; name: string; time: string }) => {
+      setCodeRequests((prev) => {
+        const idx = prev.findIndex((r) => r.socketId === req.socketId || r.name === req.name)
+        if (idx !== -1) {
+          const updated = [...prev]
+          updated[idx] = req
+          return updated
+        }
+        return [...prev, req]
+      })
+    })
+
+    socketInstance.on('code-permission-updated', ({ hasAccess }: { hasAccess: boolean }) => {
+      setHasCodePermission(hasAccess)
+    })
+
+    socketInstance.on('room-code-permissions-updated', (permissions: Record<string, boolean>) => {
+      setCodePermissionsMap(permissions)
+    })
+
     // Real-Time Room Message Received
     socketInstance.on('room-message-received', (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg])
@@ -1293,6 +1325,42 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     setWhiteboardRequests((prev) => prev.filter((r) => r.socketId !== targetSocketId))
   }, [])
 
+  // Code Sandbox Permission Methods
+  const requestCodePermission = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit('request-code-permission', {
+        roomId,
+        socketId: socketRef.current.id,
+        name: currentUser.name,
+      })
+    }
+  }, [roomId, currentUser.name])
+
+  const grantCodePermission = useCallback(
+    (targetSocketId: string) => {
+      if (socketRef.current) {
+        socketRef.current.emit('grant-code-permission', { roomId, targetSocketId })
+      }
+      setCodeRequests((prev) => prev.filter((r) => r.socketId !== targetSocketId))
+      setCodePermissionsMap((prev) => ({ ...prev, [targetSocketId]: true }))
+    },
+    [roomId]
+  )
+
+  const revokeCodePermission = useCallback(
+    (targetSocketId: string) => {
+      if (socketRef.current) {
+        socketRef.current.emit('revoke-code-permission', { roomId, targetSocketId })
+      }
+      setCodePermissionsMap((prev) => ({ ...prev, [targetSocketId]: false }))
+    },
+    [roomId]
+  )
+
+  const denyCodeRequest = useCallback((targetSocketId: string) => {
+    setCodeRequests((prev) => prev.filter((r) => r.socketId !== targetSocketId))
+  }, [])
+
   const leaveRoom = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.emit('leave-room', { roomId })
@@ -1318,6 +1386,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     hasWhiteboardPermission,
     whiteboardRequests,
     whiteboardPermissionsMap,
+    hasCodePermission,
+    codeRequests,
+    codePermissionsMap,
     toggleMic,
     toggleCamera,
     toggleHandRaise,
@@ -1327,6 +1398,10 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     grantWhiteboardPermission,
     revokeWhiteboardPermission,
     denyWhiteboardRequest,
+    requestCodePermission,
+    grantCodePermission,
+    revokeCodePermission,
+    denyCodeRequest,
     sendMessage,
     leaveRoom,
     setParticipants,
