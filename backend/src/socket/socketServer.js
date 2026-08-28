@@ -23,13 +23,32 @@ function createSocketServer(server) {
   const socketRoomMap = {}; // socketId -> roomId
   const roomWhiteboardPermissions = {}; // roomId -> { socketId: boolean }
   const roomCodePermissions = {}; // roomId -> { socketId: boolean }
-  const roomWhiteboardStrokes = {}; // roomId -> Stroke[]
-  const roomWhiteboardBg = {}; // roomId -> bgType ('dots' | 'grid' | 'blank' | 'dark' | 'chalkboard')
-  const roomWhiteboardTextItems = {}; // roomId -> TextItem[]
+  const roomWhiteboardPages = {}; // roomId -> { activePageIndex: number, pages: WhiteboardPage[] }
   const roomCodeState = {}; // roomId -> { code, language, fileName }
+  const roomSharedFiles = {}; // roomId -> SharedFile[]
   const roomStartTimes = {}; // roomId -> number (epoch ms timestamp of session start)
   const disconnectTimers = {}; // `${roomId}:${userId}` -> NodeJS.Timeout
   const roomCleanupTimers = {}; // roomId -> NodeJS.Timeout
+
+  function getRoomWhiteboard(roomId) {
+    if (!roomWhiteboardPages[roomId]) {
+      roomWhiteboardPages[roomId] = {
+        activePageIndex: 0,
+        pages: [
+          { id: 'page-1', strokes: [], textItems: [], bgType: 'dots' },
+        ],
+      };
+    }
+    const wb = roomWhiteboardPages[roomId];
+    if (!wb.pages || wb.pages.length === 0) {
+      wb.pages = [{ id: 'page-1', strokes: [], textItems: [], bgType: 'dots' }];
+      wb.activePageIndex = 0;
+    }
+    if (wb.activePageIndex < 0 || wb.activePageIndex >= wb.pages.length) {
+      wb.activePageIndex = 0;
+    }
+    return wb;
+  }
 
   // Main connection handler
   io.on('connection', (socket) => {
@@ -121,16 +140,25 @@ function createSocketServer(server) {
         socket.to(`room:${roomId}`).emit('user-joined', participantData);
       }
 
-      // Send initial whiteboard strokes and code state if already present in room
-      if (roomWhiteboardStrokes[roomId] && roomWhiteboardStrokes[roomId].length > 0) {
-        socket.emit('whiteboard-history', {
-          strokes: roomWhiteboardStrokes[roomId],
-          bgType: roomWhiteboardBg[roomId] || 'dots',
-          textItems: roomWhiteboardTextItems[roomId] || [],
-        });
-      }
+      // Send initial multi-page whiteboard state and code state if already present in room
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      socket.emit('whiteboard-history', {
+        activePageIndex: wb.activePageIndex,
+        pages: wb.pages,
+        strokes: curPage.strokes || [],
+        bgType: curPage.bgType || 'dots',
+        textItems: curPage.textItems || [],
+      });
+      socket.emit('whiteboard-init-pages', {
+        activePageIndex: wb.activePageIndex,
+        pages: wb.pages,
+      });
       if (roomCodeState[roomId]) {
         socket.emit('code-sync', roomCodeState[roomId]);
+      }
+      if (roomSharedFiles[roomId] && roomSharedFiles[roomId].length > 0) {
+        socket.emit('room-files-history', roomSharedFiles[roomId]);
       }
 
       console.log(`[Meeting Socket] ${participantData.name} joined room ${roomId} (${socket.id}) [reconnect: ${isReconnecting}]`);
@@ -273,6 +301,53 @@ function createSocketServer(server) {
       io.to(`room:${roomId}`).emit('room-code-permissions-updated', roomCodePermissions[roomId]);
     });
 
+    // ─── Multi-Page Whiteboard Real-Time Synchronization ───
+
+    // Whiteboard Page Switch Event
+    socket.on('whiteboard-switch-page', ({ roomId, activePageIndex }) => {
+      if (!roomId || typeof activePageIndex !== 'number') return;
+      const wb = getRoomWhiteboard(roomId);
+      if (activePageIndex >= 0 && activePageIndex < wb.pages.length) {
+        wb.activePageIndex = activePageIndex;
+        socket.to(`room:${roomId}`).emit('whiteboard-page-switched', { activePageIndex });
+      }
+    });
+
+    // Whiteboard Page Add Event
+    socket.on('whiteboard-add-page', ({ roomId, page }) => {
+      if (!roomId) return;
+      const wb = getRoomWhiteboard(roomId);
+      const newPage = page || {
+        id: `page-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        strokes: [],
+        textItems: [],
+        bgType: 'dots',
+      };
+      wb.pages.push(newPage);
+      wb.activePageIndex = wb.pages.length - 1;
+      socket.to(`room:${roomId}`).emit('whiteboard-page-added', {
+        page: newPage,
+        activePageIndex: wb.activePageIndex,
+      });
+    });
+
+    // Whiteboard Page Delete Event
+    socket.on('whiteboard-delete-page', ({ roomId, pageIndex }) => {
+      if (!roomId || typeof pageIndex !== 'number') return;
+      const wb = getRoomWhiteboard(roomId);
+      if (wb.pages.length > 1 && pageIndex >= 0 && pageIndex < wb.pages.length) {
+        wb.pages.splice(pageIndex, 1);
+        if (wb.activePageIndex >= wb.pages.length) {
+          wb.activePageIndex = wb.pages.length - 1;
+        }
+        socket.to(`room:${roomId}`).emit('whiteboard-page-deleted', {
+          pageIndex,
+          activePageIndex: wb.activePageIndex,
+          pages: wb.pages,
+        });
+      }
+    });
+
     // Whiteboard Real-Time Live Stroke Progress (Streamed while dragging)
     socket.on('whiteboard-stroke-progress', ({ roomId, stroke }) => {
       if (!roomId || !stroke) return;
@@ -300,10 +375,10 @@ function createSocketServer(server) {
     // Whiteboard Erase Stroke Event
     socket.on('whiteboard-erase-stroke', ({ roomId, strokeId }) => {
       if (!roomId || !strokeId) return;
-      if (roomWhiteboardStrokes[roomId]) {
-        roomWhiteboardStrokes[roomId] = roomWhiteboardStrokes[roomId].filter(
-          (s) => s.id !== strokeId
-        );
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage && curPage.strokes) {
+        curPage.strokes = curPage.strokes.filter((s) => s.id !== strokeId);
       }
       socket.to(`room:${roomId}`).emit('whiteboard-erase-stroke', { strokeId });
     });
@@ -311,37 +386,47 @@ function createSocketServer(server) {
     // Whiteboard Stroke Broadcast & Memory Cache (Final committed stroke on mouseUp)
     socket.on('whiteboard-stroke', ({ roomId, stroke }) => {
       if (!roomId || !stroke) return;
-      if (!roomWhiteboardStrokes[roomId]) {
-        roomWhiteboardStrokes[roomId] = [];
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage) {
+        if (!curPage.strokes) curPage.strokes = [];
+        const strokeWithId = {
+          ...stroke,
+          id: stroke.id || `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        };
+        curPage.strokes.push(strokeWithId);
+        // Cap in-memory strokes to prevent unbounded memory usage (last 2000 strokes per page)
+        if (curPage.strokes.length > 2000) {
+          curPage.strokes.shift();
+        }
+        socket.to(`room:${roomId}`).emit('whiteboard-stroke', strokeWithId);
       }
-      const strokeWithId = {
-        ...stroke,
-        id: stroke.id || `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      };
-      roomWhiteboardStrokes[roomId].push(strokeWithId);
-      // Cap in-memory strokes to prevent unbounded memory usage (last 2000 strokes)
-      if (roomWhiteboardStrokes[roomId].length > 2000) {
-        roomWhiteboardStrokes[roomId].shift();
-      }
-      socket.to(`room:${roomId}`).emit('whiteboard-stroke', strokeWithId);
     });
 
     // Whiteboard Background Style Change Event
     socket.on('whiteboard-bg-change', ({ roomId, bgType }) => {
       if (!roomId || !bgType) return;
-      roomWhiteboardBg[roomId] = bgType;
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage) {
+        curPage.bgType = bgType;
+      }
       socket.to(`room:${roomId}`).emit('whiteboard-bg-updated', { bgType });
     });
 
     // Whiteboard Text Item Add Event
     socket.on('whiteboard-text-item-add', ({ roomId, textItem }) => {
       if (!roomId || !textItem) return;
-      if (!roomWhiteboardTextItems[roomId]) roomWhiteboardTextItems[roomId] = [];
-      const idx = roomWhiteboardTextItems[roomId].findIndex((t) => t.id === textItem.id);
-      if (idx !== -1) {
-        roomWhiteboardTextItems[roomId][idx] = textItem;
-      } else {
-        roomWhiteboardTextItems[roomId].push(textItem);
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage) {
+        if (!curPage.textItems) curPage.textItems = [];
+        const idx = curPage.textItems.findIndex((t) => t.id === textItem.id);
+        if (idx !== -1) {
+          curPage.textItems[idx] = textItem;
+        } else {
+          curPage.textItems.push(textItem);
+        }
       }
       socket.to(`room:${roomId}`).emit('whiteboard-text-item-added', textItem);
     });
@@ -349,12 +434,16 @@ function createSocketServer(server) {
     // Whiteboard Text Item Update Event (Move, Edit, Color, Font Size Change)
     socket.on('whiteboard-text-item-update', ({ roomId, textItem }) => {
       if (!roomId || !textItem) return;
-      if (!roomWhiteboardTextItems[roomId]) roomWhiteboardTextItems[roomId] = [];
-      const idx = roomWhiteboardTextItems[roomId].findIndex((t) => t.id === textItem.id);
-      if (idx !== -1) {
-        roomWhiteboardTextItems[roomId][idx] = textItem;
-      } else {
-        roomWhiteboardTextItems[roomId].push(textItem);
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage) {
+        if (!curPage.textItems) curPage.textItems = [];
+        const idx = curPage.textItems.findIndex((t) => t.id === textItem.id);
+        if (idx !== -1) {
+          curPage.textItems[idx] = textItem;
+        } else {
+          curPage.textItems.push(textItem);
+        }
       }
       socket.to(`room:${roomId}`).emit('whiteboard-text-item-updated', textItem);
     });
@@ -362,10 +451,10 @@ function createSocketServer(server) {
     // Whiteboard Text Item Delete Event
     socket.on('whiteboard-text-item-delete', ({ roomId, textItemId }) => {
       if (!roomId || !textItemId) return;
-      if (roomWhiteboardTextItems[roomId]) {
-        roomWhiteboardTextItems[roomId] = roomWhiteboardTextItems[roomId].filter(
-          (t) => t.id !== textItemId
-        );
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage && curPage.textItems) {
+        curPage.textItems = curPage.textItems.filter((t) => t.id !== textItemId);
       }
       socket.to(`room:${roomId}`).emit('whiteboard-text-item-deleted', { textItemId });
     });
@@ -373,21 +462,25 @@ function createSocketServer(server) {
     // Whiteboard Clear Event
     socket.on('whiteboard-clear', ({ roomId }) => {
       if (!roomId) return;
-      roomWhiteboardStrokes[roomId] = [];
-      roomWhiteboardTextItems[roomId] = [];
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage) {
+        curPage.strokes = [];
+        curPage.textItems = [];
+      }
       socket.to(`room:${roomId}`).emit('whiteboard-cleared');
     });
 
     // Whiteboard Undo Event
     socket.on('whiteboard-undo', ({ roomId, strokeId }) => {
       if (!roomId) return;
-      if (roomWhiteboardStrokes[roomId]) {
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
+      if (curPage && curPage.strokes) {
         if (strokeId) {
-          roomWhiteboardStrokes[roomId] = roomWhiteboardStrokes[roomId].filter(
-            (s) => s.id !== strokeId
-          );
+          curPage.strokes = curPage.strokes.filter((s) => s.id !== strokeId);
         } else {
-          roomWhiteboardStrokes[roomId].pop();
+          curPage.strokes.pop();
         }
       }
       socket.to(`room:${roomId}`).emit('whiteboard-undo-applied', { strokeId });
@@ -396,10 +489,14 @@ function createSocketServer(server) {
     // Whiteboard History Request
     socket.on('request-whiteboard-history', ({ roomId }) => {
       if (!roomId) return;
+      const wb = getRoomWhiteboard(roomId);
+      const curPage = wb.pages[wb.activePageIndex];
       socket.emit('whiteboard-history', {
-        strokes: roomWhiteboardStrokes[roomId] || [],
-        bgType: roomWhiteboardBg[roomId] || 'dots',
-        textItems: roomWhiteboardTextItems[roomId] || [],
+        activePageIndex: wb.activePageIndex,
+        pages: wb.pages,
+        strokes: curPage.strokes || [],
+        bgType: curPage.bgType || 'dots',
+        textItems: curPage.textItems || [],
       });
     });
 
@@ -457,6 +554,41 @@ function createSocketServer(server) {
     socket.on('end-study-session', ({ roomId, reason }) => {
       if (!roomId) return;
       socket.to(`room:${roomId}`).emit('study-session-ended-by-tutor', { reason });
+    });
+
+    // Room Chat Message Broadcast
+    socket.on('send-room-message', ({ roomId, message }) => {
+      if (!roomId || !message) return;
+      socket.to(`room:${roomId}`).emit('room-message-received', message);
+    });
+
+    // ─── Real-Time Collaborative Room Files & Resource Sharing ───
+
+    socket.on('share-room-file', ({ roomId, file }) => {
+      if (!roomId || !file) return;
+      if (!roomSharedFiles[roomId]) {
+        roomSharedFiles[roomId] = [];
+      }
+      const fileWithId = {
+        ...file,
+        id: file.id || `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        uploadedBySocketId: socket.id,
+        time: file.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      roomSharedFiles[roomId].unshift(fileWithId);
+      // Cap in-memory shared files to 50 files per room
+      if (roomSharedFiles[roomId].length > 50) {
+        roomSharedFiles[roomId].pop();
+      }
+      io.to(`room:${roomId}`).emit('room-file-shared', fileWithId);
+    });
+
+    socket.on('delete-room-file', ({ roomId, fileId }) => {
+      if (!roomId || !fileId) return;
+      if (roomSharedFiles[roomId]) {
+        roomSharedFiles[roomId] = roomSharedFiles[roomId].filter((f) => f.id !== fileId);
+      }
+      io.to(`room:${roomId}`).emit('room-file-deleted', { fileId });
     });
 
     // ─── Real-Time Speech Recognition Transcript Relay & Storage ───
@@ -597,10 +729,9 @@ function createSocketServer(server) {
             if (!roomParticipants[roomId] || Object.keys(roomParticipants[roomId]).length === 0) {
               console.log(`[Meeting Socket] Clearing expired memory for room:${roomId}`);
               delete roomParticipants[roomId];
-              delete roomWhiteboardStrokes[roomId];
-              delete roomWhiteboardBg[roomId];
-              delete roomWhiteboardTextItems[roomId];
+              delete roomWhiteboardPages[roomId];
               delete roomCodeState[roomId];
+              delete roomSharedFiles[roomId];
               delete roomWhiteboardPermissions[roomId];
               delete roomCodePermissions[roomId];
               delete roomStartTimes[roomId];

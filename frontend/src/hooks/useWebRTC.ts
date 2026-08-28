@@ -17,6 +17,18 @@ export interface Participant {
   isScreenSharing: boolean
 }
 
+export interface SharedResource {
+  id: string
+  name: string
+  type: 'pdf' | 'image' | 'code' | 'doc'
+  uploadedBy: string
+  uploadedById?: string
+  time: string
+  size: string
+  url?: string
+  dataUrl?: string
+}
+
 export interface ChatMessage {
   id: string
   sender: string
@@ -24,6 +36,7 @@ export interface ChatMessage {
   role: 'tutor' | 'student' | 'system' | 'ai'
   text: string
   time: string
+  attachment?: SharedResource
 }
 
 interface UseWebRTCOptions {
@@ -229,6 +242,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     Record<string, boolean>
   >({})
 
+  // Real-Time Collaborative Shared Files State
+  const [sharedFiles, setSharedFiles] = useState<SharedResource[]>([])
+
   // Server-Synchronized Session Clock
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null)
 
@@ -424,11 +440,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         setParticipants((prev) =>
           prev.map((p) => {
             if (p.socketId === targetSocketId || p.id === targetSocketId) {
-              const hasLiveVideo = stableStream.getVideoTracks().some((t) => t.readyState === 'live')
               return {
                 ...p,
                 stream: stableStream,
-                isCameraOff: !hasLiveVideo,
               }
             }
             return p
@@ -888,6 +902,27 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       setMessages((prev) => [...prev, msg])
     })
 
+    // Real-Time Shared Files Sync
+    socketInstance.on('room-file-shared', (sharedFile: SharedResource) => {
+      console.log(`[Meeting Socket] Room file shared: ${sharedFile.name}`)
+      setSharedFiles((prev) => {
+        if (prev.some((f) => f.id === sharedFile.id)) return prev
+        return [sharedFile, ...prev]
+      })
+    })
+
+    socketInstance.on('room-file-deleted', ({ fileId }: { fileId: string }) => {
+      console.log(`[Meeting Socket] Room file deleted: ${fileId}`)
+      setSharedFiles((prev) => prev.filter((f) => f.id !== fileId))
+    })
+
+    socketInstance.on('room-files-history', (historyFiles: SharedResource[]) => {
+      if (Array.isArray(historyFiles)) {
+        console.log(`[Meeting Socket] Received ${historyFiles.length} shared files history`)
+        setSharedFiles(historyFiles)
+      }
+    })
+
     // User left room
     socketInstance.on('user-left', ({ socketId, userId }: { socketId: string; userId: string }) => {
       console.log(`[Meeting Socket] User left room: ${socketId}`)
@@ -1295,9 +1330,59 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         text,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
+      setMessages((prev) => [...prev, newMsg])
       socketRef.current.emit('send-room-message', { roomId, message: newMsg })
     },
     [roomId, currentUser.id, currentUser.name, currentUser.role]
+  )
+
+  const shareFile = useCallback(
+    (fileData: SharedResource, sendInChat = true) => {
+      const activeSocket = socketRef.current
+      const completeFile: SharedResource = {
+        ...fileData,
+        id: fileData.id || `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        uploadedBy: fileData.uploadedBy || currentUser.name,
+        uploadedById: currentUser.id,
+        time: fileData.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }
+
+      setSharedFiles((prev) => {
+        if (prev.some((f) => f.id === completeFile.id)) return prev
+        return [completeFile, ...prev]
+      })
+
+      if (sendInChat) {
+        const fileMsg: ChatMessage = {
+          id: `msg-file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          sender: currentUser.name,
+          senderId: currentUser.id,
+          role: currentUser.role,
+          text: `Shared file: ${completeFile.name}`,
+          time: completeFile.time,
+          attachment: completeFile,
+        }
+        setMessages((prev) => [...prev, fileMsg])
+        if (activeSocket) {
+          activeSocket.emit('send-room-message', { roomId, message: fileMsg })
+        }
+      }
+
+      if (activeSocket) {
+        activeSocket.emit('share-room-file', { roomId, file: completeFile })
+      }
+    },
+    [roomId, currentUser.id, currentUser.name, currentUser.role]
+  )
+
+  const deleteFile = useCallback(
+    (fileId: string) => {
+      setSharedFiles((prev) => prev.filter((f) => f.id !== fileId))
+      if (socketRef.current) {
+        socketRef.current.emit('delete-room-file', { roomId, fileId })
+      }
+    },
+    [roomId]
   )
 
   // Whiteboard Permission Methods
@@ -1415,6 +1500,9 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
     revokeCodePermission,
     denyCodeRequest,
     sendMessage,
+    sharedFiles,
+    shareFile,
+    deleteFile,
     leaveRoom,
     setParticipants,
     setMessages,

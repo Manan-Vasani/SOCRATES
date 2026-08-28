@@ -32,6 +32,10 @@ import {
   Check,
   Sparkles,
   Clock,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash,
 } from 'lucide-react'
 
 type BgType = 'dots' | 'grid' | 'blank' | 'dark' | 'chalkboard'
@@ -74,8 +78,20 @@ const STROKE_WIDTHS = [
 ]
 
 interface Point { x: number; y: number }
-interface Stroke { id?: string; tool: Tool; color: string; width: number; points: Point[] }
-interface TextItem { id: string; x: number; y: number; text: string; color: string; fontSize: number }
+export interface Stroke { id?: string; tool: Tool; color: string; width: number; points: Point[] }
+export interface TextItem { id: string; x: number; y: number; text: string; color: string; fontSize: number }
+
+export interface WhiteboardPage {
+  id: string
+  title?: string
+  strokes: Stroke[]
+  textItems: TextItem[]
+  bgType: BgType
+  undoStack?: Stroke[][]
+  redoStack?: Stroke[][]
+  textUndoStack?: TextItem[][]
+  textRedoStack?: TextItem[][]
+}
 
 function isShapeTool(t: Tool): boolean {
   return SHAPE_TOOLS.some((s) => s.key === t)
@@ -134,6 +150,32 @@ export default function Whiteboard({
   const [editingValue, setEditingValue] = useState('')
   const [isDraggingText, setIsDraggingText] = useState(false)
   const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  // Multi-Page Whiteboard State
+  const [pages, setPages] = useState<WhiteboardPage[]>([
+    { id: 'page-1', strokes: [], textItems: [], bgType: 'dots' },
+  ])
+  const [activePageIndex, setActivePageIndex] = useState<number>(0)
+
+  // Real-time synchronization refs to avoid stale closure state during page navigation
+  const strokesRef = useRef(strokes)
+  strokesRef.current = strokes
+  const textItemsRef = useRef(textItems)
+  textItemsRef.current = textItems
+  const bgTypeRef = useRef(bgType)
+  bgTypeRef.current = bgType
+  const undoStackRef = useRef(undoStack)
+  undoStackRef.current = undoStack
+  const redoStackRef = useRef(redoStack)
+  redoStackRef.current = redoStack
+  const textUndoStackRef = useRef(textUndoStack)
+  textUndoStackRef.current = textUndoStack
+  const textRedoStackRef = useRef(textRedoStack)
+  textRedoStackRef.current = textRedoStack
+  const activePageIndexRef = useRef(activePageIndex)
+  activePageIndexRef.current = activePageIndex
+  const pagesRef = useRef(pages)
+  pagesRef.current = pages
 
   // Selection & Transform states
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -1184,7 +1226,185 @@ export default function Whiteboard({
     }
   }
 
-  // ─── Socket Synchronization for Whiteboard ───
+  // ─── Multi-Page Whiteboard Page Handlers ───
+
+  const switchPage = useCallback(
+    (targetIndex: number, isRemote = false) => {
+      if (
+        targetIndex < 0 ||
+        targetIndex >= pagesRef.current.length ||
+        targetIndex === activePageIndexRef.current
+      ) {
+        return
+      }
+
+      // 1. Snapshot current page state
+      const curIdx = activePageIndexRef.current
+      const updatedPages = [...pagesRef.current]
+      if (updatedPages[curIdx]) {
+        updatedPages[curIdx] = {
+          ...updatedPages[curIdx],
+          strokes: strokesRef.current,
+          textItems: textItemsRef.current,
+          bgType: bgTypeRef.current,
+          undoStack: undoStackRef.current,
+          redoStack: redoStackRef.current,
+          textUndoStack: textUndoStackRef.current,
+          textRedoStack: textRedoStackRef.current,
+        }
+      }
+
+      // 2. Load target page state
+      const targetPage = updatedPages[targetIndex]
+      if (targetPage) {
+        setStrokes(targetPage.strokes || [])
+        setTextItems(targetPage.textItems || [])
+        setBgType(targetPage.bgType || 'dots')
+        setUndoStack(targetPage.undoStack || [])
+        setRedoStack(targetPage.redoStack || [])
+        setTextUndoStack(targetPage.textUndoStack || [])
+        setTextRedoStack(targetPage.textRedoStack || [])
+        setSelectedId(null)
+        setSelectedKind(null)
+        setEditingText(null)
+        setRemoteLiveStrokes({})
+        setRemoteLiveText({})
+      }
+
+      setPages(updatedPages)
+      setActivePageIndex(targetIndex)
+
+      if (!isRemote && activeSocket && roomId) {
+        activeSocket.emit('whiteboard-switch-page', {
+          roomId,
+          activePageIndex: targetIndex,
+        })
+      }
+    },
+    [activeSocket, roomId]
+  )
+
+  const addPage = useCallback(
+    (isRemote = false, remotePage?: WhiteboardPage) => {
+      if (!canDraw && !isTutor) {
+        triggerViewOnlyBanner()
+        return
+      }
+
+      const curIdx = activePageIndexRef.current
+      const updatedPages = [...pagesRef.current]
+      if (updatedPages[curIdx]) {
+        updatedPages[curIdx] = {
+          ...updatedPages[curIdx],
+          strokes: strokesRef.current,
+          textItems: textItemsRef.current,
+          bgType: bgTypeRef.current,
+          undoStack: undoStackRef.current,
+          redoStack: redoStackRef.current,
+          textUndoStack: textUndoStackRef.current,
+          textRedoStack: textRedoStackRef.current,
+        }
+      }
+
+      const newPage: WhiteboardPage = remotePage || {
+        id: `page-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        strokes: [],
+        textItems: [],
+        bgType: 'dots',
+        undoStack: [],
+        redoStack: [],
+        textUndoStack: [],
+        textRedoStack: [],
+      }
+
+      updatedPages.push(newPage)
+      const newIdx = updatedPages.length - 1
+
+      setStrokes(newPage.strokes || [])
+      setTextItems(newPage.textItems || [])
+      setBgType(newPage.bgType || 'dots')
+      setUndoStack([])
+      setRedoStack([])
+      setTextUndoStack([])
+      setTextRedoStack([])
+      setSelectedId(null)
+      setSelectedKind(null)
+      setEditingText(null)
+      setRemoteLiveStrokes({})
+      setRemoteLiveText({})
+
+      setPages(updatedPages)
+      setActivePageIndex(newIdx)
+
+      if (!isRemote && activeSocket && roomId) {
+        activeSocket.emit('whiteboard-add-page', { roomId, page: newPage })
+      }
+    },
+    [canDraw, isTutor, triggerViewOnlyBanner, activeSocket, roomId]
+  )
+
+  const deletePage = useCallback(
+    (pageIndexToDelete: number, isRemote = false) => {
+      if (!canDraw && !isTutor) {
+        triggerViewOnlyBanner()
+        return
+      }
+      if (pagesRef.current.length <= 1) return
+
+      const curIdx = activePageIndexRef.current
+      const currentPages = [...pagesRef.current]
+      if (currentPages[curIdx]) {
+        currentPages[curIdx] = {
+          ...currentPages[curIdx],
+          strokes: strokesRef.current,
+          textItems: textItemsRef.current,
+          bgType: bgTypeRef.current,
+          undoStack: undoStackRef.current,
+          redoStack: redoStackRef.current,
+          textUndoStack: textUndoStackRef.current,
+          textRedoStack: textRedoStackRef.current,
+        }
+      }
+
+      let nextIndex = curIdx
+      if (pageIndexToDelete === curIdx) {
+        nextIndex = Math.max(0, curIdx - 1)
+      } else if (pageIndexToDelete < curIdx) {
+        nextIndex = curIdx - 1
+      }
+
+      const newPages = currentPages.filter((_, idx) => idx !== pageIndexToDelete)
+      const targetPage = newPages[nextIndex]
+
+      if (targetPage) {
+        setStrokes(targetPage.strokes || [])
+        setTextItems(targetPage.textItems || [])
+        setBgType(targetPage.bgType || 'dots')
+        setUndoStack(targetPage.undoStack || [])
+        setRedoStack(targetPage.redoStack || [])
+        setTextUndoStack(targetPage.textUndoStack || [])
+        setTextRedoStack(targetPage.textRedoStack || [])
+        setSelectedId(null)
+        setSelectedKind(null)
+        setEditingText(null)
+        setRemoteLiveStrokes({})
+        setRemoteLiveText({})
+      }
+
+      setPages(newPages)
+      setActivePageIndex(nextIndex)
+
+      if (!isRemote && activeSocket && roomId) {
+        activeSocket.emit('whiteboard-delete-page', {
+          roomId,
+          pageIndex: pageIndexToDelete,
+        })
+      }
+    },
+    [canDraw, isTutor, triggerViewOnlyBanner, activeSocket, roomId]
+  )
+
+  // ─── Socket Synchronization for Multi-Page Whiteboard ───
   useEffect(() => {
     const s = activeSocket
     if (!s || !roomId) return
@@ -1326,10 +1546,124 @@ export default function Whiteboard({
       setTextItems((prev) => prev.filter((t) => t.id !== textItemId))
     }
 
+    const handleInitPages = (data: { activePageIndex: number; pages: WhiteboardPage[] }) => {
+      if (!data || !Array.isArray(data.pages) || data.pages.length === 0) return
+      setPages(data.pages)
+      const idx = Math.min(Math.max(0, data.activePageIndex || 0), data.pages.length - 1)
+      setActivePageIndex(idx)
+      const cur = data.pages[idx]
+      if (cur) {
+        setStrokes(cur.strokes || [])
+        setTextItems(cur.textItems || [])
+        setBgType(cur.bgType || 'dots')
+        setUndoStack(cur.undoStack || [])
+        setRedoStack(cur.redoStack || [])
+        setTextUndoStack(cur.textUndoStack || [])
+        setTextRedoStack(cur.textRedoStack || [])
+      }
+    }
+
+    const handleRemotePageSwitch = ({ activePageIndex: newIdx }: { activePageIndex: number }) => {
+      if (typeof newIdx !== 'number') return
+      setPages((prev) => {
+        const curIdx = activePageIndexRef.current
+        const updated = [...prev]
+        if (updated[curIdx]) {
+          updated[curIdx] = {
+            ...updated[curIdx],
+            strokes: strokesRef.current,
+            textItems: textItemsRef.current,
+            bgType: bgTypeRef.current,
+            undoStack: undoStackRef.current,
+            redoStack: redoStackRef.current,
+            textUndoStack: textUndoStackRef.current,
+            textRedoStack: textRedoStackRef.current,
+          }
+        }
+        const target = updated[newIdx]
+        if (target) {
+          setStrokes(target.strokes || [])
+          setTextItems(target.textItems || [])
+          setBgType(target.bgType || 'dots')
+          setUndoStack(target.undoStack || [])
+          setRedoStack(target.redoStack || [])
+          setTextUndoStack(target.textUndoStack || [])
+          setTextRedoStack(target.textRedoStack || [])
+        }
+        return updated
+      })
+      setActivePageIndex(newIdx)
+      setSelectedId(null)
+      setSelectedKind(null)
+      setEditingText(null)
+      setRemoteLiveStrokes({})
+      setRemoteLiveText({})
+    }
+
+    const handleRemotePageAdd = ({ page, activePageIndex: newIdx }: { page: WhiteboardPage; activePageIndex: number }) => {
+      setPages((prev) => {
+        const curIdx = activePageIndexRef.current
+        const updated = [...prev]
+        if (updated[curIdx]) {
+          updated[curIdx] = {
+            ...updated[curIdx],
+            strokes: strokesRef.current,
+            textItems: textItemsRef.current,
+            bgType: bgTypeRef.current,
+            undoStack: undoStackRef.current,
+            redoStack: redoStackRef.current,
+            textUndoStack: textUndoStackRef.current,
+            textRedoStack: textRedoStackRef.current,
+          }
+        }
+        return [...updated, page]
+      })
+      setActivePageIndex(newIdx)
+      setStrokes(page.strokes || [])
+      setTextItems(page.textItems || [])
+      setBgType(page.bgType || 'dots')
+      setUndoStack([])
+      setRedoStack([])
+      setTextUndoStack([])
+      setTextRedoStack([])
+      setSelectedId(null)
+      setSelectedKind(null)
+      setEditingText(null)
+      setRemoteLiveStrokes({})
+      setRemoteLiveText({})
+    }
+
+    const handleRemotePageDelete = ({ activePageIndex: newIdx, pages: updatedPages }: { pageIndex: number; activePageIndex: number; pages?: WhiteboardPage[] }) => {
+      if (updatedPages && Array.isArray(updatedPages)) {
+        setPages(updatedPages)
+        setActivePageIndex(newIdx)
+        const cur = updatedPages[newIdx]
+        if (cur) {
+          setStrokes(cur.strokes || [])
+          setTextItems(cur.textItems || [])
+          setBgType(cur.bgType || 'dots')
+          setUndoStack(cur.undoStack || [])
+          setRedoStack(cur.redoStack || [])
+          setTextUndoStack(cur.textUndoStack || [])
+          setTextRedoStack(cur.textRedoStack || [])
+        }
+      }
+    }
+
     const handleHistory = (data: any) => {
-      if (Array.isArray(data)) {
-        if (data.length > 0) setStrokes(data)
-      } else if (data && typeof data === 'object') {
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.pages) && data.pages.length > 0) {
+          setPages(data.pages)
+          const idx = typeof data.activePageIndex === 'number' ? data.activePageIndex : 0
+          setActivePageIndex(idx)
+          const cur = data.pages[idx]
+          if (cur) {
+            setStrokes(cur.strokes || [])
+            setBgType(cur.bgType || 'dots')
+            setTextItems(cur.textItems || [])
+          }
+          return
+        }
         if (Array.isArray(data.strokes) && data.strokes.length > 0) {
           setStrokes(data.strokes)
         }
@@ -1339,6 +1673,8 @@ export default function Whiteboard({
         if (Array.isArray(data.textItems) && data.textItems.length > 0) {
           setTextItems(data.textItems)
         }
+      } else if (Array.isArray(data)) {
+        if (data.length > 0) setStrokes(data)
       }
     }
 
@@ -1355,6 +1691,10 @@ export default function Whiteboard({
     s.on('whiteboard-cleared', handleRemoteClear)
     s.on('whiteboard-undo-applied', handleRemoteUndo)
     s.on('whiteboard-history', handleHistory)
+    s.on('whiteboard-init-pages', handleInitPages)
+    s.on('whiteboard-page-switched', handleRemotePageSwitch)
+    s.on('whiteboard-page-added', handleRemotePageAdd)
+    s.on('whiteboard-page-deleted', handleRemotePageDelete)
 
     return () => {
       s.off('whiteboard-stroke', handleRemoteStroke)
@@ -1370,6 +1710,10 @@ export default function Whiteboard({
       s.off('whiteboard-cleared', handleRemoteClear)
       s.off('whiteboard-undo-applied', handleRemoteUndo)
       s.off('whiteboard-history', handleHistory)
+      s.off('whiteboard-init-pages', handleInitPages)
+      s.off('whiteboard-page-switched', handleRemotePageSwitch)
+      s.off('whiteboard-page-added', handleRemotePageAdd)
+      s.off('whiteboard-page-deleted', handleRemotePageDelete)
     }
   }, [activeSocket, roomId])
 
@@ -1711,8 +2055,56 @@ export default function Whiteboard({
               } as any)
             }
           }}
-          onTouchEnd={() => handleMouseUp()}
+          onTouchEnd={handleMouseUp}
         />
+
+        {/* Floating Page Navigation Widget in Bottom Left */}
+        <div className="absolute bottom-5 left-5 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/90 backdrop-blur-xl border border-[#e5e5e7] shadow-xl shadow-black/8 select-none transition-all duration-150 transform-gpu backface-hidden">
+          <button
+            type="button"
+            onClick={() => switchPage(activePageIndex - 1)}
+            disabled={activePageIndex === 0}
+            className="w-7 h-7 rounded-xl flex items-center justify-center text-[#525252] hover:text-[#1d1d1f] hover:bg-[#f0f0f2] active:bg-[#e5e5e7] disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition-all duration-150 transform-gpu backface-hidden"
+            title="Previous Whiteboard Page"
+          >
+            <ChevronLeft size={15} />
+          </button>
+
+          <span className="px-2.5 py-0.5 rounded-lg bg-[#f0f0f2] text-[#1d1d1f] text-xs font-bold font-mono select-none tracking-tight">
+            Page {activePageIndex + 1} of {pages.length}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => switchPage(activePageIndex + 1)}
+            disabled={activePageIndex === pages.length - 1}
+            className="w-7 h-7 rounded-xl flex items-center justify-center text-[#525252] hover:text-[#1d1d1f] hover:bg-[#f0f0f2] active:bg-[#e5e5e7] disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition-all duration-150 transform-gpu backface-hidden"
+            title="Next Whiteboard Page"
+          >
+            <ChevronRight size={15} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => addPage()}
+            className="h-7 px-2.5 rounded-xl flex items-center gap-1 text-white bg-[#0066cc] hover:bg-[#0071e3] active:bg-[#0055b3] text-xs font-bold cursor-pointer transition-all duration-150 transform-gpu backface-hidden shadow-xs shadow-[#0066cc]/25"
+            title="Add New Whiteboard Page"
+          >
+            <Plus size={13} className="stroke-[2.5]" />
+            <span className="hidden sm:inline">New Page</span>
+          </button>
+
+          {pages.length > 1 && (
+            <button
+              type="button"
+              onClick={() => deletePage(activePageIndex)}
+              className="w-7 h-7 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-50 active:bg-red-100 cursor-pointer transition-all duration-150 transform-gpu backface-hidden"
+              title="Delete Current Slide"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
 
         {/* Seamless Transparent Text Input */}
         {editingText && (

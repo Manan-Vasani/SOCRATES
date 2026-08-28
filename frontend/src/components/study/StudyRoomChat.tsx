@@ -27,10 +27,10 @@ import {
 
 type ChatTab = 'chat' | 'ai' | 'participants' | 'resources'
 
-import type { ChatMessage } from '../../hooks/useWebRTC'
+import type { ChatMessage, SharedResource } from '../../hooks/useWebRTC'
 import { useScrollLock } from '../../hooks/useScrollLock'
 import { HiHandRaised, HiOutlineHandRaised } from 'react-icons/hi2'
-export type { ChatMessage }
+export type { ChatMessage, SharedResource }
 
 interface AIMessage {
   id: string
@@ -53,16 +53,6 @@ export interface Participant {
   isScreenSharing?: boolean
 }
 
-interface SharedResource {
-  id: string
-  name: string
-  type: 'pdf' | 'image' | 'canvas'
-  uploadedBy: string
-  time: string
-  size: string
-  url?: string
-}
-
 interface StudyRoomChatProps {
   participants: Participant[]
   activeTab?: ChatTab
@@ -79,6 +69,9 @@ interface StudyRoomChatProps {
   isHandRaised?: boolean
   onHandRaise?: () => void
   onMuteParticipant?: (id: string, shouldMute?: boolean) => void
+  sharedFiles?: SharedResource[]
+  onShareFile?: (file: SharedResource) => void
+  onDeleteFile?: (fileId: string) => void
 }
 
 const QUICK_REACTIONS = ['👍', '👏', '💡', '❓', '🔥', '❤️']
@@ -105,6 +98,9 @@ export default function StudyRoomChat({
   isHandRaised,
   onHandRaise,
   onMuteParticipant,
+  sharedFiles,
+  onShareFile,
+  onDeleteFile,
 }: StudyRoomChatProps) {
   const [internalTab, setInternalTab] = useState<ChatTab>(activeTab)
   const tab = onTabChange ? activeTab : internalTab
@@ -137,50 +133,68 @@ export default function StudyRoomChat({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewFile, setPreviewFile] = useState<SharedResource | null>(null)
   useScrollLock(Boolean(previewFile))
-  const [resources, setResources] = useState<SharedResource[]>([
-    { id: '1', name: 'Calculus_Chapter_4.pdf', type: 'pdf', uploadedBy: 'Dr. Alex Vance', time: '5m ago', size: '2.4 MB' },
-    { id: '2', name: 'whiteboard_export.png', type: 'image', uploadedBy: 'You', time: '2m ago', size: '340 KB' },
-  ])
+  const [localResources, setLocalResources] = useState<SharedResource[]>([])
+
+  const resources = sharedFiles !== undefined ? sharedFiles : localResources
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const isPdf = file.name.toLowerCase().endsWith('.pdf')
-    const fileUrl = URL.createObjectURL(file)
-    const newResource: SharedResource = {
-      id: String(Date.now()),
-      name: file.name,
-      type: isPdf ? 'pdf' : 'image',
-      uploadedBy: 'You',
-      time: 'Just now',
-      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      url: fileUrl,
-    }
-    setResources((prev) => [newResource, ...prev])
 
-    // Announce file share in chat
-    const fileShareMsg = `📎 Shared file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`
-    if (onSendMessage) {
-      onSendMessage(fileShareMsg)
-    } else {
-      setLocalMessages((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          sender: 'You',
-          role: 'student',
-          text: fileShareMsg,
-          time: 'Just now',
-        },
-      ])
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const ext = file.name.split('.').pop()?.toLowerCase() || ''
+      let type: 'pdf' | 'image' | 'code' | 'doc' = 'doc'
+      if (['pdf'].includes(ext)) type = 'pdf'
+      else if (['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif'].includes(ext)) type = 'image'
+      else if (['py', 'js', 'ts', 'jsx', 'tsx', 'cpp', 'c', 'java', 'html', 'css', 'json'].includes(ext)) type = 'code'
+
+      const newResource: SharedResource = {
+        id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: file.name,
+        type,
+        uploadedBy: 'You',
+        time: 'Just now',
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        url: dataUrl,
+        dataUrl,
+      }
+
+      if (onShareFile) {
+        onShareFile(newResource)
+      } else {
+        setLocalResources((prev) => [newResource, ...prev])
+        const fileShareMsg = `📎 Shared file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`
+        if (onSendMessage) {
+          onSendMessage(fileShareMsg)
+        } else {
+          setLocalMessages((prev) => [
+            ...prev,
+            {
+              id: String(Date.now()),
+              sender: 'You',
+              role: currentUserRole || 'student',
+              text: fileShareMsg,
+              time: 'Just now',
+              attachment: newResource,
+            },
+          ])
+        }
+      }
     }
+    reader.readAsDataURL(file)
 
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const deleteResource = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
-    setResources((prev) => prev.filter((r) => r.id !== id))
+    if (onDeleteFile) {
+      onDeleteFile(id)
+    } else {
+      setLocalResources((prev) => prev.filter((r) => r.id !== id))
+    }
     if (previewFile?.id === id) setPreviewFile(null)
   }
 
@@ -337,6 +351,59 @@ export default function StudyRoomChat({
                           }`}
                         >
                           {msg.text}
+
+                          {/* Interactive File Attachment Card inside Chat Bubble */}
+                          {msg.attachment && (
+                            <div
+                              onClick={() => setPreviewFile(msg.attachment!)}
+                              className={`mt-2 flex items-center gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                                msg.sender.includes('You')
+                                  ? 'bg-white/12 border-white/25 hover:bg-white/20 text-white'
+                                  : 'bg-white border-[#e5e5e7] hover:border-[#0066cc]/40 text-[#1d1d1f] shadow-2xs'
+                              }`}
+                            >
+                              <div
+                                className={`p-2 rounded-lg shrink-0 ${
+                                  msg.attachment.type === 'pdf'
+                                    ? 'bg-red-50 text-red-500 border border-red-100'
+                                    : msg.attachment.type === 'image'
+                                    ? 'bg-blue-50 text-blue-500 border border-blue-100'
+                                    : 'bg-purple-50 text-purple-600 border border-purple-100'
+                                }`}
+                              >
+                                {msg.attachment.type === 'pdf' ? (
+                                  <FileText size={15} />
+                                ) : msg.attachment.type === 'image' ? (
+                                  <ImageIcon size={15} />
+                                ) : (
+                                  <FileText size={15} />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0 text-left">
+                                <div className="text-xs font-bold truncate">{msg.attachment.name}</div>
+                                <div
+                                  className={`text-[10px] ${
+                                    msg.sender.includes('You') ? 'text-white/80' : 'text-[#8e8e93]'
+                                  }`}
+                                >
+                                  {msg.attachment.size} • Click to preview
+                                </div>
+                              </div>
+                              <a
+                                href={msg.attachment.dataUrl || msg.attachment.url}
+                                download={msg.attachment.name}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                                  msg.sender.includes('You')
+                                    ? 'hover:bg-white/20 text-white'
+                                    : 'hover:bg-[#f0f0f2] text-[#0066cc]'
+                                }`}
+                                title="Download File"
+                              >
+                                <Download size={14} />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -578,42 +645,72 @@ export default function StudyRoomChat({
               Shared files ({resources.length})
             </div>
 
-            {resources.map((r) => (
-              <div
-                key={r.id}
-                onClick={() => setPreviewFile(r)}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#0066cc]/30 hover:bg-white transition-all cursor-pointer group shadow-2xs"
-              >
-                <div
-                  className={`p-2.5 rounded-xl shadow-sm ${
-                    r.type === 'pdf' ? 'bg-red-50 border border-red-100' : 'bg-blue-50 border border-blue-100'
-                  }`}
-                >
-                  {r.type === 'pdf' ? (
-                    <FileText size={16} className="text-red-500" />
-                  ) : (
-                    <ImageIcon size={16} className="text-blue-500" />
-                  )}
+            {resources.length === 0 ? (
+              <div className="text-center py-10 px-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#f0f0f2] text-[#a1a1a6] flex items-center justify-center mx-auto mb-2.5">
+                  <FolderOpen size={22} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-[#1d1d1f] truncate group-hover:text-[#0066cc] transition-colors">
-                    {r.name}
-                  </div>
-                  <div className="text-[10px] text-[#a1a1a6]">
-                    {r.uploadedBy} • {r.time} • {r.size}
-                  </div>
-                </div>
-                <div className="flex items-center shrink-0">
-                  <button
-                    onClick={(e) => deleteResource(r.id, e)}
-                    className="p-1.5 rounded-xl hover:bg-red-50 text-[#a1a1a6] hover:text-red-500 transition-colors cursor-pointer"
-                    title="Delete File"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+                <p className="text-xs font-semibold text-[#525252]">No files shared yet</p>
+                <p className="text-[11px] text-[#a1a1a6] mt-0.5">
+                  Upload a PDF, image, notes, or code file above to share with everyone in the room.
+                </p>
               </div>
-            ))}
+            ) : (
+              resources.map((r) => (
+                <div
+                  key={r.id}
+                  onClick={() => setPreviewFile(r)}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-[#fafafa] border border-[#f0f0f2] hover:border-[#0066cc]/30 hover:bg-white transition-all cursor-pointer group shadow-2xs"
+                >
+                  <div
+                    className={`p-2.5 rounded-xl shadow-sm ${
+                      r.type === 'pdf'
+                        ? 'bg-red-50 border border-red-100 text-red-500'
+                        : r.type === 'image'
+                        ? 'bg-blue-50 border border-blue-100 text-blue-500'
+                        : 'bg-purple-50 border border-purple-100 text-purple-600'
+                    }`}
+                  >
+                    {r.type === 'pdf' ? (
+                      <FileText size={16} />
+                    ) : r.type === 'image' ? (
+                      <ImageIcon size={16} />
+                    ) : (
+                      <FileText size={16} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-[#1d1d1f] truncate group-hover:text-[#0066cc] transition-colors">
+                      {r.name}
+                    </div>
+                    <div className="text-[10px] text-[#a1a1a6]">
+                      {r.uploadedBy} • {r.time} • {r.size}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {(r.dataUrl || r.url) && (
+                      <a
+                        href={r.dataUrl || r.url}
+                        download={r.name}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded-xl hover:bg-[#0066cc]/10 text-[#a1a1a6] hover:text-[#0066cc] transition-colors cursor-pointer"
+                        title="Download File"
+                      >
+                        <Download size={15} />
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => deleteResource(r.id, e)}
+                      className="p-1.5 rounded-xl hover:bg-red-50 text-[#a1a1a6] hover:text-red-500 transition-colors cursor-pointer"
+                      title="Delete File"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -757,18 +854,18 @@ export default function StudyRoomChat({
 
               {/* Modal Body / Viewer */}
               <div className="flex-1 p-0 flex items-center justify-center bg-[#525659] overflow-hidden relative">
-                {previewFile.url ? (
+                {(previewFile.dataUrl || previewFile.url) ? (
                   previewFile.type === 'image' ? (
                     <div className="w-full h-full flex items-center justify-center p-6 bg-[#1a1a1e] overflow-auto">
                       <img
-                        src={previewFile.url}
+                        src={previewFile.dataUrl || previewFile.url}
                         alt={previewFile.name}
                         className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
                       />
                     </div>
                   ) : (
                     <iframe
-                      src={`${previewFile.url}#toolbar=1&navpanes=0`}
+                      src={`${previewFile.dataUrl || previewFile.url}#toolbar=1&navpanes=0`}
                       title={previewFile.name}
                       className="w-full h-full border-0 bg-white"
                     />
@@ -805,9 +902,9 @@ export default function StudyRoomChat({
                   >
                     Close
                   </button>
-                  {previewFile.url && (
+                  {(previewFile.dataUrl || previewFile.url) && (
                     <a
-                      href={previewFile.url}
+                      href={previewFile.dataUrl || previewFile.url}
                       download={previewFile.name}
                       className="px-5 py-2.5 rounded-2xl text-xs font-semibold bg-[#0066cc] text-white hover:bg-[#0077ed] flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-[#0066cc]/20"
                     >

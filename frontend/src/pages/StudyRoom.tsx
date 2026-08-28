@@ -185,6 +185,9 @@ export default function StudyRoom() {
     revokeCodePermission,
     denyCodeRequest,
     sendMessage,
+    sharedFiles,
+    shareFile,
+    deleteFile,
     leaveRoom,
     setParticipants,
     setMessages,
@@ -194,6 +197,16 @@ export default function StudyRoom() {
     roomId: activeRoomId,
     currentUser,
   })
+
+  // Synchronize local session storage with server-authoritative session start time
+  useEffect(() => {
+    if (serverSessionStartTime) {
+      try {
+        const key = `socrates_session_start_${activeRoomId}`
+        sessionStorage.setItem(key, String(serverSessionStartTime))
+      } catch {}
+    }
+  }, [serverSessionStartTime, activeRoomId])
 
   // Fetch room metadata, authorization and chat history
   useEffect(() => {
@@ -901,6 +914,9 @@ export default function StudyRoom() {
                 isHandRaised={isHandRaised}
                 onHandRaise={toggleHandRaise}
                 onMuteParticipant={muteParticipant}
+                sharedFiles={sharedFiles}
+                onShareFile={shareFile}
+                onDeleteFile={deleteFile}
               />
             )}
           </div>
