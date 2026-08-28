@@ -113,13 +113,25 @@ export default function CodeSandbox({
   const [outputTab, setOutputTab] = useState<'terminal' | 'preview'>('terminal')
   const [toast, setToast] = useState<{ type: 'success' | 'warning'; text: string } | null>(null)
   const [isRequestPending, setIsRequestPending] = useState(false)
-  const [isBannerVisible, setIsBannerVisible] = useState(true)
+  const [isBannerVisible, setIsBannerVisible] = useState(false)
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const triggerViewOnlyBanner = useCallback(() => {
+    if (canEdit || isTutor) return
+    setIsBannerVisible(true)
+    if (bannerTimerRef.current) {
+      clearTimeout(bannerTimerRef.current)
+    }
+    bannerTimerRef.current = setTimeout(() => {
+      setIsBannerVisible(false)
+    }, 2000)
+  }, [canEdit, isTutor])
 
   // Reset request pending state when permission is granted
   useEffect(() => {
     if (canEdit || isTutor) {
       setIsRequestPending(false)
+      setIsBannerVisible(false)
     }
   }, [canEdit, isTutor])
 
@@ -579,7 +591,7 @@ export default function CodeSandbox({
             <button
               onClick={() => {
                 if (!canEdit && !isTutor) {
-                  setToast({ type: 'warning', text: 'You are in view-only mode. Ask tutor for edit access.' })
+                  triggerViewOnlyBanner()
                   return
                 }
                 setShowLangPicker(!showLangPicker)
@@ -620,6 +632,9 @@ export default function CodeSandbox({
               type="text"
               readOnly={!canEdit && !isTutor}
               value={fullFileName}
+              onClick={() => {
+                if (!canEdit && !isTutor) triggerViewOnlyBanner()
+              }}
               onChange={(e) => {
                 if (!canEdit && !isTutor) return
                 handleFileNameChange(e.target.value.replace(/\s+/g, ''))
@@ -639,14 +654,6 @@ export default function CodeSandbox({
               title={!canEdit && !isTutor ? 'File name (view-only)' : 'Click to edit full file name and extension'}
             />
           </div>
-
-          {/* Role / Permission Indicator Badge */}
-          {!canEdit && !isTutor && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-medium">
-              <Lock size={11} />
-              <span>View Only</span>
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -673,25 +680,16 @@ export default function CodeSandbox({
           <button
             onClick={() => {
               if (!canEdit && !isTutor) {
-                setToast({ type: 'warning', text: 'You need edit permission to run code. Click "Ask Edit Access" below.' })
+                triggerViewOnlyBanner()
                 return
               }
               runCodeWithStdin()
             }}
-            disabled={isRunning || (!canEdit && !isTutor)}
-            className={`flex items-center justify-center gap-2 w-36 py-2 rounded-xl text-xs font-bold transition-all shrink-0 select-none ${
-              !canEdit && !isTutor
-                ? 'bg-white/5 text-white/40 border border-white/10 cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-md shadow-emerald-600/20 active:scale-98'
-            } disabled:opacity-70`}
-            title={!canEdit && !isTutor ? 'Ask tutor for edit permission to run code' : 'Execute code'}
+            disabled={isRunning}
+            className="flex items-center justify-center gap-2 w-36 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-70 shadow-md shadow-emerald-600/20 shrink-0 select-none active:scale-98"
+            title="Execute code"
           >
-            {!canEdit && !isTutor ? (
-              <>
-                <Lock size={13} className="text-amber-400" />
-                <span>Locked (View)</span>
-              </>
-            ) : isRunning ? (
+            {isRunning ? (
               <>
                 <Loader2 size={14} className="animate-spin shrink-0" />
                 <span>Running...</span>
@@ -718,8 +716,22 @@ export default function CodeSandbox({
           ref={textareaRef}
           readOnly={!canEdit && !isTutor}
           value={code}
+          onMouseDown={() => {
+            if (!canEdit && !isTutor) triggerViewOnlyBanner()
+          }}
+          onClick={() => {
+            if (!canEdit && !isTutor) triggerViewOnlyBanner()
+          }}
+          onKeyDown={(e) => {
+            if (!canEdit && !isTutor) {
+              triggerViewOnlyBanner()
+            }
+          }}
           onChange={(e) => {
-            if (!canEdit && !isTutor) return
+            if (!canEdit && !isTutor) {
+              triggerViewOnlyBanner()
+              return
+            }
             handleLocalCodeChange(e.target.value)
           }}
           spellCheck={false}
@@ -729,7 +741,7 @@ export default function CodeSandbox({
           style={{ tabSize: 4 }}
         />
 
-        {/* Permission Banner for Students (When in View-Only mode) */}
+        {/* Permission Banner for Students (When in View-Only mode, only appears on interaction, auto-hides after 2s) */}
         {!canEdit && !isTutor && isBannerVisible && (
           <div
             onMouseEnter={() => {
@@ -739,7 +751,7 @@ export default function CodeSandbox({
               if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
               bannerTimerRef.current = setTimeout(() => {
                 setIsBannerVisible(false)
-              }, 2500)
+              }, 2000)
             }}
             className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-2xl bg-[#18181c]/95 backdrop-blur-2xl border border-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/5 text-white flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 select-none"
           >
@@ -747,7 +759,7 @@ export default function CodeSandbox({
               <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400">
                 <Lock size={12} />
               </div>
-              <span className="text-xs font-semibold tracking-tight text-white/90">View-Only Code IDE</span>
+              <span className="text-xs font-semibold tracking-tight text-white/90">View-Only Code Sandbox</span>
             </div>
             {onRequestPermission && (
               <button
@@ -756,7 +768,6 @@ export default function CodeSandbox({
                 onClick={() => {
                   onRequestPermission()
                   setIsRequestPending(true)
-                  setToast({ type: 'warning', text: 'Edit permission requested! Waiting for tutor approval...' })
                 }}
                 className={`px-3.5 py-1.5 rounded-xl text-white text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer select-none outline-none shadow-md flex items-center gap-1.5 transform-gpu active:scale-98 ${
                   isRequestPending
