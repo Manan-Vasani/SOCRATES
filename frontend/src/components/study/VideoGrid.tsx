@@ -68,7 +68,7 @@ function VideoTile({
     p.stream &&
       !p.isCameraOff &&
       videoTracks.length > 0 &&
-      videoTracks.some((t) => t.enabled)
+      videoTracks.some((t) => t.enabled && t.readyState === 'live')
   )
 
   useEffect(() => {
@@ -162,9 +162,7 @@ function VideoTile({
           muted // Muted on video tag allows instant 60fps rendering without browser autoplay block
           className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
             hasActiveVideo ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          } ${p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'} ${
-            isSelf && !p.isScreenSharing ? 'scale-x-[-1]' : ''
-          }`}
+          } ${p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'}`}
         />
       )}
 

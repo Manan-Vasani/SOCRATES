@@ -91,7 +91,7 @@ function createSocketServer(server) {
         role: user.role || 'student',
         avatar: user.avatar || '',
         isMuted: user.isMuted ?? false,
-        isCameraOff: user.isCameraOff ?? false,
+        isCameraOff: user.isCameraOff !== undefined ? Boolean(user.isCameraOff) : true,
         isHandRaised: false,
         isScreenSharing: false,
         hasWhiteboardPermission: user.role === 'tutor' ? true : false,

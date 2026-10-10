@@ -88,80 +88,7 @@ const SOCKET_URL =
     ? window.location.origin
     : 'http://localhost:5000')
 
-function createFallbackVideoTrack(name: string, role: string): MediaStreamTrack {
-  const canvas = document.createElement('canvas')
-  canvas.width = 640
-  canvas.height = 480
-  const ctx = canvas.getContext('2d')
-  const hue = role === 'tutor' ? 160 : 215
-
-  const draw = () => {
-    if (!ctx) return
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(0, 0, 640, 480)
-
-    // Glowing dynamic gradient aura
-    const grad = ctx.createRadialGradient(320, 240, 20, 320, 240, 220)
-    grad.addColorStop(0, `hsla(${hue}, 80%, 45%, 0.9)`)
-    grad.addColorStop(0.7, `hsla(${hue + 30}, 70%, 25%, 0.4)`)
-    grad.addColorStop(1, '#020617')
-    ctx.fillStyle = grad
-    ctx.beginPath()
-    ctx.arc(320, 240, 220, 0, Math.PI * 2)
-    ctx.fill()
-
-    // Clean avatar circle
-    ctx.fillStyle = '#1e293b'
-    ctx.beginPath()
-    ctx.arc(320, 210, 85, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = `hsl(${hue}, 80%, 60%)`
-    ctx.lineWidth = 4
-    ctx.stroke()
-
-    // Initials
-    const initials =
-      name
-        .replace(/\s*\(You\)\s*/gi, '')
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase() || 'U'
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 52px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(initials, 320, 210)
-
-    // Name label
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 22px sans-serif'
-    ctx.fillText(name.replace(' (You)', ''), 320, 340)
-
-    // Live video badge
-    ctx.fillStyle = '#38bdf8'
-    ctx.font = '600 14px sans-serif'
-    ctx.fillText(`● LIVE FEED • ${role.toUpperCase()}`, 320, 375)
-
-    requestAnimationFrame(draw)
-  }
-  draw()
-
-  const captureMethod = (canvas as any).captureStream || (canvas as any).mozCaptureStream
-  if (captureMethod) {
-    const s = captureMethod.call(canvas, 30)
-    if (s && s.getVideoTracks().length > 0) {
-      return s.getVideoTracks()[0]
-    }
-  }
-
-  const dummy = document.createElement('canvas')
-  dummy.width = 2
-  dummy.height = 2
-  return (dummy as any).captureStream(1).getVideoTracks()[0]
-}
+// Camera video stream is acquired on demand when toggling camera on
 
 export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
@@ -300,30 +227,14 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       let stream: MediaStream | null = null
 
       try {
-        console.log('[WebRTC] Requesting local camera & microphone access...')
+        console.log('[WebRTC] Requesting initial microphone access...')
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
           audio: { echoCancellation: true, noiseSuppression: true },
         })
-        console.log('[WebRTC] Camera & microphone acquired successfully.')
-      } catch (videoErr) {
-        console.warn('[WebRTC] Hardware camera unavailable or in use by another tab, creating fallback video track...', videoErr)
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true },
-          })
-        } catch (audioErr) {
-          console.warn('[WebRTC] Audio access denied or unavailable:', audioErr)
-        }
-        const fallbackVideoTrack = createFallbackVideoTrack(
-          currentUserRef.current.name,
-          currentUserRef.current.role
-        )
-        if (stream) {
-          stream.addTrack(fallbackVideoTrack)
-        } else {
-          stream = new MediaStream([fallbackVideoTrack])
-        }
+        console.log('[WebRTC] Microphone acquired successfully.')
+      } catch (audioErr) {
+        console.warn('[WebRTC] Audio access denied or unavailable:', audioErr)
+        stream = new MediaStream()
       }
 
       if (!isMounted) {
@@ -332,12 +243,8 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
       }
 
       if (stream) {
-        // Keep mic enabled by default while keeping camera disabled
         stream.getAudioTracks().forEach((track) => {
           track.enabled = true
-        })
-        stream.getVideoTracks().forEach((track) => {
-          track.enabled = false
         })
       }
 
@@ -406,12 +313,17 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
             console.warn(`[WebRTC] addTrack error:`, e)
           }
         })
-      } else {
-        try {
-          pc.addTransceiver('audio', { direction: 'sendrecv' })
-          pc.addTransceiver('video', { direction: 'sendrecv' })
-        } catch (e) {}
       }
+      try {
+        const hasAudio = pc.getSenders().some((s) => s.track && s.track.kind === 'audio')
+        if (!hasAudio) {
+          pc.addTransceiver('audio', { direction: 'sendrecv' })
+        }
+        const hasVideo = pc.getSenders().some((s) => s.track && s.track.kind === 'video')
+        if (!hasVideo) {
+          pc.addTransceiver('video', { direction: 'sendrecv' })
+        }
+      } catch (e) {}
 
       // Relay ICE candidates to remote peer via Socket.IO
       pc.onicecandidate = (event) => {
@@ -443,6 +355,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
               return {
                 ...p,
                 stream: stableStream,
+                ...(event.track.kind === 'video' ? { isCameraOff: false } : {}),
               }
             }
             return p
@@ -612,7 +525,7 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
           role: p.role,
           avatar: p.avatar,
           isMuted: p.isMuted ?? false,
-          isCameraOff: p.isCameraOff ?? false,
+          isCameraOff: p.isCameraOff !== undefined ? Boolean(p.isCameraOff) : true,
           isSpeaking: false,
           isPinned: false,
           isHandRaised: p.isHandRaised ?? false,
@@ -1097,59 +1010,106 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
 
   const toggleCamera = useCallback(async () => {
     try {
-      if (localStreamRef.current) {
-        const videoTrack = localStreamRef.current.getVideoTracks()[0]
-        if (videoTrack && videoTrack.readyState === 'live') {
-          videoTrack.enabled = !videoTrack.enabled
-          const newCamState = videoTrack.enabled
-          setIsCameraOn(newCamState)
+      // 1. If camera is currently ON, turn it OFF and stop the physical webcam hardware
+      if (isCameraOn) {
+        if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach((t) => {
+            t.enabled = false
+            try {
+              t.stop()
+            } catch {}
+            localStreamRef.current!.removeTrack(t)
+          })
+          const combinedStream = new MediaStream(localStreamRef.current.getTracks())
+          localStreamRef.current = combinedStream
+          setLocalStream(combinedStream)
+        }
 
-          // Sync video track across all active peer connections
-          peerConnectionsRef.current.forEach((pc) => {
+        setIsCameraOn(false)
+
+        // Detach track on peer connections
+        peerConnectionsRef.current.forEach(async (pc, targetSocketId) => {
+          const videoTransceiver = pc.getTransceivers().find(
+            (t) =>
+              (t.sender.track && t.sender.track.kind === 'video') ||
+              (t.receiver.track && t.receiver.track.kind === 'video')
+          )
+          if (videoTransceiver && videoTransceiver.sender) {
+            videoTransceiver.sender.replaceTrack(null).catch(() => {})
+          } else {
             const senders = pc.getSenders()
             const videoSender = senders.find((s) => s.track && s.track.kind === 'video')
             if (videoSender) {
-              videoSender.replaceTrack(videoTrack).catch(() => {})
-            } else {
-              try {
-                pc.addTrack(videoTrack, localStreamRef.current!)
-              } catch {}
+              videoSender.replaceTrack(null).catch(() => {})
             }
-          })
-
-          if (socketRef.current) {
-            socketRef.current.emit('participant-state-change', {
-              roomId,
-              state: { isCameraOff: !newCamState },
-            })
           }
-          setParticipants((prev) =>
-            prev.map((p) =>
-              p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socketRef.current?.id
-                ? { ...p, isCameraOff: !newCamState }
-                : p
-            )
+
+          if (pc.signalingState === 'stable' && socketRef.current) {
+            try {
+              const offer = await pc.createOffer()
+              await pc.setLocalDescription(offer)
+              socketRef.current.emit('offer', { targetSocketId, offer })
+            } catch (err) {}
+          }
+        })
+
+        if (socketRef.current) {
+          socketRef.current.emit('participant-state-change', {
+            roomId,
+            state: { isCameraOff: true },
+          })
+        }
+
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.id === currentUser.id || p.name.includes('(You)') || p.socketId === socketRef.current?.id
+              ? { ...p, isCameraOff: true }
+              : p
           )
+        )
+        return
+      }
+
+      // 2. If camera is currently OFF, acquire the real hardware webcam
+      console.log('[WebRTC] Requesting real hardware camera access...')
+      let newVideoStream: MediaStream | null = null
+      try {
+        newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        })
+      } catch (err1: any) {
+        try {
+          newVideoStream = await navigator.mediaDevices.getUserMedia({ video: true })
+        } catch (camErr: any) {
+          console.warn('[WebRTC] Hardware camera unavailable or permission denied:', camErr)
+          const isPerm =
+            camErr?.name === 'NotAllowedError' ||
+            camErr?.name === 'PermissionDeniedError' ||
+            camErr?.message?.toLowerCase().includes('permission') ||
+            camErr?.message?.toLowerCase().includes('denied')
+          if (isPerm) {
+            setPermissionDeniedType('camera')
+            toast.error('Camera permission denied. Please allow camera access in browser settings.')
+          } else {
+            toast.error('No webcam detected or camera is in use by another application.')
+          }
+          setIsCameraOn(false)
           return
         }
       }
 
-      // If no active video track exists, dynamically acquire camera stream or fallback
-      console.log('[WebRTC] Requesting camera access on toggle...')
-      let newVideoTrack: MediaStreamTrack | null = null
-      try {
-        const newVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-        })
-        newVideoTrack = newVideoStream.getVideoTracks()[0]
-      } catch (camErr: any) {
-        console.warn('[WebRTC] Hardware camera locked or in use, activating virtual video feed:', camErr)
-        newVideoTrack = createFallbackVideoTrack(currentUser.name, currentUser.role)
-      }
-
+      const newVideoTrack = newVideoStream.getVideoTracks()[0]
       if (newVideoTrack) {
+        newVideoTrack.enabled = true
+
         let combinedStream: MediaStream
         if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach((t) => {
+            try {
+              t.stop()
+            } catch {}
+            localStreamRef.current!.removeTrack(t)
+          })
           localStreamRef.current.addTrack(newVideoTrack)
           combinedStream = new MediaStream(localStreamRef.current.getTracks())
         } else {
@@ -1161,14 +1121,46 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         setIsCameraOn(true)
         setPermissionDeniedType(null)
 
-        // Replace or add video track to all active peer connections
-        peerConnectionsRef.current.forEach((pc) => {
-          const senders = pc.getSenders()
-          const videoSender = senders.find((s) => s.track && s.track.kind === 'video')
-          if (videoSender) {
-            videoSender.replaceTrack(newVideoTrack).catch(() => {})
-          } else {
-            pc.addTrack(newVideoTrack, combinedStream)
+        // Replace or add video track to all active peer connections and re-negotiate
+        peerConnectionsRef.current.forEach(async (pc, targetSocketId) => {
+          let replaced = false
+          const videoTransceiver = pc.getTransceivers().find(
+            (t) =>
+              (t.sender.track && t.sender.track.kind === 'video') ||
+              (t.receiver.track && t.receiver.track.kind === 'video')
+          )
+          if (videoTransceiver && videoTransceiver.sender) {
+            try {
+              await videoTransceiver.sender.replaceTrack(newVideoTrack)
+              replaced = true
+            } catch (e) {
+              console.warn('[WebRTC] replaceTrack on transceiver failed:', e)
+            }
+          }
+          if (!replaced) {
+            const senders = pc.getSenders()
+            const videoSender = senders.find((s) => s.track && s.track.kind === 'video')
+            if (videoSender) {
+              try {
+                await videoSender.replaceTrack(newVideoTrack)
+                replaced = true
+              } catch (e) {}
+            }
+          }
+          if (!replaced) {
+            try {
+              pc.addTrack(newVideoTrack, combinedStream)
+            } catch (e) {}
+          }
+
+          if (pc.signalingState === 'stable' && socketRef.current) {
+            try {
+              const offer = await pc.createOffer()
+              await pc.setLocalDescription(offer)
+              socketRef.current.emit('offer', { targetSocketId, offer })
+            } catch (err) {
+              console.warn('[WebRTC] Camera ON offer renegotiation error:', err)
+            }
           }
         })
 
@@ -1188,16 +1180,11 @@ export function useWebRTC({ roomId, currentUser }: UseWebRTCOptions) {
         )
       }
     } catch (err: any) {
-      console.error('[WebRTC] Camera access error:', err)
-      const isPerm = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message?.toLowerCase().includes('permission') || err.message?.toLowerCase().includes('denied')
-      if (isPerm) {
-        setPermissionDeniedType('camera')
-      } else {
-        toast.error('Could not access camera')
-      }
+      console.error('[WebRTC] Camera toggle error:', err)
+      toast.error('Could not toggle camera')
       setIsCameraOn(false)
     }
-  }, [roomId, currentUser.id])
+  }, [isCameraOn, roomId, currentUser.id])
 
   // Tutor Remote Mute / Unmute Participant Handler
   const muteParticipant = useCallback(
