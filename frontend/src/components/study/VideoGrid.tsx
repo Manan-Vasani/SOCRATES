@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Mic, MicOff, VideoOff, Pin, Monitor } from 'lucide-react'
+import { Mic, MicOff, VideoOff, Pin, Monitor, FlipHorizontal } from 'lucide-react'
 import { HiHandRaised } from 'react-icons/hi2'
 
 export interface Participant {
@@ -63,6 +63,8 @@ function VideoTile({
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [imgError, setImgError] = useState(false)
+  // Default to true (scaleX(-1)) so the raw reversed webcam stream is flipped into exact, forward-reading orientation
+  const [isFlipped, setIsFlipped] = useState(true)
   const videoTracks = p.stream ? p.stream.getVideoTracks() : []
   const hasActiveVideo = Boolean(
     p.stream &&
@@ -163,6 +165,7 @@ function VideoTile({
           className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
             hasActiveVideo ? 'opacity-100' : 'opacity-0 pointer-events-none'
           } ${p.isScreenSharing ? 'object-contain bg-black' : 'object-cover'}`}
+          style={!p.isScreenSharing && isFlipped ? { transform: 'scaleX(-1)' } : undefined}
         />
       )}
 
@@ -225,6 +228,20 @@ function VideoTile({
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {hasActiveVideo && !p.isScreenSharing && (
+            <button
+              type="button"
+              onClick={() => setIsFlipped((prev) => !prev)}
+              className={`w-6 h-6 flex items-center justify-center rounded-lg border transition-colors cursor-pointer select-none opacity-0 group-hover:opacity-100 ${
+                isFlipped
+                  ? 'bg-[#0066cc]/25 border-[#0066cc]/40 text-[#4d9fff]'
+                  : 'bg-white/8 border-white/10 text-white/50 hover:text-white'
+              }`}
+              title={isFlipped ? 'Un-mirrored (Exact Reality)' : 'Mirrored View'}
+            >
+              <FlipHorizontal size={11} />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onPinParticipant(p.id)}
