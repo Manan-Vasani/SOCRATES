@@ -35,32 +35,27 @@ From the student's perspective, Socrates is a highly visual, friction-free learn
 * **Student Value:** Avoids paying for a full hour when they only need help with a single difficult topic or homework question.
 * **Tech Stack:** `{component.calendar-scheduler-genius}`, Razorpay API, Mongoose Booking model with duration intervals.
 
-#### 5. Instant "On-Demand" SOS Call (Ad-hoc Tutoring)
-* **What it does:** Students post a single difficult problem. The platform broadcasts it to active, online certified tutors in that subject. A tutor can accept and instantly start a 10-15 minute voice/video call.
-* **Student Value:** Get immediate human help on a specific roadblock without scheduling in advance.
-* **Tech Stack:** WebSockets (Socket.io), Jitsi room generation, active tutor matching queue.
-
-#### 6. Chat & Messenger
+#### 5. Chat & Messenger
 * **What it does:** A direct message terminal to chat with tutors, share homework attachments, and coordinate questions.
 * **Student Value:** Keeps communication direct and safe, without giving away private phone numbers.
 * **Tech Stack:** Socket.io (real-time chat), `{component.imessage-bubble}` UI, Multer/Cloudinary (file uploads).
 
-#### 7. Live FaceTime Classroom
+#### 6. Live FaceTime Classroom
 * **What it does:** An in-browser, high-definition video call room featuring a shared drawing canvas and real-time text editor.
 * **Student Value:** Dynamic learning room that lets them draw equations or write code alongside their tutor.
 * **Tech Stack:** Jitsi Meet API (video stream), Socket.io (canvas/editor sync), `{component.facetime-video-grid}`.
 
-#### 8. Active Socratic AI Assistant (On-Demand Help)
+#### 7. Active Socratic AI Assistant (On-Demand Help)
 * **What it does:** An integrated chat bot that uses the Socratic method (asking guiding questions) to help students solve homework problems.
 * **Student Value:** Immediate homework help without getting answers copy-pasted for them.
 * **Tech Stack:** Google Gemini API (Socratic Prompt Engineering).
 
-#### 9. Automated Session Recaps
+#### 8. Automated Session Recaps
 * **What it does:** After a class, the student receives a structured markdown summary outlining key topics, homework tasks, and transcripts.
 * **Student Value:** Saves time taking notes during class, allowing 100% focus on the tutor.
 * **Tech Stack:** Google Gemini API (Transcript summarization), BullMQ (Background job queue).
 
-#### 10. Community Doubt Board & Cost-Split Group Sessions
+#### 9. Community Doubt Board & Cost-Split Group Sessions
 * **What it does:** Students post specific doubts. If other students have the same issue, they can upvote it or click "Split Session". Tutors can host a group classroom session for up to 5 students on that doubt, auto-splitting the session fee.
 * **Student Value:** Reduces individual cost by up to 80% while enabling peer study and group problem-solving.
 * **Tech Stack:** Mongoose GroupBooking schema, Socket.io upvote broadcast, Razorpay split-payment logic.
@@ -84,8 +79,8 @@ From the tutor's perspective, Socrates is a professional business suite. It simp
 * **Tech Stack:** React forms (Zod validation), Mongoose (Tutor schema), Multer (file upload).
 
 #### 2. Availability & Slot Configurator
-* **What it does:** An interactive calendar grid where tutors configure their availability slots in varying increments (15m, 30m, 60m) and toggle their availability for "Instant SOS On-Demand" calls.
-* **Tutor Value:** Tutors can monetize small gaps in their schedule with quick 15-minute doubt-solving sessions, maximizing their earning potential.
+* **What it does:** An interactive calendar grid where tutors configure their availability slots in varying increments (15m, 30m, 60m).
+* **Tutor Value:** Tutors can monetize flexible gaps in their schedule with customizable session durations, maximizing their earning potential.
 * **Tech Stack:** FullCalendar React plugin, Mongoose Availability schema.
 
 #### 3. Dashboard Analytics & Earnings Tracker

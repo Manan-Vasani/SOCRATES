@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { X, ChevronsLeftRight, ShieldAlert, Lock, ArrowLeft, UserCheck } from 'lucide-react'
+import { X, ChevronsLeftRight, ShieldAlert, Lock, ArrowLeft, UserCheck, Sparkles, CheckCircle2, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import RoomHeader, { type StageMode } from '../components/study/RoomHeader'
 import VideoGrid from '../components/study/VideoGrid'
@@ -304,7 +304,8 @@ export default function StudyRoom() {
   const [activeCCEntry, setActiveCCEntry] = useState<TranscriptEntry | null>(null)
   const ccTimeoutRef = useRef<any>(null)
   const [showLeaveModal, setShowLeaveModal] = useState(false)
-  useScrollLock(showLeaveModal)
+  const [concludedRecap, setConcludedRecap] = useState<any | null>(null)
+  useScrollLock(showLeaveModal || Boolean(concludedRecap))
 
   // Fetch initial room transcript from MongoDB
   useEffect(() => {
@@ -492,6 +493,16 @@ export default function StudyRoom() {
   useEffect(() => {
     if (!socket) return
 
+    const handleSummaryReady = (data: any) => {
+      try {
+        sessionStorage.removeItem(`socrates_room_joined_${activeRoomId}`)
+        sessionStorage.removeItem(`socrates_room_details_${activeRoomId}`)
+        sessionStorage.removeItem(`socrates_session_start_${activeRoomId}`)
+      } catch {}
+      setConcludedRecap(data)
+      leaveRoom()
+    }
+
     const handleSessionEnded = (data?: { reason?: string }) => {
       try {
         sessionStorage.removeItem(`socrates_room_joined_${activeRoomId}`)
@@ -500,15 +511,23 @@ export default function StudyRoom() {
       } catch {}
 
       toast.info(data?.reason ? `Session concluded: ${data.reason}` : 'Study session officially concluded by tutor.')
+      if (!concludedRecap) {
+        setConcludedRecap({
+          roomId: activeRoomId,
+          summary: 'The study session has concluded. Your automated Socratic AI recap and study flashcards have been generated and dispatched.',
+          keyTakeaways: ['Session completed and recorded in your SOCRATES Vault.'],
+        })
+      }
       leaveRoom()
-      navigate('/profile')
     }
 
+    socket.on('session-summary-ready', handleSummaryReady)
     socket.on('study-session-ended-by-tutor', handleSessionEnded)
     return () => {
+      socket.off('session-summary-ready', handleSummaryReady)
       socket.off('study-session-ended-by-tutor', handleSessionEnded)
     }
-  }, [socket, activeRoomId, leaveRoom, navigate])
+  }, [socket, activeRoomId, leaveRoom, concludedRecap])
 
   const handleAutoEndSession = useCallback(async () => {
     try {
@@ -517,25 +536,25 @@ export default function StudyRoom() {
       sessionStorage.removeItem(`socrates_session_start_${activeRoomId}`)
     } catch {}
 
-    toast.warning('Session concluded. The 1-minute wrap-up window has ended.', {
+    toast.warning('Session concluded. The wrap-up window has ended.', {
       duration: 5000,
     })
 
     if (currentUser.role === 'tutor') {
       try {
-        await endStudyRoom(activeRoomId)
+        const res = await endStudyRoom(activeRoomId)
+        if (res?.recap) setConcludedRecap(res.recap)
       } catch {}
       if (socket) {
         socket.emit('end-study-session', {
           roomId: activeRoomId,
-          reason: '1-minute wrap-up window completed',
+          reason: 'Scheduled session duration completed',
         })
       }
     }
 
     leaveRoom()
-    navigate('/profile')
-  }, [activeRoomId, currentUser.role, socket, leaveRoom, navigate])
+  }, [activeRoomId, currentUser.role, socket, leaveRoom])
 
   const handleEndSession = async () => {
     try {
@@ -543,10 +562,20 @@ export default function StudyRoom() {
       sessionStorage.removeItem(`socrates_room_details_${activeRoomId}`)
       sessionStorage.removeItem(`socrates_session_start_${activeRoomId}`)
     } catch {}
+    setShowLeaveModal(false)
+
     try {
-      await endStudyRoom(activeRoomId)
+      const res = await endStudyRoom(activeRoomId)
       toast.success('Study session ended. Session recaps dispatched to all participants!')
-    } catch (e) {}
+      if (res?.recap) {
+        setConcludedRecap(res.recap)
+      } else {
+        navigate(`/recordings?room=${activeRoomId}`)
+      }
+    } catch (e) {
+      navigate(`/recordings?room=${activeRoomId}`)
+    }
+
     if (socket) {
       socket.emit('end-study-session', {
         roomId: activeRoomId,
@@ -554,8 +583,6 @@ export default function StudyRoom() {
       })
     }
     leaveRoom()
-    setShowLeaveModal(false)
-    navigate('/profile')
   }
 
   const renderStage = () => {
@@ -925,7 +952,7 @@ export default function StudyRoom() {
 
       {/* Leave / End Confirmation Modal */}
       {showLeaveModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-150 select-none">
           <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-7 w-full max-w-sm mx-4 space-y-5 animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-[#1d1d1f]">
@@ -966,6 +993,68 @@ export default function StudyRoom() {
                   {currentUser.role === 'tutor' ? 'Step Out' : 'Leave Room'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Celebratory Session Concluded & AI Summary Modal */}
+      {concludedRecap && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 animate-in fade-in duration-200 select-none p-4">
+          <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-7 sm:p-8 w-full max-w-lg mx-auto space-y-6 animate-in zoom-in-95 duration-200 text-center">
+            {/* Celebration Icon */}
+            <div className="w-16 h-16 rounded-full bg-[#f0fdf4] border border-[#bbf7d0] text-[#166534] flex items-center justify-center mx-auto shadow-xs">
+              <Sparkles size={30} className="text-[#166534]" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-block px-3.5 py-1 rounded-full bg-[#f0f6ff] border border-[#d0e1fd] text-[#0066cc] text-xs font-bold uppercase tracking-wider">
+                Session Complete
+              </span>
+              <h3 className="text-2xl font-display font-extrabold text-[#1d1d1f] tracking-tight">
+                AI Session Recap Ready
+              </h3>
+              <p className="text-xs sm:text-sm text-[#6e6e73] max-w-md mx-auto leading-relaxed">
+                Your study session has concluded. Socratic AI has synthesized your dialogue, generated active recall flashcards, and emailed your full briefing.
+              </p>
+            </div>
+
+            {/* Executive Summary Snippet */}
+            {concludedRecap.summary && (
+              <div className="p-4 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] text-left space-y-1.5 text-xs">
+                <div className="font-bold text-[#0066cc] flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
+                  <Sparkles size={13} />
+                  <span>Executive Takeaway</span>
+                </div>
+                <p className="text-[#334155] line-clamp-3 leading-relaxed">
+                  {concludedRecap.summary}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setConcludedRecap(null)
+                  navigate(`/recordings?room=${encodeURIComponent(activeRoomId)}`)
+                }}
+                className="w-full py-3.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-extrabold transition-all shadow-md shadow-[#0066cc]/25 cursor-pointer transform-gpu"
+              >
+                Open Interactive AI Recap &amp; Flashcards
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setConcludedRecap(null)
+                  navigate('/profile')
+                }}
+                className="w-full py-3 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-bold border border-[#e0e0e4] transition-all cursor-pointer"
+              >
+                Return to My Dashboard
+              </button>
             </div>
           </div>
         </div>

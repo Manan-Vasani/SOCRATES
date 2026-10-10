@@ -5,6 +5,7 @@ const studyRoom = require('../controllers/studyRoomController');
 
 // ─── Room Routes ───────────────────────────────────────────────
 router.get('/', studyRoom.getRooms);
+router.get('/my-recaps', protect, studyRoom.getMyRecaps);
 router.post('/', protect, studyRoom.createRoom);
 router.get('/:id', optionalAuth, studyRoom.getRoom);
 

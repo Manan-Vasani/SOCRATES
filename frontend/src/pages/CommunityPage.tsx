@@ -24,6 +24,7 @@ import {
   Percent,
   Plus,
   PlusCircle,
+  RotateCcw,
   Search,
   Share2,
   ShieldCheck,
@@ -1873,6 +1874,41 @@ export default function CommunityPage() {
                   )}
                 </div>
 
+                {/* Academic Discussions Header matching Tutors.tsx */}
+                <div className="flex items-center justify-between mb-4 px-1 sm:px-2">
+                  <div className="flex items-center gap-2.5 select-none">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse shrink-0" />
+                      <h2 className="text-sm sm:text-base font-bold text-[#1d1d1f] tracking-tight">
+                        Academic Discussions
+                      </h2>
+                    </div>
+                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 font-extrabold text-xs">
+                      {filteredThreads.length} Available
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {(activeSubject !== 'All' || searchQuery || filterMode !== 'all' || activeThread !== null) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSubject('All')
+                          setSearchQuery('')
+                          setFilterMode('all')
+                          setActiveThread(null)
+                          loadThreads()
+                          toast.success('Filters reset & discussions refreshed')
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/40 text-xs font-semibold text-[#525252] hover:text-[#0066cc] transition-all duration-150 shadow-2xs hover:shadow-xs cursor-pointer select-none shrink-0 transform-gpu leading-none"
+                      >
+                        <RotateCcw size={12} className={`text-[#0066cc] ${isLoading ? 'animate-spin' : ''}`} />
+                        <span>Reset Filters</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Doubts Feed - Loading Skeleton or Feed */}
                 {isLoading ? (
                   <div className="space-y-4 min-h-[500px]">
@@ -1903,8 +1939,22 @@ export default function CommunityPage() {
                         No Doubt Threads Found
                       </h3>
                       <p className="text-sm sm:text-base text-[#6e6e73] leading-relaxed">
-                        We couldn't find any academic threads matching your selected criteria. Be the first scholar to start a discussion!
+                        We couldn't find any academic threads matching your selected criteria. Try adjusting your filters.
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSubject('All')
+                          setSearchQuery('')
+                          setFilterMode('all')
+                          setActiveThread(null)
+                          loadThreads()
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 mt-2 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/40 text-xs font-semibold text-[#0066cc] shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                      >
+                        <RotateCcw size={12} className="text-[#0066cc]" />
+                        <span>Reset Filters</span>
+                      </button>
                     </div>
                   </div>
                 ) : (

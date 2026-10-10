@@ -580,6 +580,47 @@ const buildPeerStudentJoinedGroupEmail = ({ booking, peerStudentName, newStudent
 };
 
 /**
+ * Format raw LaTeX formulas into readable mathematical Unicode typography for emails
+ */
+const formatMathFormula = (eq) => {
+  if (!eq) return '';
+  return eq
+    .replace(/\\int\b/g, '∫')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 / $2')
+    .replace(/\\arctan\b/g, 'arctan')
+    .replace(/\\sin\b/g, 'sin')
+    .replace(/\\cos\b/g, 'cos')
+    .replace(/\\tan\b/g, 'tan')
+    .replace(/\\left\(/g, '(')
+    .replace(/\\right\)/g, ')')
+    .replace(/\\,/g, ' ')
+    .replace(/\\\s/g, ' ')
+    .replace(/\^2\b/g, '²')
+    .replace(/\^3\b/g, '³')
+    .replace(/\^n\b/g, 'ⁿ')
+    .replace(/\\times\b/g, '×')
+    .replace(/\\cdot\b/g, '·')
+    .replace(/\\min\b/g, 'min')
+    .replace(/\\log\b/g, 'log')
+    .replace(/\\alpha\b/g, 'α')
+    .replace(/\\beta\b/g, 'β')
+    .replace(/\\theta\b/g, 'θ')
+    .replace(/\\pi\b/g, 'π')
+    .replace(/\\sigma\b/g, 'σ')
+    .replace(/\\Delta\b/g, 'Δ')
+    .replace(/\\pm\b/g, '±')
+    .replace(/\\infty\b/g, '∞')
+    .replace(/\\approx\b/g, '≈')
+    .replace(/\\neq\b/g, '≠')
+    .replace(/\\leq\b/g, '≤')
+    .replace(/\\geq\b/g, '≥')
+    .replace(/\\([a-zA-Z]+)/g, '$1')
+    .replace(/\{([^{}]+)\}/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+/**
  * 8. End-of-Session Recap Email
  * Dispatched to participants when a study session concludes.
  */
@@ -594,89 +635,225 @@ const buildSessionRecapEmail = ({
   meetingId,
   isGroupSession = false,
   totalParticipants = 1,
+  totalWords = 0,
+  executiveSummary = '',
+  keyTakeaways = [],
+  actionItems = [],
+  keyEquations = [],
+  flashcards = [],
+  sharedFiles = [],
+  recordingsUrl = `${FRONTEND_URL}/recordings`,
 }) => {
-  const profileUrl = `${FRONTEND_URL}/profile`;
+  const recapLink = meetingId ? `${recordingsUrl}?room=${encodeURIComponent(meetingId)}` : recordingsUrl;
 
   const content = `
     <!-- Header Section -->
-    <div style="margin-bottom: 28px; text-align: left;">
-      <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-        Session Complete
-      </span>
-      <h1 style="font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 24px; font-weight: 700; color: #1d1d1f; margin: 0 0 8px 0; letter-spacing: -0.5px; line-height: 1.2;">
+    <div style="margin-bottom: 24px; text-align: left;">
+      <h1 style="font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 24px; font-weight: 700; color: #1d1d1f; margin: 0 0 18px 0; letter-spacing: -0.5px; line-height: 1.25;">
         Session Summary: ${subject}
       </h1>
-      <p style="font-size: 15px; line-height: 1.5; color: #515154; margin: 0;">
-        Hi <strong>${recipientName || 'there'}</strong>, your ${isGroupSession ? 'group study session' : '1-on-1 tutoring session'} has concluded. Here is your session recap.
+      <p style="font-size: 15px; line-height: 1.6; color: #515154; margin: 0 0 24px 0;">
+        Hi <strong>${recipientName || 'there'}</strong>, your ${isGroupSession ? 'group study session' : '1-on-1 tutoring session'} with <strong>${tutorName || 'your mentor'}</strong> has concluded. Here is your automated Socratic AI intelligence briefing and review toolkit.
       </p>
     </div>
 
-    <!-- Metrics Strip -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+    <!-- Metrics Strip (Clean & Focused) -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 28px;">
       <tr>
-        <td width="32%" style="background-color: #f5f5f7; border: 1px solid #e5e5e7; border-radius: 12px; padding: 14px; text-align: center;">
-          <div style="font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px;">Duration</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f;">${durationMinutes} min</div>
+        <td width="48%" style="background-color: #f5f5f7; border-radius: 14px; padding: 14px 18px; text-align: center;">
+          <div style="font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Duration</div>
+          <div style="font-size: 18px; font-weight: 800; color: #1d1d1f;">${durationMinutes} min</div>
         </td>
-        <td width="2%"></td>
-        <td width="32%" style="background-color: #f5f5f7; border: 1px solid #e5e5e7; border-radius: 12px; padding: 14px; text-align: center;">
-          <div style="font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px;">Messages</div>
-          <div style="font-size: 18px; font-weight: 700; color: #0066cc;">${messageCount}</div>
-        </td>
-        <td width="2%"></td>
-        <td width="32%" style="background-color: #f5f5f7; border: 1px solid #e5e5e7; border-radius: 12px; padding: 14px; text-align: center;">
-          <div style="font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px;">Learners</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f;">${totalParticipants}</div>
+        <td width="4%"></td>
+        <td width="48%" style="background-color: #f5f5f7; border-radius: 14px; padding: 14px 18px; text-align: center;">
+          <div style="font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Participants</div>
+          <div style="font-size: 18px; font-weight: 800; color: #1d1d1f;">${totalParticipants} ${totalParticipants === 1 ? 'Learner' : 'Learners'}</div>
         </td>
       </tr>
     </table>
 
-    <!-- Session Details Card -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border: 1px solid #e5e5e7; border-radius: 14px; margin-bottom: 28px; overflow: hidden;">
-      <tr>
-        <td style="padding: 20px 24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="padding: 8px 0; font-size: 14px; color: #86868b; font-weight: 400;">Subject</td>
-              <td align="right" style="padding: 8px 0; font-size: 14px; font-weight: 600; color: #1d1d1f;">${subject}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; border-top: 1px solid #e5e5e7; font-size: 14px; color: #86868b; font-weight: 400;">Topic</td>
-              <td align="right" style="padding: 8px 0; border-top: 1px solid #e5e5e7; font-size: 14px; font-weight: 600; color: #1d1d1f;">${topic || 'Live Interactive Practice'}</td>
-            </tr>
-            ${tutorName ? `
-            <tr>
-              <td style="padding: 8px 0; border-top: 1px solid #e5e5e7; font-size: 14px; color: #86868b; font-weight: 400;">Tutor</td>
-              <td align="right" style="padding: 8px 0; border-top: 1px solid #e5e5e7; font-size: 14px; font-weight: 600; color: #1d1d1f;">${tutorName}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 8px 0; border-top: 1px solid #e5e5e7; font-size: 14px; color: #86868b; font-weight: 400;">Meeting ID</td>
-              <td align="right" style="padding: 8px 0; border-top: 1px solid #e5e5e7; font-family: monospace; font-size: 13px; font-weight: 600; color: #515154;">${meetingId || 'N/A'}</td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+    ${executiveSummary ? `
+    <!-- Executive Summary Card -->
+    <div style="margin-bottom: 24px;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #86868b; margin-bottom: 8px;">
+        Executive Summary
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f0f6ff; border: 1px solid #d0e1fd; border-radius: 14px; overflow: hidden;">
+        <tr>
+          <td style="padding: 18px 20px;">
+            <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #1e3a8a;">
+              ${executiveSummary}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+    ` : ''}
+
+    ${keyTakeaways && keyTakeaways.length > 0 ? `
+    <!-- Key Concepts Mastered -->
+    <div style="margin-bottom: 24px;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #86868b; margin-bottom: 8px;">
+        Key Concepts Mastered
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #e5e5e7; border-radius: 14px; overflow: hidden;">
+        <tr>
+          <td style="padding: 16px 20px;">
+            ${keyTakeaways.map((takeaway, idx) => `
+              <div style="margin-bottom: ${idx === keyTakeaways.length - 1 ? '0px' : '10px'}; font-size: 14px; line-height: 1.5; color: #1d1d1f;">
+                <span style="display: inline-block; width: 6px; height: 6px; background-color: #0066cc; border-radius: 50%; margin-right: 10px; vertical-align: middle;"></span>
+                ${takeaway}
+              </div>
+            `).join('')}
+          </td>
+        </tr>
+      </table>
+    </div>
+    ` : ''}
+
+    ${actionItems && actionItems.length > 0 ? `
+    <!-- Action Items & Homework Checklist -->
+    <div style="margin-bottom: 24px;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #86868b; margin-bottom: 8px;">
+        Recommended Practice & Action Items
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #e5e5e7; border-radius: 14px; overflow: hidden;">
+        <tr>
+          <td style="padding: 16px 20px;">
+            ${actionItems.map((item, idx) => `
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: ${idx === actionItems.length - 1 ? '0px' : '12px'};">
+                <tr>
+                  <td width="22" valign="top" style="padding-top: 1px;">
+                    <div style="width: 16px; height: 16px; border-radius: 5px; background-color: #0066cc; text-align: center; line-height: 16px; color: #ffffff; font-size: 10px; font-weight: 800;">✓</div>
+                  </td>
+                  <td style="font-size: 14px; line-height: 1.5; color: #1d1d1f; padding-left: 10px;">
+                    ${item}
+                  </td>
+                </tr>
+              </table>
+            `).join('')}
+          </td>
+        </tr>
+      </table>
+    </div>
+    ` : ''}
+
+    ${keyEquations && keyEquations.length > 0 ? `
+    <!-- Key Equations & Formulations -->
+    <div style="margin-bottom: 24px;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #86868b; margin-bottom: 8px;">
+        Formulas & Core Principles
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden;">
+        <tr>
+          <td style="padding: 16px 18px;">
+            ${keyEquations.map((eq, idx) => `
+              <div style="margin-bottom: ${idx === keyEquations.length - 1 ? '0px' : '8px'}; font-family: 'Cambria Math', 'Latin Modern Math', 'STIX Two Math', 'Times New Roman', Georgia, serif; font-size: 15px; font-style: normal; color: #0f172a; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 14px; line-height: 1.5;">
+                ${formatMathFormula(eq)}
+              </div>
+            `).join('')}
+          </td>
+        </tr>
+      </table>
+    </div>
+    ` : ''}
+
+    ${flashcards && flashcards.length > 0 ? `
+    <!-- Socratic Active Recall Flashcards (Borderless & Clean Apple Styling) -->
+    <div style="margin-bottom: 24px;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #86868b; margin-bottom: 8px;">
+        Generated Active-Recall Flashcards
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${flashcards.slice(0, 3).map((card, idx) => `
+          <tr>
+            <td style="padding-bottom: 12px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: none; border-radius: 14px; padding: 16px 20px;">
+                <tr>
+                  <td>
+                    <div style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #0066cc; background-color: #e8f0fe; padding: 3px 8px; border-radius: 6px; margin-bottom: 8px;">
+                      Flashcard ${idx + 1}
+                    </div>
+                    <div style="font-size: 15px; font-weight: 600; line-height: 1.45; color: #0f172a; margin-bottom: 10px;">
+                      ${card.question}
+                    </div>
+                    <div style="background-color: #ffffff; border-radius: 10px; padding: 12px 16px; border-left: 3px solid #0066cc;">
+                      <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #0066cc; margin-bottom: 3px;">
+                        Key Principle &amp; Answer
+                      </div>
+                      <div style="font-size: 13px; line-height: 1.5; color: #334155;">
+                        ${card.answer}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+    ` : ''}
+
+    ${sharedFiles && sharedFiles.length > 0 ? `
+    <!-- Shared Files & Resources (Card Structured, No Raw Emojis) -->
+    <div style="margin-bottom: 24px;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #86868b; margin-bottom: 8px;">
+        Shared Session Assets & Notes
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${sharedFiles.map((file, idx) => {
+          const ext = (file.name.split('.').pop() || 'FILE').toUpperCase();
+          return `
+          <tr>
+            <td style="padding-bottom: ${idx === sharedFiles.length - 1 ? '0px' : '8px'};">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <tr>
+                  <td width="36" align="center" style="padding: 10px 0 10px 14px;">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background-color: #e8f0fe; color: #0066cc; font-size: 10px; font-weight: 800; text-align: center; line-height: 32px;">
+                      ${ext}
+                    </div>
+                  </td>
+                  <td style="padding: 10px 14px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #0f172a; line-height: 1.3;">
+                      ${file.name}
+                    </div>
+                    ${file.uploadedBy ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Shared by ${file.uploadedBy}</div>` : ''}
+                  </td>
+                  <td align="right" style="padding: 10px 14px 10px 0;">
+                    <a href="${file.url}" target="_blank" style="display: inline-block; padding: 6px 14px; background-color: #0066cc; color: #ffffff !important; font-size: 12px; font-weight: 600; text-decoration: none; border-radius: 9999px;">
+                      View
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          `;
+        }).join('')}
+      </table>
+    </div>
+    ` : ''}
 
     <!-- Call to Action -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
       <tr>
         <td align="center">
-          <a href="${profileUrl}" class="button-pill" style="display: inline-block; padding: 12px 32px; background-color: #0066cc; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 9999px; text-align: center;">
-            View Your Sessions & Profile
+          <a href="${recapLink}" class="button-pill" style="display: inline-block; padding: 13px 34px; background-color: #0066cc; color: #ffffff !important; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 9999px; text-align: center; box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);">
+            Open Interactive AI Recap & Flashcards
           </a>
         </td>
       </tr>
     </table>
 
     <p style="font-size: 12px; line-height: 1.5; color: #86868b; text-align: center; margin: 0;">
-      Keep practicing! Socratic AI notes and review materials are accessible in your dashboard.
+      All recordings, interactive transcripts, and AI-generated study cards are permanently synced in your <a href="${recapLink}" style="color: #0066cc; text-decoration: underline;">SOCRATES AI Recaps Vault</a>.
     </p>
   `;
 
   return baseEmailLayout({
-    title: `Session Recap: ${subject} — SOCRATES`,
-    previewText: `Your ${subject} session recap is ready.`,
+    title: `AI Session Recap: ${subject} — SOCRATES`,
+    previewText: `Your ${subject} AI session recap and review flashcards are ready.`,
     content,
   });
 };

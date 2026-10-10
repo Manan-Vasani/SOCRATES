@@ -1,16 +1,14 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import { useScrollLock } from '../hooks/useScrollLock'
+import React, { useState, useEffect, useRef } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowDownWideNarrow,
+  ArrowLeft,
   ArrowUpNarrowWide,
   Atom,
   BookOpen,
   Calendar,
   Check,
+  CheckSquare,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -18,107 +16,274 @@ import {
   Code2,
   Cpu,
   Download,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileCode,
+  FileDown,
+  FileText,
   Filter,
   FlaskConical,
+  FolderDown,
+  Image as ImageIcon,
   Layers,
+  Lightbulb,
+  ListTodo,
   Play,
+  RotateCcw,
   Search,
   Sigma,
   Sparkles,
+  Square,
   User,
   Video,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { fetchMyRecaps } from '../services/api'
+
+interface Flashcard {
+  question: string
+  answer: string
+}
+
+interface SharedFile {
+  name: string
+  url: string
+  uploadedBy?: string
+}
 
 interface SessionRecord {
   id: string
+  roomId?: string
   title: string
   subject: string
+  topic?: string
   tutorName: string
+  studentName?: string
+  studentNames?: string[]
   tutorAvatar?: string
   date: string
   duration: string
-  fileSize: string
+  fileSize?: string
   thumbnailUrl: string
   videoUrl: string
+  recordingUrl?: string
+  executiveSummary?: string
   aiSummary: string[]
+  actionItems?: string[]
   keyEquations: string[]
-  transcript: { time: string; speaker: string; text: string }[]
+  flashcards?: Flashcard[]
+  sharedFiles?: SharedFile[]
+  totalWords?: number
+  transcript: { time: string; speaker: string; text: string; role?: string }[]
+}
+
+export const TUTOR_AVATAR_MAP: Record<string, string> = {
+  'Dr. Alex Vance': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400',
+  'Elena Rostova': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
+  'Prof. Sarah Jenkins': 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
+  'Dr. Evelyn Reed': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
+  'Marcus Chen': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
+  'Sophia Williams': 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
+  'Alexandre Dubois': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+  'Priya Sharma': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+  'David Vance': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400',
+}
+
+export const getTutorAvatar = (tutorName: string, customAvatar?: string): string => {
+  if (customAvatar && customAvatar.trim() !== '') return customAvatar
+  if (tutorName && TUTOR_AVATAR_MAP[tutorName]) return TUTOR_AVATAR_MAP[tutorName]
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(tutorName || 'Tutor')}&background=0066cc&color=fff&size=128&bold=true`
+}
+
+export const getRecordStudents = (record: SessionRecord): string[] => {
+  const set = new Set<string>()
+
+  if (Array.isArray(record.studentNames)) {
+    record.studentNames.forEach((s) => {
+      const trimmed = s?.trim()
+      if (trimmed) set.add(trimmed)
+    })
+  }
+
+  if (record.studentName) {
+    record.studentName.split(/[,&]/).forEach((s) => {
+      const trimmed = s?.trim()
+      if (trimmed) set.add(trimmed)
+    })
+  }
+
+  if (Array.isArray(record.transcript)) {
+    const tutorLower = (record.tutorName || '').toLowerCase().trim()
+    record.transcript.forEach((t) => {
+      const speaker = (t.speaker || '').trim()
+      const speakerLower = speaker.toLowerCase()
+      if (
+        speaker &&
+        speakerLower !== 'system' &&
+        speakerLower !== tutorLower &&
+        !tutorLower.includes(speakerLower) &&
+        (t.role === 'student' || !t.role || t.role === 'participant')
+      ) {
+        set.add(speaker)
+      }
+    })
+  }
+
+  const result = Array.from(set)
+  return result.length > 0 ? result : (record.studentName ? [record.studentName] : ['Student'])
 }
 
 const SAMPLE_RECORDINGS: SessionRecord[] = [
   {
     id: 'rec-1',
+    roomId: 'sess-101',
     title: 'Advanced Calculus: Integration by Parts & Partial Fractions',
     subject: 'Mathematics',
+    topic: 'Integration by Parts & ILATE Strategy',
     tutorName: 'Dr. Alex Vance',
+    tutorAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400',
+    studentName: 'Alex Chen',
+    studentNames: ['Alex Chen', 'Sophia Taylor'],
     date: 'Aug 2, 2026',
     duration: '45 mins',
     fileSize: '320 MB',
+    totalWords: 3420,
     thumbnailUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=800&auto=format&fit=crop',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    executiveSummary: 'This advanced calculus masterclass established the core foundations of Integration by Parts, transforming complex product integrals through systematic reduction. The student achieved complete mastery of boundary evaluations and partial fraction decompositions.',
     aiSummary: [
       'Derived the Product Rule origin for Integration by Parts: ∫ u dv = uv - ∫ v du.',
       'Demonstrated ILATE rule priority for choosing u (Inverse trig, Logarithmic, Algebraic, Trigonometric, Exponential).',
       'Solved 3 complex improper integral problems on the digital whiteboard.',
     ],
+    actionItems: [
+      'Solve problems #14 to #22 from Chapter 7.2 on partial fraction expansions.',
+      'Practice evaluating improper integrals with infinite upper limits.',
+      'Complete the active-recall flashcards below to solidify the ILATE rule.',
+    ],
     keyEquations: [
       '\\int u \\, dv = uv - \\int v \\, du',
       '\\int \\frac{1}{x^2 + a^2} dx = \\frac{1}{a} \\arctan\\left(\\frac{x}{a}\\right) + C',
     ],
+    flashcards: [
+      {
+        question: 'What does each letter in the ILATE acronym represent for selecting u in integration by parts?',
+        answer: 'Inverse Trigonometric, Logarithmic, Algebraic, Trigonometric, Exponential.',
+      },
+      {
+        question: 'When should you choose Tabular Integration (DI Method) over standard integration by parts?',
+        answer: 'When one factor differentiates to zero after repeated derivatives (e.g. polynomials multiplied by sine, cosine, or exponential functions).',
+      },
+      {
+        question: 'What is the algebraic form for decomposing a repeated linear factor 1/(x-a)^2?',
+        answer: 'A/(x - a) + B/(x - a)^2',
+      },
+    ],
+    sharedFiles: [
+      { name: 'Integration_By_Parts_Cheatsheet.pdf', url: '#', uploadedBy: 'Dr. Alex Vance' },
+      { name: 'Calculus_Whiteboard_Export.png', url: '#', uploadedBy: 'Alex Chen' },
+    ],
     transcript: [
       { time: '00:02', speaker: 'Dr. Alex Vance', text: 'Welcome back! Today we are diving into advanced integration techniques.' },
-      { time: '05:14', speaker: 'You', text: 'Can we go over how to pick u when both algebraic and trig functions appear?' },
+      { time: '05:14', speaker: 'Alex Chen', text: 'Can we go over how to pick u when both algebraic and trig functions appear?' },
       { time: '05:30', speaker: 'Dr. Alex Vance', text: 'Great question! Remember the ILATE rule hierarchy. Algebraic comes before Trigonometric.' },
+      { time: '14:10', speaker: 'Sophia Taylor', text: 'Does that mean trigonometric functions should always be chosen as dv if exponential is absent?' },
+      { time: '14:28', speaker: 'Dr. Alex Vance', text: 'Spot on, Sophia. ILATE prioritizes Algebraic for u over Trigonometric.' },
       { time: '22:40', speaker: 'Dr. Alex Vance', text: 'Let us draw this step on the whiteboard and check our boundary limits.' },
     ],
   },
   {
     id: 'rec-2',
+    roomId: 'sess-102',
     title: 'Data Structures: Graph Traversal & Dijkstra Algorithm',
     subject: 'Computer Science',
+    topic: 'Dijkstra Shortest Path & Priority Queues',
     tutorName: 'Elena Rostova',
+    tutorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
+    studentName: 'Alex Chen',
+    studentNames: ['Alex Chen', 'Marcus Brody'],
     date: 'Jul 30, 2026',
     duration: '60 mins',
     fileSize: '410 MB',
+    totalWords: 4180,
     thumbnailUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800&auto=format&fit=crop',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    executiveSummary: 'Collaborative analysis of single-source shortest path algorithms. Implemented an optimized Dijkstra algorithm using a Min-Heap priority queue in Python and verified asymptotic complexity guarantees.',
     aiSummary: [
       'Implemented Min-Heap priority queue optimization for Dijkstra in Python.',
       'Analyzed O((V + E) log V) time complexity vs O(V^2) unoptimized matrix approach.',
       'Ran live test cases in SOCRATES Code Sandbox IDE.',
     ],
+    actionItems: [
+      'Implement Bellman-Ford algorithm to handle graphs with negative edge weights.',
+      'Benchmark Dijkstra heap implementation on 10,000 node random graph.',
+      'Review topological sorting for Directed Acyclic Graphs (DAGs).',
+    ],
     keyEquations: [
       'd[v] = \\min(d[v], d[u] + w(u, v))',
       'Time\\ Complexity = O((V + E) \\log V)',
     ],
+    flashcards: [
+      {
+        question: 'Why does standard Dijkstra algorithm fail on graphs containing negative edge weights?',
+        answer: 'Dijkstra greedily assumes that once a vertex is marked visited with the minimum distance, its shortest path is permanently finalized. A negative edge explored later could invalidate that greedy choice.',
+      },
+      {
+        question: 'What is the time complexity of Dijkstra using a Fibonacci Heap vs a Binary Min-Heap?',
+        answer: 'Fibonacci Heap: O(E + V log V). Binary Min-Heap: O((V + E) log V).',
+      },
+    ],
+    sharedFiles: [
+      { name: 'dijkstra_min_heap.py', url: '#', uploadedBy: 'Elena Rostova' },
+    ],
     transcript: [
       { time: '00:05', speaker: 'Elena Rostova', text: 'Let us start by building an adjacency list representation of our graph.' },
-      { time: '14:20', speaker: 'You', text: 'Why do we use a priority queue instead of a standard FIFO queue?' },
+      { time: '14:20', speaker: 'Alex Chen', text: 'Why do we use a priority queue instead of a standard FIFO queue?' },
       { time: '14:45', speaker: 'Elena Rostova', text: 'Because we always want to extract the vertex with the smallest distance estimation next.' },
+      { time: '18:30', speaker: 'Marcus Brody', text: 'Can we trace the priority queue decrease-key operation step by step?' },
     ],
   },
   {
     id: 'rec-3',
+    roomId: 'sess-103',
     title: 'Quantum Mechanics: Wave Packet Dispersion & Uncertainty',
     subject: 'Physics',
+    topic: 'Heisenberg Uncertainty & Gaussian Packets',
     tutorName: 'Prof. Sarah Jenkins',
+    tutorAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
+    studentName: 'Alex Chen',
+    studentNames: ['Alex Chen', 'Liam Vance'],
     date: 'Jul 28, 2026',
     duration: '50 mins',
     fileSize: '380 MB',
+    totalWords: 3890,
     thumbnailUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?q=80&w=800&auto=format&fit=crop',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    executiveSummary: 'Derived the non-relativistic Schrödinger equation and explored wave packet broadening in free space. Highlighted the fundamental relationship between conjugate position and momentum spaces.',
     aiSummary: [
       'Derived the Heisenberg Uncertainty Principle Δx Δp ≥ ħ/2 from Fourier transform pairs.',
       'Simulated Gaussian wave packet broadening over time on the shared canvas.',
+    ],
+    actionItems: [
+      'Calculate the group velocity vs phase velocity for a free electron packet.',
+      'Solve the 1D infinite square well boundary condition problem.',
     ],
     keyEquations: [
       '\\Delta x \\cdot \\Delta p \\ge \\frac{\\hbar}{2}',
       'i\\hbar \\frac{\\partial}{\\partial t} \\psi(x,t) = \\hat{H} \\psi(x,t)',
     ],
+    flashcards: [
+      {
+        question: 'What is the physical meaning of the wavefunction modulus squared |ψ(x,t)|²?',
+        answer: 'Born Rule: The probability density of finding the particle at position x at time t.',
+      },
+    ],
+    sharedFiles: [],
     transcript: [
       { time: '00:10', speaker: 'Prof. Sarah Jenkins', text: 'Today we explore how momentum uncertainty causes spatial spreading of wavepackets.' },
+      { time: '08:45', speaker: 'Liam Vance', text: 'How does wavepacket dispersion differ in a non-zero potential well?' },
     ],
   },
 ]
@@ -143,12 +308,34 @@ const getSubjectFilterIcon = (subj: string, isActive: boolean) => {
   }
 }
 
+function RecordingCardSkeleton() {
+  return (
+    <div className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-xs grid grid-cols-1 md:grid-cols-12 gap-0 animate-pulse select-none">
+      <div className="md:col-span-5 lg:col-span-4 min-h-[220px] bg-[#f0f0f2]" />
+      <div className="md:col-span-7 lg:col-span-8 p-7 sm:p-8 space-y-5 flex flex-col justify-between">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="h-6 bg-[#e5e5e7]/80 rounded-md w-3/4" />
+            <div className="h-4 bg-[#e5e5e7]/50 rounded-md w-1/3" />
+          </div>
+          <div className="h-20 bg-[#f4f8fc] rounded-2xl border border-[#0066cc]/10 p-4 space-y-2" />
+        </div>
+        <div className="h-10 bg-[#f5f5f7] rounded-xl w-full" />
+      </div>
+    </div>
+  )
+}
+
 export default function RecordingsPage() {
-  const [recordings] = useState<SessionRecord[]>(SAMPLE_RECORDINGS)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const roomQuery = searchParams.get('room')
+
+  const [recordings, setRecordings] = useState<SessionRecord[]>(SAMPLE_RECORDINGS)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSubject, setActiveSubject] = useState('All')
   const [selectedRecord, setSelectedRecord] = useState<SessionRecord | null>(null)
-  useScrollLock(Boolean(selectedRecord))
   const [isPlayingVideo, setIsPlayingVideo] = useState(false)
   const [selectedDateFilter, setSelectedDateFilter] = useState('All')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
@@ -157,14 +344,140 @@ export default function RecordingsPage() {
   const [calendarYear, setCalendarYear] = useState(2026)
   const [calendarMonth, setCalendarMonth] = useState(6) // 0-indexed: 6 = July 2026
 
+  // In-page Active Studio Tab: 'briefing' | 'flashcards' | 'checklist' | 'transcript'
+  const [studioTab, setStudioTab] = useState<'briefing' | 'flashcards' | 'checklist' | 'transcript'>('briefing')
+  const [revealedFlashcards, setRevealedFlashcards] = useState<Set<number>>(new Set())
+  const [completedActions, setCompletedActions] = useState<Set<number>>(new Set())
+
+  const studioRef = useRef<HTMLDivElement | null>(null)
+
+  // Load real recaps from backend with skeleton state support (matches Tutors.tsx)
+  const loadUserRecaps = React.useCallback(async (showRefreshing = false) => {
+    if (showRefreshing) setIsRefreshing(true)
+    else setIsLoading(true)
+    try {
+      const res = await fetchMyRecaps()
+      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+        const backendRecords: SessionRecord[] = res.data.map((item: any) => ({
+          id: item.id || `rec-${item.roomId}`,
+          roomId: item.roomId,
+          title: `${item.subject}: ${item.topic || 'Interactive Practice'}`,
+          subject: item.subject || 'General Tutoring',
+          topic: item.topic || 'Socratic Tutoring',
+          tutorName: item.tutorName || 'Mentor',
+          studentName: item.studentName || 'Student',
+          studentNames: Array.isArray(item.studentNames) && item.studentNames.length > 0
+            ? item.studentNames
+            : (item.studentName ? [item.studentName] : ['Student']),
+          tutorAvatar: item.tutorAvatar,
+          date: item.date || 'Recent',
+          duration: `${item.durationMinutes || 60} mins`,
+          fileSize: 'HD Video & Audio',
+          totalWords: item.totalWords || 0,
+          thumbnailUrl: item.thumbnailUrl || (item.subject?.toLowerCase().includes('math')
+            ? 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=800&auto=format&fit=crop'
+            : item.subject?.toLowerCase().includes('computer')
+            ? 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800&auto=format&fit=crop'
+            : 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?q=80&w=800&auto=format&fit=crop'),
+          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          recordingUrl: item.recordingUrl,
+          executiveSummary: item.executiveSummary,
+          aiSummary: Array.isArray(item.keyTakeaways) && item.keyTakeaways.length > 0
+            ? item.keyTakeaways
+            : ['Mastered core concepts and problem-solving strategies collaboratively.'],
+          actionItems: item.actionItems || [],
+          keyEquations: item.keyEquations || [],
+          flashcards: item.flashcards || [],
+          sharedFiles: item.sharedFiles || [],
+          transcript: Array.isArray(item.transcriptEntries)
+            ? item.transcriptEntries.map((e: any) => ({
+                time: e.timeFormatted || '00:00',
+                speaker: e.speakerName || 'Speaker',
+                text: e.text || '',
+                role: e.role || 'student',
+              }))
+            : [],
+        }))
+
+        const existingIds = new Set(backendRecords.map((r) => r.roomId || r.id))
+        const nonDuplicatedSamples = SAMPLE_RECORDINGS.filter((s) => !existingIds.has(s.roomId) && !existingIds.has(s.id))
+        setRecordings([...backendRecords, ...nonDuplicatedSamples])
+      }
+    } catch (err) {
+      console.warn('[Recordings Page] Fallback to cached session recaps', err)
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false)
+        setIsRefreshing(false)
+      }, 200)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadUserRecaps()
+  }, [loadUserRecaps])
+
+  // Auto-select room from query parameter (?room=...) directly on page
+  useEffect(() => {
+    if (roomQuery && recordings.length > 0) {
+      const match = recordings.find((r) => r.roomId === roomQuery || r.id === roomQuery)
+      if (match) {
+        setSelectedRecord(match)
+        setStudioTab('briefing')
+        setRevealedFlashcards(new Set())
+      }
+    }
+  }, [roomQuery, recordings])
+
+  const selectSessionOnPage = (rec: SessionRecord, playVideo = false) => {
+    setSelectedRecord(rec)
+    setIsPlayingVideo(playVideo)
+    setStudioTab('briefing')
+    setRevealedFlashcards(new Set())
+    if (rec.roomId) {
+      setSearchParams({ room: rec.roomId })
+    }
+    // Smooth scroll down to the in-page active session studio
+    setTimeout(() => {
+      studioRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+  }
+
+  const clearSelectedSession = () => {
+    setSelectedRecord(null)
+    setIsPlayingVideo(false)
+    setSearchParams({})
+  }
+
+  const toggleFlashcard = (index: number) => {
+    setRevealedFlashcards((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }
+
+  const toggleActionItem = (index: number) => {
+    setCompletedActions((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
 
-  const dateOptions = ['All', ...Array.from(new Set(recordings.map((r) => r.date)))]
-
-  // Days in month calculator
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate()
   const getFirstDayOfWeek = (year: number, month: number) => new Date(year, month, 1).getDay()
 
@@ -194,7 +507,8 @@ export default function RecordingsPage() {
         r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.tutorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.aiSummary.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+        r.aiSummary.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (r.executiveSummary && r.executiveSummary.toLowerCase().includes(searchQuery.toLowerCase()))
       return matchesSubject && matchesDate && matchesSearch
     })
     .sort((a, b) => {
@@ -203,15 +517,121 @@ export default function RecordingsPage() {
       return sortOrder === 'newest' ? dateB - dateA : dateA - dateB
     })
 
-  const handleDownloadPDF = (title: string) => {
-    toast.success(`Exporting AI Notes PDF for "${title}"... Download started!`)
+  const triggerBlobDownload = (filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
+  const handleDownloadStudyGuide = (record: SessionRecord) => {
+    const filename = `${record.title.replace(/[^a-zA-Z0-9_-]/g, '_')}_Socratic_Study_Guide.md`
+    const studentsList = getRecordStudents(record).join(', ')
+    const content = `# 📚 Socratic AI Lesson Study Guide: ${record.title}
+**Subject**: ${record.subject}
+**Date**: ${record.date} | **Duration**: ${record.duration}
+**Tutor**: ${record.tutorName}
+**${getRecordStudents(record).length > 1 ? 'Learners' : 'Learner'}**: ${studentsList || record.studentName || 'Student'}
+
+---
+
+## 🎯 Executive Summary
+${record.executiveSummary || 'No executive summary recorded for this session.'}
+
+## 💡 Concepts & Principles Mastered
+${record.aiSummary.map((s) => `- ${s}`).join('\n')}
+
+## 📐 Key Equations & Mathematical Formulations
+${
+  record.keyEquations && record.keyEquations.length > 0
+    ? record.keyEquations.map((eq) => `$$ ${eq} $$`).join('\n\n')
+    : 'No formal mathematical equations recorded.'
+}
+
+## ✅ Recommended Practice & Homework Checklist
+${
+  record.actionItems && record.actionItems.length > 0
+    ? record.actionItems.map((item) => `- [ ] ${item}`).join('\n')
+    : 'No specific homework items assigned. Continue topic practice!'
+}
+
+## 🎴 Socratic Active-Recall Flashcards
+${
+  record.flashcards && record.flashcards.length > 0
+    ? record.flashcards
+        .map(
+          (fc, idx) => `### Flashcard ${idx + 1}
+**Question**: ${fc.question}
+**Answer / Principle**: ${fc.answer}
+`
+        )
+        .join('\n')
+    : 'No flashcards generated for this session.'
+}
+
+## 💬 Dialogue Transcript
+${
+  record.transcript && record.transcript.length > 0
+    ? record.transcript
+        .map((t) => `[${t.time}] ${t.speaker} (${t.role || 'Participant'}): ${t.text}`)
+        .join('\n')
+    : 'No spoken dialogue transcribed.'
+}
+
+---
+*Generated automatically by SOCRATES AI Learning Intelligence Vault*
+`
+    triggerBlobDownload(filename, content, 'text/markdown;charset=utf-8')
+    toast.success(`Downloaded Socratic Study Guide for "${record.title}" (.md)!`)
+  }
+
+
+
+  const handleDownloadVideo = (record: SessionRecord) => {
+    if (!record.videoUrl || record.videoUrl === '#') {
+      toast.error('No downloadable video file URL found for this session.')
+      return
+    }
+    const a = document.createElement('a')
+    a.href = record.videoUrl
+    a.download = `${record.title.replace(/[^a-zA-Z0-9_-]/g, '_')}_Recording.mp4`
+    a.target = '_blank'
+    a.rel = 'noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    toast.success(`Starting download for "${record.title}" session video (.mp4)...`)
+  }
+
+  const handleDownloadSingleFile = (file: SharedFile) => {
+    if (!file.url || file.url === '#') {
+      const content = `Sample Resource File: ${file.name}\nShared in SOCRATES Study Room session.\nUploaded by: ${file.uploadedBy || 'Tutor'}`
+      triggerBlobDownload(file.name, content, 'text/plain;charset=utf-8')
+      toast.success(`Downloaded "${file.name}"!`)
+      return
+    }
+    const a = document.createElement('a')
+    a.href = file.url
+    a.download = file.name
+    a.target = '_blank'
+    a.rel = 'noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    toast.success(`Downloading resource "${file.name}"...`)
+  }
+
+
+
   return (
-    <div className="min-h-screen bg-[#fafafc] text-[#1d1d1f] flex flex-col font-sans selection:bg-[#0066cc]/10 antialiased">
-      {/* Premium Apple-Grade Centered Hero Showcase */}
+    <div className="w-full flex-1 flex flex-col font-sans selection:bg-[#0066cc]/10 antialiased">
+      {/* Hero Showcase */}
       <section className="relative bg-gradient-to-b from-[#fbfbfd] via-[#f5f5f7] to-[#fafafc] border-b border-[#e5e5e7] pt-10 sm:pt-14 pb-5 sm:pb-6 px-6 overflow-hidden transform-gpu subpixel-antialiased">
-        {/* Radial Center Highlight */}
         <div
           className="absolute inset-0 pointer-events-none flex items-start justify-center"
           aria-hidden="true"
@@ -219,34 +639,29 @@ export default function RecordingsPage() {
           <div className="w-[900px] h-[480px] bg-radial from-[#0066cc]/[0.05] via-transparent to-transparent rounded-full blur-3xl transform-gpu" />
         </div>
 
-        {/* Ambient Corner Glows */}
         <div className="absolute top-10 left-1/5 w-72 h-72 bg-[#0066cc]/5 rounded-full blur-3xl pointer-events-none transform-gpu" />
-        <div className="absolute bottom-4 right-1/5 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none transform-gpu" />
+        <div className="absolute bottom-4 right-1/5 w-80 h-80 bg-[#0077ed]/5 rounded-full blur-3xl pointer-events-none transform-gpu" />
 
         <div className="max-w-4xl mx-auto relative z-10 text-center flex flex-col items-center">
-          {/* Main Headline */}
-          <h1 className="mt-6 text-4xl sm:text-6xl md:text-7xl font-display font-extrabold tracking-tight text-[#1d1d1f] leading-[1.08] transform-gpu">
-            Session Recordings &amp;
-            <span className="block mt-1 sm:mt-2 bg-gradient-to-r from-[#0066cc] to-indigo-600 bg-clip-text text-transparent pb-1">
-              Knowledge Archive.
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-display font-extrabold tracking-tight text-[#1d1d1f] leading-[1.08] transform-gpu">
+            AI Session Recaps &amp;
+            <span className="block mt-1 sm:mt-2 bg-gradient-to-r from-[#0066cc] via-[#0077ed] to-[#004499] bg-clip-text text-transparent pb-1">
+              Study Intelligence Vault.
             </span>
           </h1>
 
-          {/* Description */}
-          <p className="mt-6 max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-[#6e6e73] font-normal leading-relaxed transform-gpu">
-            Revisit your past Study Room video recordings, review Socratic lesson
-            summaries, inspect whiteboard proofs, and export formatted PDF notes
-            anytime.
+          <p className="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-[#6e6e73] font-normal leading-relaxed transform-gpu">
+            Review your automated Socratic lesson summaries, practice with active-recall
+            flashcards, inspect whiteboard derivations, and access interactive speech transcripts on this page.
           </p>
 
-          {/* CTA Action Buttons & Status Counter */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto transform-gpu">
+          <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto transform-gpu">
             <Link
               to="/study-room/demo-101"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0052a3] text-white font-bold text-sm shadow-md shadow-[#0066cc]/20 transition-all duration-150 cursor-pointer select-none transform-gpu"
             >
               <Video size={16} className="shrink-0" />
-              <span>Join Active Study Room</span>
+              <span>Join Live Study Room</span>
             </Link>
 
             <button
@@ -256,118 +671,558 @@ export default function RecordingsPage() {
               }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white border border-[#e0e0e4] hover:border-[#0066cc]/40 hover:bg-[#0066cc]/5 text-[#1d1d1f] hover:text-[#0066cc] font-bold text-sm shadow-2xs transition-all duration-150 cursor-pointer select-none transform-gpu"
             >
-              <Download size={16} className="text-[#0066cc] shrink-0" />
-              <span>Browse the Vault</span>
+              <FileText size={16} className="text-[#0066cc] shrink-0" />
+              <span>Browse Saved Recaps ({recordings.length})</span>
             </button>
-
           </div>
 
-          {/* Feature Capability Chips */}
           <div className="mt-8 flex flex-wrap justify-center gap-2.5 text-xs select-none transform-gpu">
             <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
-              <Video size={13} className="text-[#0066cc] shrink-0" />
-              HD 1080p Video Vault
+              <Sparkles size={13} className="text-[#0066cc] shrink-0" />
+              7-Section Socratic Recaps
+            </span>
+            <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
+              <Lightbulb size={13} className="text-[#0066cc] shrink-0" />
+              Active Recall Flashcards
             </span>
             <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
               <Sigma size={13} className="text-[#0066cc] shrink-0" />
-              LaTeX Math Proof Engine
-            </span>
-            <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
-              <Sparkles size={13} className="text-[#0066cc] shrink-0" />
-              Socratic AI Summaries
+              LaTeX Math Formulations
             </span>
             <span className="px-4 py-2 rounded-full bg-white border border-[#e5e5e7] shadow-2xs text-[#525252] font-semibold flex items-center gap-1.5 transform-gpu">
               <Download size={13} className="text-[#0066cc] shrink-0" />
-              One-Click PDF Export
+              Instant PDF Notes
             </span>
-          </div>
-
-          {/* Featured Session Showcase Mockup */}
-          <div className="mt-8 sm:mt-10 w-full max-w-3xl transform-gpu">
-            <div className="w-full bg-white border border-[#e5e5e7] rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.07)] overflow-hidden text-left transform-gpu">
-              {/* Window Header */}
-              <div className="px-5 py-3 bg-[#f5f5f7] border-b border-[#e5e5e7] flex items-center justify-between select-none transform-gpu">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#e0e0e0]" />
-                  <div className="w-3 h-3 rounded-full bg-[#e0e0e0]" />
-                  <div className="w-3 h-3 rounded-full bg-[#e0e0e0]" />
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#7a7a7a]">
-                  <Video size={13} className="text-[#0066cc] shrink-0" />
-                  <span>SOCRATES Session Vault</span>
-                </div>
-                <div className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold flex items-center gap-1.5 shrink-0">
-                  <span className="relative flex h-1.5 w-1.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                  </span>
-                  LIVE
-                </div>
-              </div>
-
-              {/* Preview Thumbnail */}
-              <div
-                onClick={() => setSelectedRecord(SAMPLE_RECORDINGS[0])}
-                className="relative group overflow-hidden cursor-pointer transform-gpu"
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=800&auto=format&fit=crop"
-                  alt="Featured Session Preview"
-                  className="w-full h-44 sm:h-56 object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedRecord(SAMPLE_RECORDINGS[0])
-                    }}
-                    className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-2xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-all duration-200 cursor-pointer transform-gpu group-hover:scale-105 active:scale-95 select-none"
-                    title="Play Featured Session"
-                  >
-                    <Play size={24} className="fill-current translate-x-[1.5px] shrink-0" />
-                  </div>
-                </div>
-                <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-display font-bold tracking-wide border border-white/25 shadow-md flex items-center gap-1.5 select-none transform-gpu">
-                  <Clock size={13} className="text-white/90 shrink-0" />
-                  <span>45 mins</span>
-                </div>
-              </div>
-
-              {/* Session Breakdown Footer */}
-              <div className="p-5 sm:p-6 space-y-3.5 transform-gpu">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-bold text-[11px] shadow-2xs shrink-0">
-                      DV
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-display text-sm font-bold text-[#1d1d1f] truncate">
-                        Advanced Calculus: Integration by Parts
-                      </div>
-                      <div className="text-[11px] text-[#6e6e73] font-medium">
-                        Dr. Alex Vance • Aug 2, 2026
-                      </div>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-bold text-[10px] border border-[#0066cc]/20 shrink-0 select-none">
-                    Mathematics
-                  </span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-mono text-[#0066cc] flex items-center justify-between gap-3 select-none transform-gpu">
-                  <span className="truncate">∫ u dv = uv - ∫ v du</span>
-                  <span className="text-[10px] text-[#6e6e73] font-sans font-semibold shrink-0">
-                    Derived Formula
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Main Body */}
-      <main id="library-section" className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+      <main id="library-section" className="max-w-6xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        {/* IN-PAGE ACTIVE RECAP STUDIO (Displayed directly on this page without a new window/modal) */}
+        {selectedRecord && (
+          <div
+            ref={studioRef}
+            className="bg-white rounded-3xl border-2 border-[#0066cc]/30 shadow-xl overflow-hidden transition-all animate-in fade-in duration-200 transform-gpu"
+          >
+            {/* Active Studio Header Bar */}
+            <div className="p-6 sm:p-8 bg-gradient-to-b from-[#f8faff] via-white to-white border-b border-[#e5e5e7]">
+              {/* Top Navigation & Actions Bar */}
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <button
+                  type="button"
+                  onClick={clearSelectedSession}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-[#f5f5f7] border border-[#e0e0e4] text-[#0066cc] text-xs font-bold transition-colors duration-150 cursor-pointer select-none shadow-2xs transform-gpu"
+                >
+                  <ArrowLeft size={14} className="shrink-0" />
+                  <span>Back to All Sessions</span>
+                </button>
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadStudyGuide(selectedRecord)}
+                    className="px-4 py-2 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-bold transition-colors duration-150 shadow-xs flex items-center gap-2 cursor-pointer select-none transform-gpu shrink-0"
+                    title="Download Formatted Socratic Study Guide"
+                  >
+                    <Download size={14} className="shrink-0" />
+                    <span>Download Notes</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Title & Metadata Block */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs border border-[#0066cc]/20 flex items-center gap-1.5">
+                    {getSubjectFilterIcon(selectedRecord.subject, false)}
+                    <span>{selectedRecord.subject}</span>
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5e7] text-[#6e6e73] text-xs font-medium flex items-center gap-1">
+                    <Calendar size={12} className="text-[#86868b]" />
+                    <span>{selectedRecord.date}</span>
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5e7] text-[#6e6e73] text-xs font-medium flex items-center gap-1">
+                    <Clock size={12} className="text-[#86868b]" />
+                    <span>{selectedRecord.duration}</span>
+                  </span>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-[#1d1d1f] tracking-tight leading-tight">
+                  {selectedRecord.title}
+                </h2>
+
+                <div className="flex items-center gap-3 pt-0.5 text-xs text-[#525252] font-semibold flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 select-none border border-[#e5e5e7] shadow-2xs bg-[#0066cc]">
+                      <img
+                        src={getTutorAvatar(selectedRecord.tutorName, selectedRecord.tutorAvatar)}
+                        alt={selectedRecord.tutorName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            selectedRecord.tutorName
+                          )}&background=0066cc&color=fff&size=128&bold=true`
+                        }}
+                      />
+                    </div>
+                    <span className="font-bold text-[#1d1d1f]">{selectedRecord.tutorName}</span>
+                    <span className="text-[#86868b] font-normal">(Tutor)</span>
+                  </div>
+                  {getRecordStudents(selectedRecord).length > 0 && (
+                    <>
+                      <span className="text-[#d1d1d6]">•</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[#86868b] font-normal">
+                          {getRecordStudents(selectedRecord).length > 1 ? 'Learners:' : 'Learner:'}
+                        </span>
+                        {getRecordStudents(selectedRecord).map((student, idx, arr) => (
+                          <span key={student} className="font-semibold text-[#1d1d1f]">
+                            {student}{idx < arr.length - 1 ? ',' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* In-Page Studio Tabs */}
+            <div className="flex items-center gap-2 px-6 pt-3.5 pb-2.5 bg-[#f5f5f7] border-b border-[#e5e5e7] overflow-x-auto scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setStudioTab('briefing')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none flex items-center gap-1.5 shrink-0 transition-colors duration-150 transform-gpu ${
+                  studioTab === 'briefing'
+                    ? 'border-[#e5e5e7] bg-white text-[#0066cc] shadow-2xs'
+                    : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/60'
+                }`}
+              >
+                <Sparkles size={14} className="text-[#0066cc]" />
+                <span>Executive Briefing &amp; Key Concepts</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioTab('flashcards')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none flex items-center gap-1.5 shrink-0 transition-colors duration-150 transform-gpu ${
+                  studioTab === 'flashcards'
+                    ? 'border-[#e5e5e7] bg-white text-[#0066cc] shadow-2xs'
+                    : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/60'
+                }`}
+              >
+                <Lightbulb size={14} className="text-[#0066cc]" />
+                <span>Socratic Flashcards ({selectedRecord.flashcards?.length || 0})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioTab('checklist')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none flex items-center gap-1.5 shrink-0 transition-colors duration-150 transform-gpu ${
+                  studioTab === 'checklist'
+                    ? 'border-[#e5e5e7] bg-white text-[#0066cc] shadow-2xs'
+                    : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/60'
+                }`}
+              >
+                <ListTodo size={14} className="text-[#0066cc]" />
+                <span>Homework &amp; Practice ({selectedRecord.actionItems?.length || 0})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioTab('transcript')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none flex items-center gap-1.5 shrink-0 transition-colors duration-150 transform-gpu ${
+                  studioTab === 'transcript'
+                    ? 'border-[#e5e5e7] bg-white text-[#0066cc] shadow-2xs'
+                    : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/60'
+                }`}
+              >
+                <Clock size={14} className="text-[#0066cc]" />
+                <span>Dialogue Transcript ({selectedRecord.transcript.length})</span>
+              </button>
+            </div>
+
+            {/* In-Page Studio Tab Content */}
+            <div className="p-6 sm:p-8 bg-[#fafafc]">
+              {studioTab === 'briefing' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column: Video & Formulas (7 cols) */}
+                  <div className="lg:col-span-7 space-y-6">
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-lg relative border border-[#2a2a2e] transform-gpu">
+                        {isPlayingVideo ? (
+                          <video
+                            src={selectedRecord.videoUrl}
+                            controls
+                            autoPlay
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="relative w-full h-full">
+                            <img src={selectedRecord.thumbnailUrl} alt={selectedRecord.title} className="w-full h-full object-cover opacity-85" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <button
+                              type="button"
+                              onClick={() => setIsPlayingVideo(true)}
+                              className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 transition-colors duration-150 cursor-pointer transform-gpu select-none"
+                            >
+                              <Play size={26} className="fill-white translate-x-[2px]" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Video Quick-Download Bar */}
+                      <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white border border-[#e5e5e7] shadow-2xs">
+                        <div className="flex items-center gap-2 text-xs text-[#525252] font-semibold">
+                          <Video size={15} className="text-[#0066cc] shrink-0" />
+                          <span>{selectedRecord.fileSize || 'Full HD Recording'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadVideo(selectedRecord)}
+                            className="px-3.5 py-1.5 rounded-xl bg-[#0066cc]/10 hover:bg-[#0066cc]/15 text-[#0066cc] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer select-none"
+                            title="Download Session Video (.mp4)"
+                          >
+                            <Download size={13} className="shrink-0" />
+                            <span>Download Video (.mp4)</span>
+                          </button>
+                          {selectedRecord.thumbnailUrl && (
+                            <a
+                              href={selectedRecord.thumbnailUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={`${selectedRecord.title.replace(/[^a-zA-Z0-9_-]/g, '_')}_Snapshot.jpg`}
+                              className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#525252] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer select-none border border-[#e0e0e4]"
+                              title="Download Board / Session Snapshot"
+                            >
+                              <ImageIcon size={13} className="shrink-0 text-[#86868b]" />
+                              <span>Snapshot</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Key Equations Section */}
+                    {selectedRecord.keyEquations && selectedRecord.keyEquations.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-[#e5e5e7] p-6 space-y-3 shadow-2xs">
+                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                          <Sigma size={16} className="text-[#0066cc]" />
+                          <span>Key Equations &amp; Formulations</span>
+                        </h4>
+                        <div className="space-y-2.5">
+                          {selectedRecord.keyEquations.map((eq, i) => (
+                            <div key={i} className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] font-mono text-xs text-[#0f172a] font-bold flex items-center justify-between shadow-2xs">
+                              <span className="truncate">{eq}</span>
+                              <span className="text-[10px] font-mono text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-md font-bold shrink-0">LaTeX</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Summaries & Shared Files (5 cols) */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {/* Executive Summary */}
+                    {selectedRecord.executiveSummary && (
+                      <div className="bg-[#f0f6ff] rounded-2xl border border-[#d0e1fd] p-5 space-y-2 shadow-2xs">
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-[#0066cc] uppercase tracking-wider">
+                          <Sparkles size={16} />
+                          <span>Executive AI Summary</span>
+                        </div>
+                        <p className="text-xs sm:text-[13px] text-[#1e3a8a] leading-relaxed font-medium">
+                          {selectedRecord.executiveSummary}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Key Concepts Mastered */}
+                    <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                        <Check size={16} className="text-[#0066cc]" />
+                        <span>Concepts Mastered</span>
+                      </h4>
+                      <ul className="space-y-2.5 text-xs text-[#525252] leading-relaxed">
+                        {selectedRecord.aiSummary.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-[#0066cc] font-bold shrink-0">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Shared Files */}
+                    {selectedRecord.sharedFiles && selectedRecord.sharedFiles.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
+                            <FolderDown size={15} className="text-[#0066cc]" />
+                            <span>Shared Session Assets ({selectedRecord.sharedFiles.length})</span>
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              selectedRecord.sharedFiles?.forEach((f, idx) => {
+                                setTimeout(() => handleDownloadSingleFile(f), idx * 250)
+                              })
+                            }}
+                            className="text-[11px] text-[#0066cc] hover:underline font-bold cursor-pointer"
+                          >
+                            Download All
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {selectedRecord.sharedFiles.map((file, i) => {
+                            const isImage = file.name.endsWith('.png') || file.name.endsWith('.jpg') || file.name.endsWith('.webp')
+                            const isPdf = file.name.endsWith('.pdf')
+                            const isCode = file.name.endsWith('.py') || file.name.endsWith('.ts') || file.name.endsWith('.js')
+                            return (
+                              <div
+                                key={i}
+                                className="p-3 rounded-xl bg-[#f5f5f7] hover:bg-[#eef2f8] border border-[#e0e0e4] flex items-center justify-between text-xs transition-colors"
+                              >
+                                <div className="flex items-center gap-2.5 truncate mr-2">
+                                  <div className="w-7 h-7 rounded-lg bg-white border border-[#e0e0e4] flex items-center justify-center text-[#0066cc] shrink-0">
+                                    {isImage ? <ImageIcon size={14} /> : isPdf ? <FileText size={14} /> : isCode ? <FileCode size={14} /> : <FileDown size={14} />}
+                                  </div>
+                                  <div className="truncate">
+                                    <p className="font-bold text-[#1d1d1f] truncate">{file.name}</p>
+                                    {file.uploadedBy && (
+                                      <p className="text-[10px] text-[#86868b]">Uploaded by {file.uploadedBy}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadSingleFile(file)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#0066cc] text-[#0066cc] hover:text-white border border-[#e0e0e4] hover:border-[#0066cc] text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
+                                  title={`Download ${file.name}`}
+                                >
+                                  <Download size={12} />
+                                  <span>Save</span>
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {studioTab === 'flashcards' && (
+                <div className="max-w-3xl mx-auto space-y-6">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <h4 className="font-display text-lg font-bold text-[#1d1d1f]">Socratic Active-Recall Flashcards</h4>
+                      <p className="text-xs text-[#6e6e73]">Click any card to reveal or hide the verified principle and solution.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (revealedFlashcards.size === (selectedRecord.flashcards?.length || 0)) {
+                          setRevealedFlashcards(new Set())
+                        } else {
+                          setRevealedFlashcards(new Set(selectedRecord.flashcards?.map((_, i) => i) || []))
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-bold border border-[#e0e0e4] transition-colors cursor-pointer select-none"
+                    >
+                      {revealedFlashcards.size === (selectedRecord.flashcards?.length || 0) ? 'Hide All Answers' : 'Reveal All Answers'}
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedRecord.flashcards && selectedRecord.flashcards.length > 0 ? (
+                      selectedRecord.flashcards.map((card, idx) => {
+                        const isRevealed = revealedFlashcards.has(idx)
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => toggleFlashcard(idx)}
+                            className="bg-white rounded-2xl border border-[#e5e5e7] hover:border-[#0066cc]/40 p-6 shadow-2xs cursor-pointer transition-colors duration-150 select-none"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1.5 flex-1 min-w-0">
+                                <div>
+                                  <span className="text-[11px] font-bold text-[#0066cc] uppercase tracking-wider">
+                                    Flashcard {idx + 1}
+                                  </span>
+                                </div>
+                                <h5 className="text-sm sm:text-base font-bold text-[#1d1d1f] leading-snug">
+                                  {card.question}
+                                </h5>
+                              </div>
+                              <div className="w-8 h-8 rounded-xl bg-[#f5f5f7] text-[#0066cc] flex items-center justify-center shrink-0 transition-colors duration-150">
+                                {isRevealed ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </div>
+                            </div>
+
+                            {/* Smooth Unfolding Answer (Zero Jiggle & Stutter) */}
+                            <div
+                              className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                                isRevealed
+                                  ? 'grid-rows-[1fr] opacity-100 mt-4'
+                                  : 'grid-rows-[0fr] opacity-0 mt-0 pointer-events-none'
+                              }`}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="p-4 rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] text-xs text-[#166534] leading-relaxed font-medium">
+                                  <div className="font-bold uppercase tracking-wider text-[10px] text-[#15803d] mb-1">
+                                    Verified Principle &amp; Answer
+                                  </div>
+                                  <p className="m-0 text-xs sm:text-[13px] leading-relaxed">{card.answer}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-12 text-[#86868b] text-xs font-semibold">
+                        No flashcards available for this session.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {studioTab === 'checklist' && (
+                <div className="max-w-3xl mx-auto space-y-6">
+                  <div>
+                    <h4 className="font-display text-lg font-bold text-[#1d1d1f]">Recommended Practice &amp; Homework Checklist</h4>
+                    <p className="text-xs text-[#6e6e73]">Track your post-session reinforcement and assignment tasks on this page.</p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-[#e5e5e7] p-6 space-y-3 shadow-2xs">
+                    {selectedRecord.actionItems && selectedRecord.actionItems.length > 0 ? (
+                      selectedRecord.actionItems.map((item, idx) => {
+                        const isDone = completedActions.has(idx)
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => toggleActionItem(idx)}
+                            className={`p-4 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors duration-150 select-none ${
+                              isDone
+                                ? 'bg-[#f0fdf4] border-[#bbf7d0] text-[#166534]'
+                                : 'bg-[#fafafc] hover:bg-[#f5f5f7] border-[#e5e5e7] text-[#1d1d1f]'
+                            }`}
+                          >
+                            <div className="mt-0.5 shrink-0">
+                              {isDone ? (
+                                <CheckSquare size={18} className="text-[#166534]" />
+                              ) : (
+                                <Square size={18} className="text-[#86868b]" />
+                              )}
+                            </div>
+                            <span className={`text-xs font-medium leading-relaxed ${isDone ? 'line-through opacity-80' : ''}`}>
+                              {item}
+                            </span>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-8 text-[#86868b] text-xs font-semibold">
+                        No specific action items listed. Continue general topic practice!
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {studioTab === 'transcript' && (
+                <div className="max-w-3xl mx-auto space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#e5e5e7] flex-wrap gap-2">
+                    <div>
+                      <h4 className="font-display text-base font-bold text-[#1d1d1f]">Session Dialogue</h4>
+                      <p className="text-xs text-[#6e6e73]">Interactive back-and-forth Socratic conversation</p>
+                    </div>
+                    <span className="text-xs font-semibold text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full">
+                      {selectedRecord.transcript.length} Dialogue Turns
+                    </span>
+                  </div>
+
+                  <div className="space-y-4 max-h-[480px] overflow-y-auto pr-2 py-2">
+                    {selectedRecord.transcript.length > 0 ? (
+                      selectedRecord.transcript.map((t, idx) => {
+                        const isTutor =
+                          t.role === 'tutor' ||
+                          t.speaker.toLowerCase().includes('dr.') ||
+                          t.speaker.toLowerCase().includes('prof') ||
+                          t.speaker === selectedRecord.tutorName
+
+                        const initials = t.speaker
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .substring(0, 2)
+                          .toUpperCase()
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex items-start gap-3 ${isTutor ? '' : 'flex-row-reverse'}`}
+                          >
+                            {/* Avatar / Initials */}
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-2xs select-none ${
+                                isTutor ? 'bg-[#0066cc] text-white' : 'bg-[#1d1d1f] text-white'
+                              }`}
+                            >
+                              {initials || (isTutor ? 'TU' : 'ST')}
+                            </div>
+
+                            {/* Dialogue Bubble */}
+                            <div className={`max-w-[82%] space-y-1 ${isTutor ? '' : 'items-end'}`}>
+                              <div
+                                className={`flex items-center gap-2 text-[11px] font-semibold text-[#6e6e73] ${
+                                  isTutor ? '' : 'justify-end'
+                                }`}
+                              >
+                                <span className="text-[#1d1d1f] font-bold">{t.speaker}</span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider ${
+                                    isTutor
+                                      ? 'bg-[#0066cc]/10 text-[#0066cc]'
+                                      : 'bg-[#f0f0f2] text-[#525252]'
+                                  }`}
+                                >
+                                  {isTutor ? 'Tutor' : 'Student'}
+                                </span>
+                                <span className="font-mono text-[10px] text-[#86868b]">{t.time}</span>
+                              </div>
+
+                              <div
+                                className={`p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed select-text ${
+                                  isTutor
+                                    ? 'bg-white border border-[#e5e5e7] text-[#1d1d1f] shadow-2xs rounded-tl-xs text-left'
+                                    : 'bg-[#0066cc] text-white shadow-2xs rounded-tr-xs text-left'
+                                }`}
+                              >
+                                {t.text}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-12 text-[#86868b] text-xs font-semibold">
+                        No live dialogue transcribed for this session yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Integrated Search, Date & Subject Control Panel */}
         <div className="bg-white rounded-3xl border border-[#e5e5e7] p-4 sm:p-5 space-y-4 shadow-2xs">
           {/* Top Control Bar: Search Input + Date Filter + Sort Order */}
@@ -379,23 +1234,23 @@ export default function RecordingsPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search recordings by topic, tutor name, date, or keyword..."
-                className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-[#f5f5f7] border border-transparent text-xs font-semibold outline-none focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition-colors"
+                placeholder="Search recaps by topic, tutor name, date, equation, or keyword..."
+                className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-[#f5f5f7] border border-transparent text-xs font-semibold outline-none focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition-colors select-none"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1a1a6] hover:text-[#1d1d1f] p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1a1a6] hover:text-[#1d1d1f] p-1 cursor-pointer"
                 >
                   <X size={14} />
                 </button>
               )}
             </div>
 
-            {/* Side Filters: Custom Interactive Calendar Popover + Sort Order */}
+            {/* Side Filters: Calendar Popover + Sort Order */}
             <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap relative">
-              {/* Custom Apple-Grade Session Archive Calendar Trigger */}
+              {/* Calendar Trigger */}
               <div className="relative flex-1 sm:flex-none">
                 <button
                   type="button"
@@ -413,10 +1268,9 @@ export default function RecordingsPage() {
                   <ChevronDown size={14} className={`text-[#6e6e73] shrink-0 ml-1 transition-transform duration-200 group-hover:text-[#0066cc] ${isCalendarOpen ? 'rotate-180 text-[#0066cc]' : ''}`} />
                 </button>
 
-                {/* Custom Interactive Calendar Popover Box */}
+                {/* Interactive Calendar Popover */}
                 {isCalendarOpen && (
                   <div className="absolute left-1/2 -translate-x-1/2 top-12 z-50 w-80 bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
-                    {/* Calendar Month & Year Navigation Header */}
                     <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
                       <div className="flex items-center gap-2">
                         <span className="font-display text-sm font-extrabold text-[#1d1d1f]">
@@ -443,27 +1297,22 @@ export default function RecordingsPage() {
                       </div>
                     </div>
 
-                    {/* Day of Week Labels */}
                     <div className="grid grid-cols-7 text-center text-[11px] font-bold text-[#86868b]">
                       {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
                         <div key={d}>{d}</div>
                       ))}
                     </div>
 
-                    {/* Date Grid */}
                     <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                      {/* Empty filler cells for start of month */}
                       {Array.from({ length: getFirstDayOfWeek(calendarYear, calendarMonth) }).map((_, i) => (
                         <div key={`empty-${i}`} className="h-8" />
                       ))}
 
-                      {/* Day cells */}
                       {Array.from({ length: getDaysInMonth(calendarYear, calendarMonth) }).map((_, i) => {
                         const dayNum = i + 1
                         const shortMonth = monthNames[calendarMonth].substring(0, 3)
                         const fullDateStr = `${shortMonth} ${dayNum}, ${calendarYear}`
 
-                        // Check session status & current today date
                         const today = new Date()
                         const isToday =
                           dayNum === today.getDate() &&
@@ -471,7 +1320,6 @@ export default function RecordingsPage() {
                           calendarYear === today.getFullYear()
 
                         const hasRecording = recordings.some((r) => r.date === fullDateStr)
-                        const isCancelled = ['Jul 15, 2026', 'Jul 22, 2026'].includes(fullDateStr)
                         const isSelected = selectedDateFilter === fullDateStr || (selectedDateFilter === 'All' && isToday)
 
                         return (
@@ -485,8 +1333,6 @@ export default function RecordingsPage() {
                             className={`h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-colors cursor-pointer select-none ${
                               isSelected
                                 ? 'bg-[#0066cc] text-white border border-[#0066cc] shadow-2xs'
-                                : isCancelled
-                                ? 'bg-red-50 text-red-700 border border-red-300/80 hover:bg-red-100'
                                 : hasRecording
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-300/80 hover:bg-emerald-100'
                                 : 'text-[#1d1d1f] hover:bg-[#f5f5f7] border border-transparent'
@@ -497,27 +1343,11 @@ export default function RecordingsPage() {
                         )
                       })}
                     </div>
-
-                    {/* Calendar Status Legend */}
-                    <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between text-[10px] font-bold text-[#6e6e73]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-400 inline-block shrink-0 shadow-2xs" />
-                        <span>Past Session</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded-full bg-red-50 border border-red-400 inline-block shrink-0 shadow-2xs" />
-                        <span>Cancelled</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded-full bg-[#0066cc] border border-[#0066cc] inline-block shrink-0 shadow-2xs" />
-                        <span>Selected</span>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Custom Apple-Grade Interactive Sort Order Dropdown */}
+              {/* Sort Order Dropdown */}
               <div className="relative flex-1 sm:flex-none">
                 <button
                   type="button"
@@ -531,7 +1361,6 @@ export default function RecordingsPage() {
                   <ChevronDown size={14} className={`text-[#6e6e73] shrink-0 ml-1 transition-transform duration-200 group-hover:text-[#0066cc] ${isSortOpen ? 'rotate-180 text-[#0066cc]' : ''}`} />
                 </button>
 
-                {/* Custom Sort Options Popover Menu */}
                 {isSortOpen && (
                   <div className="absolute left-1/2 -translate-x-1/2 top-12 z-50 w-52 bg-white rounded-2xl border border-[#e5e5e7] shadow-xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 transform-gpu select-none">
                     <button
@@ -599,7 +1428,6 @@ export default function RecordingsPage() {
               })}
             </div>
 
-            {/* Clear All Active Filters */}
             {(selectedDateFilter !== 'All' || activeSubject !== 'All' || searchQuery !== '') && (
               <button
                 type="button"
@@ -607,270 +1435,248 @@ export default function RecordingsPage() {
                   setSelectedDateFilter('All')
                   setActiveSubject('All')
                   setSearchQuery('')
+                  loadUserRecaps(true)
                 }}
-                className="px-3.5 py-2 rounded-2xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] text-xs font-bold transition-colors cursor-pointer select-none whitespace-nowrap border border-[#e0e0e4] shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/40 text-xs font-semibold text-[#525252] hover:text-[#0066cc] transition-all duration-150 shadow-2xs hover:shadow-xs cursor-pointer select-none shrink-0 transform-gpu leading-none"
               >
-                Clear All Filters
+                <RotateCcw size={12} className={`text-[#0066cc] ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>Reset Filters</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Recordings List - Wide & Rich Information Cards */}
+        {/* Sessions Library Grid / List */}
         <div className="space-y-6">
-          {filteredRecordings.map((rec) => (
-            <div
-              key={rec.id}
-              onClick={() => {
-                setSelectedRecord(rec)
-                setIsPlayingVideo(false)
-              }}
-              className="bg-white rounded-3xl border border-[#e5e5e7] overflow-hidden shadow-xs hover:border-[#0066cc]/50 transition-colors duration-150 cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group transform-gpu select-none"
-            >
-              {/* Left Column: Wide Video Thumbnail Frame (5 cols) */}
-              <div className="md:col-span-5 lg:col-span-4 relative aspect-video md:aspect-auto min-h-[280px] sm:min-h-[310px] bg-black overflow-hidden">
-                <img
-                  src={rec.thumbnailUrl}
-                  alt={rec.title}
-                  className="w-full h-full object-cover opacity-95 group-hover:opacity-100 transition-opacity duration-150"
-                />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-2xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-all duration-200 transform-gpu group-hover:scale-105 active:scale-95 select-none">
-                    <Play size={24} className="fill-current translate-x-[1.5px] shrink-0" />
-                  </div>
-                </div>
-
-                {/* Duration Badge */}
-                <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-display font-bold tracking-wide border border-white/25 shadow-md select-none">
-                  <Clock size={13} className="text-white/90" />
-                  <span>{rec.duration}</span>
-                </div>
-
-                {/* Subject Badge */}
-                <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-md text-[#0066cc] text-xs font-bold shadow-xs border border-[#0066cc]/20 flex items-center gap-1.5">
-                  {getSubjectFilterIcon(rec.subject, false)}
-                  <span>{rec.subject}</span>
-                </div>
+          <div className="flex items-center justify-between mb-4 px-1 sm:px-2">
+            <div className="flex items-center gap-2.5 select-none">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse shrink-0" />
+                <h2 className="text-sm sm:text-base font-bold text-[#1d1d1f] tracking-tight">
+                  {selectedRecord ? 'All Sessions in Vault' : 'Saved Study Sessions'}
+                </h2>
               </div>
-
-              {/* Right Column: Expansive Information Body (7 cols) */}
-              <div className="md:col-span-7 lg:col-span-8 p-7 sm:p-8 flex flex-col justify-between space-y-5">
-                <div className="space-y-4">
-                  {/* Title & Instructor Info */}
-                  <div className="space-y-2">
-                    <h3 className="font-display text-xl sm:text-2xl font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug tracking-tight">
-                      {rec.title}
-                    </h3>
-                    <div className="flex items-center gap-2.5 text-xs font-semibold text-[#525252]">
-                      <div className="inline-flex items-center gap-1.5">
-                        <User size={14} className="text-[#0066cc]" />
-                        <span className="font-bold text-[#1d1d1f]">{rec.tutorName}</span>
-                      </div>
-                      <span>•</span>
-                      <span>{rec.date}</span>
-                    </div>
-                  </div>
-
-                  {/* Socratic AI Summary Multi-point List */}
-                  <div className="bg-[#f4f8fc] border border-[#0066cc]/15 rounded-2xl p-4.5 space-y-2.5 shadow-2xs">
-                    <div className="flex items-center gap-1.5 font-display text-xs font-bold text-[#0066cc] uppercase tracking-wider">
-                      <Sparkles size={14} />
-                      <span>Socrates AI Summary & Key Takeaways</span>
-                    </div>
-                    <ul className="space-y-1.5 text-xs sm:text-[13px] text-[#424245] leading-relaxed font-normal">
-                      {rec.aiSummary.map((point, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-[#0066cc] font-bold shrink-0">•</span>
-                          <span>{point}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Key Formula / Equation Tags */}
-                  {rec.keyEquations && rec.keyEquations.length > 0 && (
-                    <div className="flex flex-wrap gap-2.5 items-center pt-0.5">
-                      <span className="font-display text-xs font-bold text-[#7a7a7a] uppercase tracking-wider">Formulas:</span>
-                      {rec.keyEquations.map((eq, idx) => (
-                        <span key={idx} className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e5] font-mono text-xs text-[#1d1d1f] font-bold shadow-2xs">
-                          {eq}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom Action Footer Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#f0f0f2]">
-                  <span className="text-xs font-semibold text-[#7a7a7a]">
-                    {rec.fileSize} HD • 1080p Video & Transcript
-                  </span>
-
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedRecord(rec)
-                        setIsPlayingVideo(true)
-                      }}
-                      className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white font-display text-xs font-bold transition-colors shadow-xs flex items-center gap-2 cursor-pointer select-none"
-                    >
-                      <Play size={14} className="fill-white" />
-                      <span>Watch Recording</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDownloadPDF(rec.title)
-                      }}
-                      className="px-5 py-2.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e0e0e4] font-display text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer select-none"
-                    >
-                      <Download size={14} />
-                      <span>AI Notes PDF</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-
-      {/* RECAP DETAIL MODAL - Anti-Lag GPU Hardware Locked */}
-      {selectedRecord && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-150 transform-gpu select-none">
-          <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 transform-gpu">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e7] bg-white">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="px-3.5 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold shrink-0 border border-[#0066cc]/20 flex items-center gap-1.5">
-                  {getSubjectFilterIcon(selectedRecord.subject, false)}
-                  <span>{selectedRecord.subject}</span>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-base font-extrabold text-[#1d1d1f] truncate leading-snug">{selectedRecord.title}</h3>
-                  <span className="text-xs text-[#6e6e73] font-medium">{selectedRecord.tutorName} • {selectedRecord.date} • {selectedRecord.duration} • {selectedRecord.fileSize} HD</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedRecord(null)}
-                className="p-2 rounded-2xl hover:bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors cursor-pointer shrink-0"
-              >
-                <X size={20} />
-              </button>
+              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 font-extrabold text-xs">
+                {filteredRecordings.length} Available
+              </span>
             </div>
 
-            {/* Modal Body: Split Video + AI Notes & Transcript */}
-            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-[#fafafc]">
-              {/* Left Column: Video Player & Equations */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Video Player Box */}
-                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-xl relative border border-[#2a2a2e] transform-gpu">
-                  {isPlayingVideo ? (
-                    <video
-                      src={selectedRecord.videoUrl}
-                      controls
-                      autoPlay
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="relative w-full h-full">
-                      <img src={selectedRecord.thumbnailUrl} alt={selectedRecord.title} className="w-full h-full object-cover opacity-85" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <button
-                        type="button"
-                        onClick={() => setIsPlayingVideo(true)}
-                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/40 transition-colors duration-150 cursor-pointer transform-gpu select-none"
-                      >
-                        <Play size={26} className="fill-white translate-x-[2px]" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Key Equations Section */}
-                {selectedRecord.keyEquations && selectedRecord.keyEquations.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3.5 shadow-2xs">
-                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
-                      <Sigma size={16} className="text-[#0066cc]" />
-                      <span>Key Equations & Derivations Covered</span>
-                    </h4>
-                    <div className="space-y-2.5">
-                      {selectedRecord.keyEquations.map((eq, i) => (
-                        <div key={i} className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] font-mono text-xs text-[#0f172a] font-bold flex items-center justify-between shadow-2xs">
-                          <span className="truncate">{eq}</span>
-                          <span className="text-[10px] font-mono text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-md font-bold shrink-0">LaTeX</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: AI Summary & Interactive Transcript */}
-              <div className="space-y-6 flex flex-col justify-between">
-                <div className="space-y-6">
-                  {/* AI Summary Box */}
-                  <div className="bg-gradient-to-br from-[#f4f8fc] via-white to-[#f4f8fc] rounded-2xl border border-[#0066cc]/20 p-5 space-y-3 shadow-xs">
-                    <div className="flex items-center gap-2 text-xs font-extrabold text-[#0066cc] uppercase tracking-wider">
-                      <Sparkles size={16} />
-                      <span>Socrates AI Summary & Takeaways</span>
-                    </div>
-                    <ul className="space-y-2 text-xs text-[#525252] leading-relaxed">
-                      {selectedRecord.aiSummary.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-[#0066cc] font-bold shrink-0">•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Interactive Transcript */}
-                  <div className="bg-white rounded-2xl border border-[#e5e5e7] p-5 space-y-3 shadow-2xs">
-                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1d1d1f] flex items-center gap-2">
-                      <Clock size={16} className="text-[#0066cc]" />
-                      <span>Interactive Transcript</span>
-                    </h4>
-                    <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-                      {selectedRecord.transcript.map((t, i) => (
-                        <div key={i} className="text-xs space-y-1 border-b border-[#f0f0f2] pb-2.5 last:border-0">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-bold text-[#1d1d1f]">{t.speaker}</span>
-                            <button
-                              type="button"
-                              onClick={() => setIsPlayingVideo(true)}
-                              className="font-mono text-[#0066cc] bg-[#0066cc]/10 hover:bg-[#0066cc] hover:text-white px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors cursor-pointer select-none"
-                              title="Jump to video timestamp"
-                            >
-                              {t.time}
-                            </button>
-                          </div>
-                          <p className="text-[#525252] font-normal leading-relaxed">{t.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* PDF Export Action */}
+            <div className="flex items-center gap-2 shrink-0">
+              {(activeSubject !== 'All' || searchQuery || selectedDateFilter !== 'All' || selectedRecord !== null) && (
                 <button
                   type="button"
-                  onClick={() => handleDownloadPDF(selectedRecord.title)}
-                  className="w-full py-3.5 rounded-2xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-extrabold transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#0066cc]/20 cursor-pointer transform-gpu select-none mt-4"
+                  onClick={() => {
+                    setActiveSubject('All')
+                    setSearchQuery('')
+                    setSelectedDateFilter('All')
+                    clearSelectedSession()
+                    loadUserRecaps(true)
+                    toast.success('Filters reset & sessions refreshed')
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/40 text-xs font-semibold text-[#525252] hover:text-[#0066cc] transition-all duration-150 shadow-2xs hover:shadow-xs cursor-pointer select-none shrink-0 transform-gpu leading-none"
                 >
-                  <Download size={16} />
-                  <span>Download Full AI Notes PDF</span>
+                  <RotateCcw size={12} className={`text-[#0066cc] ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>Reset Filters</span>
                 </button>
-              </div>
+              )}
             </div>
           </div>
+
+          {isLoading ? (
+            <div className="space-y-6">
+              {[1, 2, 3].map((n) => (
+                <RecordingCardSkeleton key={n} />
+              ))}
+            </div>
+          ) : filteredRecordings.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-[#e5e5e7] p-12 text-center space-y-3">
+              <BookOpen size={36} className="mx-auto text-[#7a7a7a]" />
+              <h3 className="text-lg font-display font-semibold text-[#1d1d1f]">No study sessions matched your criteria</h3>
+              <p className="text-xs text-[#7a7a7a]">Try adjusting your search query or subject filters.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubject('All')
+                  setSearchQuery('')
+                  setSelectedDateFilter('All')
+                  loadUserRecaps(true)
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 mt-2 rounded-full bg-white border border-[#e5e5e7] hover:border-[#0066cc]/40 text-xs font-semibold text-[#0066cc] shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              >
+                <RotateCcw size={12} className="text-[#0066cc]" />
+                <span>Reset Filters</span>
+              </button>
+            </div>
+          ) : (
+            filteredRecordings.map((rec) => {
+            const isCurrentlySelected = selectedRecord?.id === rec.id
+
+            return (
+              <div
+                key={rec.id}
+                onClick={() => selectSessionOnPage(rec)}
+                className={`bg-white rounded-3xl border overflow-hidden shadow-xs hover:border-[#0066cc]/60 transition-all duration-150 cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group transform-gpu select-none ${
+                  isCurrentlySelected
+                    ? 'border-[#0066cc] ring-2 ring-[#0066cc]/20 shadow-md'
+                    : 'border-[#e5e5e7]'
+                }`}
+              >
+                {/* Left Column: Video Thumbnail Frame */}
+                <div className="md:col-span-5 lg:col-span-4 relative aspect-video md:aspect-auto min-h-[260px] sm:min-h-[290px] bg-black overflow-hidden">
+                  <img
+                    src={rec.thumbnailUrl}
+                    alt={rec.title}
+                    className="w-full h-full object-cover opacity-95 group-hover:opacity-100 transition-opacity duration-150"
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-white/95 text-[#0066cc] flex items-center justify-center shadow-2xl ring-4 ring-white/30 backdrop-blur-sm group-hover:bg-[#0066cc] group-hover:text-white transition-all duration-200 transform-gpu group-hover:scale-105 active:scale-95 select-none">
+                      <Play size={24} className="fill-current translate-x-[1.5px] shrink-0" />
+                    </div>
+                  </div>
+
+                  {/* Duration Badge */}
+                  <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md text-white text-xs font-display font-bold tracking-wide border border-white/25 shadow-md select-none">
+                    <Clock size={13} className="text-white/90" />
+                    <span>{rec.duration}</span>
+                  </div>
+
+                  {/* Subject Badge */}
+                  <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-md text-[#0066cc] text-xs font-bold shadow-xs border border-[#0066cc]/20 flex items-center gap-1.5">
+                    {getSubjectFilterIcon(rec.subject, false)}
+                    <span>{rec.subject}</span>
+                  </div>
+                </div>
+
+                {/* Right Column: Information Body */}
+                <div className="md:col-span-7 lg:col-span-8 p-7 sm:p-8 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    {/* Title & Instructor Info */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-display text-xl sm:text-2xl font-bold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors leading-snug tracking-tight">
+                          {rec.title}
+                        </h3>
+                        {isCurrentlySelected && (
+                          <span className="px-2.5 py-1 rounded-full bg-[#0066cc] text-white text-[10px] font-bold uppercase tracking-wider shrink-0">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2.5 text-xs font-semibold text-[#525252] flex-wrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 select-none border border-[#e5e5e7] shadow-2xs bg-[#0066cc]">
+                            <img
+                              src={getTutorAvatar(rec.tutorName, rec.tutorAvatar)}
+                              alt={rec.tutorName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                  rec.tutorName
+                                )}&background=0066cc&color=fff&size=128&bold=true`
+                              }}
+                            />
+                          </div>
+                          <span className="font-bold text-[#1d1d1f]">{rec.tutorName}</span>
+                          <span className="text-[#86868b] font-normal">(Tutor)</span>
+                        </div>
+                        <span>•</span>
+                        <span>{rec.date}</span>
+                        {getRecordStudents(rec).length > 0 && (
+                          <>
+                            <span className="text-[#d1d1d6]">•</span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="text-[#86868b] font-normal">
+                                {getRecordStudents(rec).length > 1 ? 'Learners:' : 'Learner:'}
+                              </span>
+                              <span className="font-semibold text-[#1d1d1f]">
+                                {getRecordStudents(rec).join(', ')}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Socratic AI Summary */}
+                    <div className="bg-[#f4f8fc] border border-[#0066cc]/15 rounded-2xl p-4.5 space-y-2 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-display text-xs font-bold text-[#0066cc] uppercase tracking-wider">
+                          <Sparkles size={14} />
+                          <span>Socrates AI Summary &amp; Key Concepts</span>
+                        </div>
+                        {rec.flashcards && rec.flashcards.length > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-bold text-[10px]">
+                            {rec.flashcards.length} Flashcards
+                          </span>
+                        )}
+                      </div>
+                      {rec.executiveSummary && (
+                        <p className="text-xs text-[#1e3a8a] leading-relaxed font-medium line-clamp-2">
+                          {rec.executiveSummary}
+                        </p>
+                      )}
+                      <ul className="space-y-1 text-xs text-[#424245] leading-relaxed font-normal">
+                        {rec.aiSummary.slice(0, 2).map((point, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-[#0066cc] font-bold shrink-0">•</span>
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Key Formula / Equation Tags */}
+                    {rec.keyEquations && rec.keyEquations.length > 0 && (
+                      <div className="flex flex-wrap gap-2 items-center pt-0.5">
+                        <span className="font-display text-xs font-bold text-[#7a7a7a] uppercase tracking-wider">Formulas:</span>
+                        {rec.keyEquations.map((eq, idx) => (
+                          <span key={idx} className="px-3 py-1 rounded-xl bg-[#f5f5f7] border border-[#e0e0e5] font-mono text-xs text-[#1d1d1f] font-bold shadow-2xs">
+                            {eq}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Action Footer Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#f0f0f2]">
+                    <span className="text-xs font-semibold text-[#7a7a7a]">
+                      {rec.fileSize || 'Full HD Recording'} • AI Transcript Ready
+                    </span>
+
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          selectSessionOnPage(rec, true)
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white font-display text-xs font-bold transition-colors shadow-xs flex items-center gap-2 cursor-pointer select-none"
+                      >
+                        <Play size={14} className="fill-white" />
+                        <span>Explore on this Page</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownloadStudyGuide(rec)
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e0e0e4] font-display text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer select-none"
+                        title="Download Socratic Study Guide (.md)"
+                      >
+                        <Download size={14} />
+                        <span>AI Notes (.md)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }))}
         </div>
-      )}
+      </main>
     </div>
   )
 }

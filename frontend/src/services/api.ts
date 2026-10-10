@@ -375,6 +375,15 @@ export const createStudyRoomFromThread = async (threadId: string) => {
   return response.data
 }
 
+export const fetchMyRecaps = async () => {
+  try {
+    const response = await api.get('/study-rooms/my-recaps')
+    return response.data
+  } catch (error) {
+    return { success: false, data: [] }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  MEDIA UPLOAD API
 // ═══════════════════════════════════════════════════════════════

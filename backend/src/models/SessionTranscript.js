@@ -19,6 +19,22 @@ const sessionTranscriptSchema = new mongoose.Schema(
     entries: [transcriptEntrySchema],
     totalWords: { type: Number, default: 0 },
     summary: { type: String, default: '' },
+    keyTakeaways: [{ type: String }],
+    actionItems: [{ type: String }],
+    keyEquations: [{ type: String }],
+    flashcards: [
+      {
+        question: { type: String, required: true },
+        answer: { type: String, required: true },
+      },
+    ],
+    sharedFiles: [
+      {
+        name: { type: String, required: true },
+        url: { type: String, required: true },
+        uploadedBy: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );
