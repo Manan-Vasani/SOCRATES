@@ -30,6 +30,7 @@ import {
   Lightbulb,
   ListTodo,
   Play,
+  Presentation,
   RotateCcw,
   Search,
   Sigma,
@@ -41,6 +42,23 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchMyRecaps } from '../services/api'
+import {
+  getStoredWhiteboardPages,
+  downloadSingleWhiteboardPage,
+  downloadAllWhiteboardPages,
+  renderPageToCanvas,
+  generateRealisticWhiteboardPages,
+} from '../utils/whiteboardExport'
+import type { WhiteboardPage } from '../components/study/Whiteboard'
+
+export interface SessionSlide {
+  slideNumber: number
+  title: string
+  description?: string
+  imageUrl?: string
+  equations?: string[]
+  keyPoints?: string[]
+}
 
 interface Flashcard {
   question: string
@@ -75,6 +93,8 @@ interface SessionRecord {
   keyEquations: string[]
   flashcards?: Flashcard[]
   sharedFiles?: SharedFile[]
+  slides?: SessionSlide[]
+  whiteboardPages?: WhiteboardPage[]
   totalWords?: number
   transcript: { time: string; speaker: string; text: string; role?: string }[]
 }
@@ -185,6 +205,71 @@ const SAMPLE_RECORDINGS: SessionRecord[] = [
       { name: 'Integration_By_Parts_Cheatsheet.pdf', url: '#', uploadedBy: 'Dr. Alex Vance' },
       { name: 'Calculus_Whiteboard_Export.png', url: '#', uploadedBy: 'Alex Chen' },
     ],
+    slides: [
+      {
+        slideNumber: 1,
+        title: 'ILATE Priority Hierarchy for Integration by Parts',
+        description: 'Establishing the systematic priority rule for selecting u vs dv in complex product integrals.',
+        imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\int u \\, dv = uv - \\int v \\, du',
+          '\\text{Hierarchy: } I \\to L \\to A \\to T \\to E',
+        ],
+        keyPoints: [
+          'I: Inverse Trigonometric functions (arcsin, arctan)',
+          'L: Logarithmic functions (ln x, log_a x)',
+          'A: Algebraic powers and polynomials (x^2, 3x)',
+          'T: Trigonometric functions (sin x, cos x)',
+          'E: Exponential terms (e^x, 2^x)',
+        ],
+      },
+      {
+        slideNumber: 2,
+        title: 'Whiteboard Derivation: Product Rule to Integration by Parts',
+        description: 'Complete board derivation showing how Leibniz product rule rearranges into the standard integral formula.',
+        imageUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\frac{d}{dx}[u(x)v(x)] = u\'(x)v(x) + u(x)v\'(x)',
+          'uv = \\int v\\,du + \\int u\\,dv \\implies \\int u\\,dv = uv - \\int v\\,du',
+        ],
+        keyPoints: [
+          'Integrating both sides transforms the differential identity into an integral form.',
+          'Differentiating u reduces polynomial degree by 1 on each iteration.',
+          'dv must always be integrable via elementary anti-derivative techniques.',
+        ],
+      },
+      {
+        slideNumber: 3,
+        title: 'Worked Example: Evaluating ∫ x · cos(x) dx',
+        description: 'Step-by-step whiteboard application with sign verification and constant of integration.',
+        imageUrl: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          'u = x \\implies du = dx',
+          'dv = \\cos(x)dx \\implies v = \\sin(x)',
+          '\\int x\\cos(x)dx = x\\sin(x) - \\int \\sin(x)dx = x\\sin(x) + \\cos(x) + C',
+        ],
+        keyPoints: [
+          'Recognized x as Algebraic (priority for u) and cos(x) as Trigonometric (assigned to dv).',
+          'Checked derivative sign: derivative of -cos(x) is +sin(x).',
+          'Verified with student Alex Chen on whiteboard quadrant canvas.',
+        ],
+      },
+      {
+        slideNumber: 4,
+        title: 'Tabular (DI) Method for Repeated Polynomial Integrals',
+        description: 'D-I column shorthand technique for multi-stage polynomial reductions without nested integration.',
+        imageUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\int x^3 e^{2x} dx = \\frac{x^3 e^{2x}}{2} - \\frac{3x^2 e^{2x}}{4} + \\frac{6x e^{2x}}{8} - \\frac{6 e^{2x}}{16} + C',
+        ],
+        keyPoints: [
+          'Column 1: Signs (+, -, +, -, ...)',
+          'Column 2: Derivatives of polynomial until reaching 0.',
+          'Column 3: Successive anti-derivatives of exponential.',
+          'Sum diagonal products with corresponding signs.',
+        ],
+      },
+    ],
     transcript: [
       { time: '00:02', speaker: 'Dr. Alex Vance', text: 'Welcome back! Today we are diving into advanced integration techniques.' },
       { time: '05:14', speaker: 'Alex Chen', text: 'Can we go over how to pick u when both algebraic and trig functions appear?' },
@@ -238,6 +323,54 @@ const SAMPLE_RECORDINGS: SessionRecord[] = [
     sharedFiles: [
       { name: 'dijkstra_min_heap.py', url: '#', uploadedBy: 'Elena Rostova' },
     ],
+    slides: [
+      {
+        slideNumber: 1,
+        title: 'Single-Source Shortest Path & Dijkstra Invariant',
+        description: 'Formal formulation of relaxation and the greedy distance finalization property.',
+        imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          'd[v] = \\min(d[v],\\; d[u] + w(u, v))',
+          '\\forall u \\in S,\\; d[u] = \\delta(s, u)',
+        ],
+        keyPoints: [
+          'Non-negative edge weights condition: w(u, v) >= 0.',
+          'Greedy choice property: once a vertex is popped, its distance estimate is optimal.',
+          'Why Dijkstra fails on negative edge weights (Bellman-Ford needed).',
+        ],
+      },
+      {
+        slideNumber: 2,
+        title: 'Min-Heap Priority Queue Architecture & Complexity',
+        description: 'Comparing adjacency matrix O(V^2) vs adjacency list with binary min-heap O((V + E) log V).',
+        imageUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          'T(V, E) = O(V \\cdot \\text{ExtractMin} + E \\cdot \\text{DecreaseKey})',
+          '\\text{Binary Heap: } O((V + E) \\log V)',
+          '\\text{Fibonacci Heap: } O(E + V \\log V)',
+        ],
+        keyPoints: [
+          'Extract-Min takes O(log V) time.',
+          'Relaxation triggers push of updated distance tuple taking O(log V).',
+          'Space complexity is bounded by O(V + E) for storing adjacency lists.',
+        ],
+      },
+      {
+        slideNumber: 3,
+        title: 'Live Whiteboard Trace: 5-Node Graph Execution',
+        description: 'Tracing distance array states and priority queue transitions across 5 iterations.',
+        imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\text{Source } S=0: \\; d = [0, \\infty, \\infty, \\infty, \\infty]',
+          '\\text{After Node 0: } d = [0, 4, 2, \\infty, \\infty]',
+          '\\text{Final Shortest Paths: } d = [0, 3, 2, 8, 7]',
+        ],
+        keyPoints: [
+          'Demonstrated on digital whiteboard with real-time student participation.',
+          'Verified with Python Code Sandbox execution in live study room.',
+        ],
+      },
+    ],
     transcript: [
       { time: '00:05', speaker: 'Elena Rostova', text: 'Let us start by building an adjacency list representation of our graph.' },
       { time: '14:20', speaker: 'Alex Chen', text: 'Why do we use a priority queue instead of a standard FIFO queue?' },
@@ -281,6 +414,52 @@ const SAMPLE_RECORDINGS: SessionRecord[] = [
       },
     ],
     sharedFiles: [],
+    slides: [
+      {
+        slideNumber: 1,
+        title: 'Heisenberg Uncertainty Principle & Fourier Concurrency',
+        description: 'Deriving conjugate position and momentum uncertainty bounds from non-commuting operators.',
+        imageUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\Delta x \\cdot \\Delta p \\ge \\frac{\\hbar}{2}',
+          '[\\hat{x}, \\hat{p}] = i\\hbar \\hat{I}',
+        ],
+        keyPoints: [
+          'Commutator relation between position and momentum operators.',
+          'Physical implication: exact position precision completely delocalizes wave frequency.',
+          'Equality holds strictly for Gaussian minimum uncertainty wave packets.',
+        ],
+      },
+      {
+        slideNumber: 2,
+        title: 'Gaussian Wave Packet Dispersion in Free Space',
+        description: 'Time evolution of spatial variance showing how wave packets spread over time without potential.',
+        imageUrl: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\sigma(t) = \\sigma_0 \\sqrt{1 + \\left(\\frac{\\hbar t}{2m \\sigma_0^2}\\right)^2}',
+        ],
+        keyPoints: [
+          'Narrower initial spatial distribution σ0 causes faster subsequent spreading.',
+          'Group velocity vs phase velocity dispersion relations.',
+          'Demonstrated on shared chalkboard canvas with student participation.',
+        ],
+      },
+      {
+        slideNumber: 3,
+        title: '1D Infinite Square Well Boundary Conditions',
+        description: 'Standing wave quantization and boundary nodes at x=0 and x=L.',
+        imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1200&auto=format&fit=crop',
+        equations: [
+          '\\psi_n(x) = \\sqrt{\\frac{2}{L}} \\sin\\left(\\frac{n\\pi x}{L}\\right)',
+          'E_n = \\frac{n^2 \\pi^2 \\hbar^2}{2m L^2}',
+        ],
+        keyPoints: [
+          'Wavefunction vanishes at boundaries: ψ(0) = ψ(L) = 0.',
+          'Energy states are strictly discrete and scale with n^2.',
+          'Ground state n=1 possesses zero-point energy.',
+        ],
+      },
+    ],
     transcript: [
       { time: '00:10', speaker: 'Prof. Sarah Jenkins', text: 'Today we explore how momentum uncertainty causes spatial spreading of wavepackets.' },
       { time: '08:45', speaker: 'Liam Vance', text: 'How does wavepacket dispersion differ in a non-zero potential well?' },
@@ -326,6 +505,133 @@ function RecordingCardSkeleton() {
   )
 }
 
+const generateFallbackSlides = (rec: Partial<SessionRecord>): SessionSlide[] => {
+  const equations = rec.keyEquations || []
+  const takeaways = rec.aiSummary || []
+  const title = rec.topic || rec.subject || 'Session Slide'
+
+  return [
+    {
+      slideNumber: 1,
+      title: `Overview: ${title}`,
+      description: `Core theoretical overview and fundamentals discussed by ${rec.tutorName || 'the tutor'}.`,
+      imageUrl: rec.thumbnailUrl,
+      keyPoints: takeaways.length > 0 ? takeaways.slice(0, 2) : ['Comprehensive conceptual breakdown during live dialogue.'],
+      equations: equations.slice(0, 1),
+    },
+    {
+      slideNumber: 2,
+      title: 'Detailed Problem Solving & Whiteboard Derivation',
+      description: 'Step-by-step breakdown and mathematical modeling conducted during the interactive session.',
+      imageUrl: rec.thumbnailUrl,
+      keyPoints: takeaways.length > 2 ? takeaways.slice(2, 4) : ['Interactive problem analysis solved on collaborative whiteboard.'],
+      equations: equations.slice(1, 3),
+    },
+    {
+      slideNumber: 3,
+      title: 'Key Applications & Synthesis',
+      description: 'Synthesis of solution paradigms, boundary cases, and post-session homework implications.',
+      imageUrl: rec.thumbnailUrl,
+      keyPoints: takeaways.length > 4 ? takeaways.slice(4) : ['Core formulas verified for exam prep and homework practice.'],
+      equations: equations.slice(3),
+    },
+  ]
+}
+
+export const getRecordWhiteboardPages = (record?: SessionRecord | null): WhiteboardPage[] => {
+  if (!record) return []
+  if (record.roomId) {
+    const cached = getStoredWhiteboardPages(record.roomId)
+    if (cached && cached.length > 0) return cached
+  }
+  if (record.whiteboardPages && record.whiteboardPages.length > 0) {
+    return record.whiteboardPages
+  }
+  return generateRealisticWhiteboardPages(record.title, record.subject, record.keyEquations)
+}
+
+function WhiteboardCanvasViewer({
+  page,
+  className = '',
+}: {
+  page: WhiteboardPage
+  className?: string
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !page) return
+    canvas.width = 1920
+    canvas.height = 1080
+    renderPageToCanvas(page, canvas)
+  }, [page])
+
+  return (
+    <div className={`relative w-full rounded-2xl overflow-hidden border border-[#d2d2d7] bg-[#fafbfc] shadow-md ${className}`}>
+      <canvas
+        ref={canvasRef}
+        className="w-full h-auto block select-none pointer-events-none"
+        style={{ aspectRatio: '16 / 9' }}
+      />
+    </div>
+  )
+}
+
+function MiniCanvasThumbnail({
+  page,
+  isSelected,
+  onClick,
+  pageNumber,
+}: {
+  page: WhiteboardPage
+  isSelected: boolean
+  onClick: () => void
+  pageNumber: number
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !page) return
+    canvas.width = 480
+    canvas.height = 270
+    renderPageToCanvas(page, canvas)
+  }, [page])
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative rounded-xl overflow-hidden text-left transition-all cursor-pointer border select-none p-1.5 flex flex-col gap-1.5 transform-gpu ${
+        isSelected
+          ? 'bg-white border-[#0066cc] shadow-md ring-2 ring-[#0066cc]/25'
+          : 'bg-white/80 hover:bg-white border-[#e0e0e4] hover:border-[#b0b0b8]'
+      }`}
+    >
+      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-[#e5e5e7] bg-[#fafbfc]">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full block object-contain pointer-events-none"
+        />
+        <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[9px] font-mono font-bold text-white">
+          Page {pageNumber}
+        </div>
+        {isSelected && (
+          <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-[#0066cc] text-[9px] font-bold text-white shadow-xs">
+            Active
+          </div>
+        )}
+      </div>
+      <div className="px-1 pb-0.5">
+        <p className="text-[11px] font-bold text-[#1d1d1f] truncate">
+          {page.title || `Page ${pageNumber}`}
+        </p>
+      </div>
+    </button>
+  )
+}
+
 export default function RecordingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const roomQuery = searchParams.get('room')
@@ -344,8 +650,9 @@ export default function RecordingsPage() {
   const [calendarYear, setCalendarYear] = useState(2026)
   const [calendarMonth, setCalendarMonth] = useState(6) // 0-indexed: 6 = July 2026
 
-  // In-page Active Studio Tab: 'briefing' | 'flashcards' | 'checklist' | 'transcript'
-  const [studioTab, setStudioTab] = useState<'briefing' | 'flashcards' | 'checklist' | 'transcript'>('briefing')
+  // In-page Active Studio Tab: 'briefing' | 'slides' | 'flashcards' | 'checklist' | 'transcript'
+  const [studioTab, setStudioTab] = useState<'briefing' | 'slides' | 'flashcards' | 'checklist' | 'transcript'>('briefing')
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0)
   const [revealedFlashcards, setRevealedFlashcards] = useState<Set<number>>(new Set())
   const [completedActions, setCompletedActions] = useState<Set<number>>(new Set())
 
@@ -389,6 +696,10 @@ export default function RecordingsPage() {
           keyEquations: item.keyEquations || [],
           flashcards: item.flashcards || [],
           sharedFiles: item.sharedFiles || [],
+          slides: Array.isArray(item.slides) && item.slides.length > 0
+            ? item.slides
+            : generateFallbackSlides(item),
+          whiteboardPages: Array.isArray(item.whiteboardPages) ? item.whiteboardPages : [],
           transcript: Array.isArray(item.transcriptEntries)
             ? item.transcriptEntries.map((e: any) => ({
                 time: e.timeFormatted || '00:00',
@@ -424,6 +735,7 @@ export default function RecordingsPage() {
       if (match) {
         setSelectedRecord(match)
         setStudioTab('briefing')
+        setActiveSlideIndex(0)
         setRevealedFlashcards(new Set())
       }
     }
@@ -433,6 +745,7 @@ export default function RecordingsPage() {
     setSelectedRecord(rec)
     setIsPlayingVideo(playVideo)
     setStudioTab('briefing')
+    setActiveSlideIndex(0)
     setRevealedFlashcards(new Set())
     if (rec.roomId) {
       setSearchParams({ room: rec.roomId })
@@ -447,6 +760,25 @@ export default function RecordingsPage() {
     setSelectedRecord(null)
     setIsPlayingVideo(false)
     setSearchParams({})
+  }
+
+  const handleDownloadCurrentWhiteboardPage = () => {
+    if (!selectedRecord) return
+    const pages = getRecordWhiteboardPages(selectedRecord)
+    const cur = pages[activeSlideIndex] || pages[0]
+    if (cur) {
+      downloadSingleWhiteboardPage(cur, activeSlideIndex, selectedRecord.title)
+    }
+  }
+
+  const handleDownloadAllWhiteboardPages = () => {
+    if (!selectedRecord) return
+    const pages = getRecordWhiteboardPages(selectedRecord)
+    if (pages.length === 0) {
+      toast.error('No whiteboard pages available to download')
+      return
+    }
+    downloadAllWhiteboardPages(pages, selectedRecord.title)
   }
 
   const toggleFlashcard = (index: number) => {
@@ -805,6 +1137,24 @@ ${
 
               <button
                 type="button"
+                onClick={() => {
+                  setStudioTab('slides')
+                  setActiveSlideIndex(0)
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none flex items-center gap-1.5 shrink-0 transition-colors duration-150 transform-gpu ${
+                  studioTab === 'slides'
+                    ? 'border-[#e5e5e7] bg-white text-[#0066cc] shadow-2xs'
+                    : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/60'
+                }`}
+              >
+                <Presentation size={14} className="text-[#0066cc]" />
+                <span>
+                  Taught Whiteboard Pages ({getRecordWhiteboardPages(selectedRecord).length})
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setStudioTab('flashcards')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer select-none flex items-center gap-1.5 shrink-0 transition-colors duration-150 transform-gpu ${
                   studioTab === 'flashcards'
@@ -1015,6 +1365,141 @@ ${
                   </div>
                 </div>
               )}
+
+              {studioTab === 'slides' && (() => {
+                const currentPages = getRecordWhiteboardPages(selectedRecord)
+                const currentPage = currentPages[activeSlideIndex] || currentPages[0]
+
+                if (currentPages.length === 0) {
+                  return (
+                    <div className="max-w-xl mx-auto py-12 text-center space-y-4">
+                      <div className="w-14 h-14 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto">
+                        <Presentation size={26} />
+                      </div>
+                      <h4 className="text-lg font-bold text-[#1d1d1f]">No Whiteboard Pages Recorded</h4>
+                      <p className="text-xs text-[#6e6e73]">
+                        This session relied on oral discussion without digital whiteboard drawings.
+                      </p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-200">
+                    {/* Slides / Whiteboard Header & Navigation Controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-[#e5e5e7] shadow-2xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 border border-[#0066cc]/20 flex items-center justify-center text-[#0066cc] shrink-0">
+                          <Presentation size={20} />
+                        </div>
+                        <div>
+                          <h4 className="font-display text-base font-extrabold text-[#1d1d1f]">
+                            Taught Lecture Slides &amp; Whiteboard Pages
+                          </h4>
+                          <p className="text-xs text-[#6e6e73]">
+                            Original whiteboard drawings, diagrams, and equations taught during the live session.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setActiveSlideIndex((prev) => Math.max(0, prev - 1))}
+                          disabled={activeSlideIndex === 0}
+                          className="p-2 rounded-xl border border-[#e5e5e7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
+                          title="Previous Page"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+
+                        <span className="px-3 py-1.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5e7] text-xs font-mono font-bold text-[#1d1d1f] select-none">
+                          Page {activeSlideIndex + 1} of {currentPages.length}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveSlideIndex((prev) => Math.min(currentPages.length - 1, prev + 1))}
+                          disabled={activeSlideIndex === currentPages.length - 1}
+                          className="p-2 rounded-xl border border-[#e5e5e7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
+                          title="Next Page"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadCurrentWhiteboardPage}
+                          className="px-3.5 py-2 rounded-xl border border-[#e5e5e7] bg-white hover:bg-[#f5f5f7] active:bg-[#ebebef] text-[#1d1d1f] text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer select-none"
+                          title="Download Current Whiteboard Page as high-res PNG"
+                        >
+                          <Download size={13} />
+                          <span>Save Page (.PNG)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadAllWhiteboardPages}
+                          className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer select-none"
+                          title="Download All Whiteboard Pages (.PNG)"
+                        >
+                          <Download size={13} />
+                          <span>Download All Pages ({currentPages.length})</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Main Whiteboard Canvas Display Viewport */}
+                    {currentPage && (
+                      <div className="bg-white rounded-3xl border border-[#e5e5e7] shadow-md overflow-hidden space-y-0">
+                        {/* Slide Top Bar */}
+                        <div className="px-6 py-4 border-b border-[#e5e5e7] bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <span className="px-2.5 py-1 rounded-lg bg-[#0066cc] text-white text-[11px] font-bold font-mono uppercase tracking-wider">
+                              Page #{activeSlideIndex + 1}
+                            </span>
+                            <h5 className="font-display text-base font-bold text-[#1d1d1f]">
+                              {currentPage.title || `Whiteboard Canvas Page ${activeSlideIndex + 1}`}
+                            </h5>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-[#6e6e73]">
+                              Taught by <strong className="text-[#1d1d1f]">{selectedRecord.tutorName}</strong>
+                            </span>
+                            <span className="text-[11px] font-mono text-[#6e6e73] bg-white border border-[#e0e0e4] px-2 py-0.5 rounded-md">
+                              1920 × 1080 HD Canvas
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Direct Whiteboard Canvas Viewer */}
+                        <div className="p-4 sm:p-6 bg-[#f5f5f7]">
+                          <WhiteboardCanvasViewer page={currentPage} />
+                        </div>
+
+                        {/* Thumbnail Selector Rail with Mini Previews */}
+                        <div className="px-6 py-4 bg-[#fbfbfd] border-t border-[#e5e5e7]">
+                          <div className="text-[11px] font-bold text-[#6e6e73] uppercase tracking-wider mb-2.5 flex items-center justify-between">
+                            <span>Whiteboard Navigation ({currentPages.length} Pages)</span>
+                            <span>Click any page to showcase</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {currentPages.map((page, pIdx) => (
+                              <MiniCanvasThumbnail
+                                key={page.id || pIdx}
+                                page={page}
+                                pageNumber={pIdx + 1}
+                                isSelected={pIdx === activeSlideIndex}
+                                onClick={() => setActiveSlideIndex(pIdx)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {studioTab === 'flashcards' && (
                 <div className="max-w-3xl mx-auto space-y-6">

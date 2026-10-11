@@ -334,8 +334,8 @@ export const leaveStudyRoom = async (roomId: string) => {
   return response.data
 }
 
-export const endStudyRoom = async (roomId: string) => {
-  const response = await api.post(`/study-rooms/${roomId}/end`)
+export const endStudyRoom = async (roomId: string, data?: any) => {
+  const response = await api.post(`/study-rooms/${roomId}/end`, data || {})
   return response.data
 }
 

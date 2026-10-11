@@ -37,10 +37,15 @@ import {
   Plus,
   Trash,
 } from 'lucide-react'
+import {
+  saveStoredWhiteboardPages,
+  downloadSingleWhiteboardPage,
+  downloadAllWhiteboardPages,
+} from '../../utils/whiteboardExport'
 
-type BgType = 'dots' | 'grid' | 'blank' | 'dark' | 'chalkboard'
+export type BgType = 'dots' | 'grid' | 'blank' | 'dark' | 'chalkboard'
 
-type Tool =
+export type Tool =
   | 'select' | 'pen' | 'text' | 'eraser'
   | 'line' | 'arrow' | 'doubleArrow'
   | 'rect' | 'roundedRect' | 'circle' | 'ellipse'
@@ -1717,14 +1722,37 @@ export default function Whiteboard({
     }
   }, [activeSocket, roomId])
 
-  const exportPng = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const link = document.createElement('a')
-    link.download = 'whiteboard.png'
-    link.href = canvas.toDataURL('image/png')
-    link.click()
+  const getCurrentAllPages = useCallback((): WhiteboardPage[] => {
+    const curIdx = activePageIndexRef.current
+    const currentPages = [...pagesRef.current]
+    if (currentPages[curIdx]) {
+      currentPages[curIdx] = {
+        ...currentPages[curIdx],
+        strokes: strokesRef.current,
+        textItems: textItemsRef.current,
+        bgType: bgTypeRef.current,
+      }
+    }
+    return currentPages
+  }, [])
+
+  const exportCurrentPage = () => {
+    const all = getCurrentAllPages()
+    const curPage = all[activePageIndex] || all[0]
+    downloadSingleWhiteboardPage(curPage, activePageIndex, roomId || 'Whiteboard')
   }
+
+  const exportAllPages = () => {
+    const all = getCurrentAllPages()
+    downloadAllWhiteboardPages(all, roomId || 'Whiteboard')
+  }
+
+  // Continuously persist all whiteboard pages to sessionStorage so they are immediately available on meeting end
+  useEffect(() => {
+    if (!roomId) return
+    const all = getCurrentAllPages()
+    saveStoredWhiteboardPages(roomId, all)
+  }, [roomId, strokes, textItems, bgType, pages, activePageIndex, getCurrentAllPages])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1969,10 +1997,7 @@ export default function Whiteboard({
           <div className="w-px h-6 bg-[#e5e5e7] mx-1 shrink-0" />
 
           {/* Action Buttons */}
-          <button onClick={undo} disabled={undoStack.length === 0} className="p-2 rounded-xl text-[#525252] hover:bg-[#f0f0f2] hover:text-[#1d1d1f] transition-all cursor-pointer disabled:opacity-25" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
-          <button onClick={redo} disabled={redoStack.length === 0} className="p-2 rounded-xl text-[#525252] hover:bg-[#f0f0f2] hover:text-[#1d1d1f] transition-all cursor-pointer disabled:opacity-25" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
-          <button onClick={clearAll} disabled={strokes.length === 0} className="p-2 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer disabled:opacity-25" title="Clear All"><Trash2 size={16} /></button>
-          <button onClick={exportPng} className="p-2 rounded-xl text-[#525252] hover:bg-[#f0f0f2] hover:text-[#1d1d1f] transition-all cursor-pointer" title="Export PNG"><Download size={16} /></button>
+          <button onClick={exportAllPages} className="p-2 rounded-xl text-[#525252] hover:text-[#0066cc] hover:bg-[#f0f0f2] transition-all cursor-pointer" title={`Download All ${pages.length} Whiteboard Pages (.PNG)`}><Download size={16} /></button>
         </div>
 
         {/* Line 2 (only rendered when canvas is shrunk/narrow): Colors & Stroke Width */}
@@ -2104,6 +2129,18 @@ export default function Whiteboard({
               <Trash2 size={13} />
             </button>
           )}
+
+          <div className="w-px h-4 bg-[#e5e5e7] mx-0.5 shrink-0" />
+
+          <button
+            type="button"
+            onClick={exportAllPages}
+            className="h-7 px-2.5 rounded-xl flex items-center gap-1.5 text-[#0066cc] bg-[#0066cc]/10 hover:bg-[#0066cc]/20 active:bg-[#0066cc]/30 text-xs font-bold cursor-pointer transition-all duration-150 transform-gpu backface-hidden border border-[#0066cc]/20 shadow-2xs"
+            title={`Download All ${pages.length} Whiteboard Pages (.PNG)`}
+          >
+            <Download size={13} className="stroke-[2.5]" />
+            <span className="hidden sm:inline">Export All ({pages.length})</span>
+          </button>
         </div>
 
         {/* Seamless Transparent Text Input */}

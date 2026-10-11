@@ -35,6 +35,17 @@ const sessionTranscriptSchema = new mongoose.Schema(
         uploadedBy: { type: String },
       },
     ],
+    slides: [
+      {
+        slideNumber: { type: Number },
+        title: { type: String },
+        description: { type: String },
+        imageUrl: { type: String },
+        equations: [{ type: String }],
+        keyPoints: [{ type: String }],
+      },
+    ],
+    whiteboardPages: { type: Array, default: [] },
   },
   { timestamps: true }
 );

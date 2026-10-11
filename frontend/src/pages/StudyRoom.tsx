@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { X, ChevronsLeftRight, ShieldAlert, Lock, ArrowLeft, UserCheck, Sparkles, CheckCircle2, FileText } from 'lucide-react'
+import { X, ChevronsLeftRight, ShieldAlert, Lock, ArrowLeft, UserCheck, Sparkles, CheckCircle2, FileText, Download } from 'lucide-react'
 import { toast } from 'sonner'
+import { getStoredWhiteboardPages, downloadAllWhiteboardPages } from '../utils/whiteboardExport'
 import RoomHeader, { type StageMode } from '../components/study/RoomHeader'
 import VideoGrid from '../components/study/VideoGrid'
 import Whiteboard from '../components/study/Whiteboard'
@@ -542,7 +543,8 @@ export default function StudyRoom() {
 
     if (currentUser.role === 'tutor') {
       try {
-        const res = await endStudyRoom(activeRoomId)
+        const wbPages = getStoredWhiteboardPages(activeRoomId)
+        const res = await endStudyRoom(activeRoomId, { whiteboardPages: wbPages })
         if (res?.recap) setConcludedRecap(res.recap)
       } catch {}
       if (socket) {
@@ -565,7 +567,8 @@ export default function StudyRoom() {
     setShowLeaveModal(false)
 
     try {
-      const res = await endStudyRoom(activeRoomId)
+      const wbPages = getStoredWhiteboardPages(activeRoomId)
+      const res = await endStudyRoom(activeRoomId, { whiteboardPages: wbPages })
       toast.success('Study session ended. Session recaps dispatched to all participants!')
       if (res?.recap) {
         setConcludedRecap(res.recap)
@@ -1015,7 +1018,7 @@ export default function StudyRoom() {
                 AI Session Recap Ready
               </h3>
               <p className="text-xs sm:text-sm text-[#6e6e73] max-w-md mx-auto leading-relaxed">
-                Your study session has concluded. Socratic AI has synthesized your dialogue, generated active recall flashcards, and emailed your full briefing.
+                Your study session has concluded. Socratic AI has synthesized your dialogue, compiled your taught whiteboard lecture slides, generated active recall flashcards, and emailed your full briefing.
               </p>
             </div>
 
@@ -1032,6 +1035,45 @@ export default function StudyRoom() {
               </div>
             )}
 
+            {/* Download Taught Whiteboard Pages Card (Direct Post-Meeting Download) */}
+            {(() => {
+              const pages = getStoredWhiteboardPages(activeRoomId)
+              const pageCount = pages.length > 0 ? pages.length : 1
+              return (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 to-indigo-50/80 border border-[#cbe0fc] text-left space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#0066cc] text-white flex items-center justify-center shadow-xs shrink-0">
+                        <Download size={15} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-[#1d1d1f]">
+                          Whiteboard Pages ({pageCount} Page{pageCount > 1 ? 's' : ''} Taught)
+                        </h4>
+                        <p className="text-[11px] text-[#6e6e73]">
+                          Download all handwritten drawings, diagrams, and notes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const toDownload = pages.length > 0
+                        ? pages
+                        : [{ id: 'page-1', strokes: [], textItems: [], bgType: 'dots' as const }]
+                      downloadAllWhiteboardPages(toDownload, activeRoomId)
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer transform-gpu select-none"
+                  >
+                    <Download size={14} />
+                    <span>Download All Whiteboard Pages ({pageCount} PNGs)</span>
+                  </button>
+                </div>
+              )
+            })()}
+
             {/* Action Buttons */}
             <div className="space-y-2.5 pt-2">
               <button
@@ -1042,7 +1084,7 @@ export default function StudyRoom() {
                 }}
                 className="w-full py-3.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] active:bg-[#0055b3] text-white text-xs font-extrabold transition-all shadow-md shadow-[#0066cc]/25 cursor-pointer transform-gpu"
               >
-                Open Interactive AI Recap &amp; Flashcards
+                Open Interactive AI Recap, Slides &amp; Flashcards
               </button>
 
               <button

@@ -650,6 +650,9 @@ exports.endRoom = async (req, res) => {
   transcriptDoc.keyEquations = aiRecap.key_equations;
   transcriptDoc.flashcards = aiRecap.generated_flashcards;
   transcriptDoc.totalWords = calculatedWords;
+  if (Array.isArray(req.body.whiteboardPages) && req.body.whiteboardPages.length > 0) {
+    transcriptDoc.whiteboardPages = req.body.whiteboardPages;
+  }
   if (booking) transcriptDoc.bookingId = booking._id;
   await transcriptDoc.save();
 
@@ -856,6 +859,7 @@ exports.getMyRecaps = async (req, res) => {
         flashcards: transcript?.flashcards || [],
         sharedFiles: transcript?.sharedFiles || [],
         transcriptEntries: transcript?.entries || [],
+        whiteboardPages: transcript?.whiteboardPages || [],
         recordingUrl: `https://meet.jit.si/socrates-${booking.meetingId || booking._id}`,
         createdAt: transcript?.createdAt || booking.createdAt,
       });
@@ -892,6 +896,7 @@ exports.getMyRecaps = async (req, res) => {
           flashcards: t.flashcards || [],
           sharedFiles: t.sharedFiles || [],
           transcriptEntries: t.entries || [],
+          whiteboardPages: t.whiteboardPages || [],
           recordingUrl: `https://meet.jit.si/socrates-${t.roomId}`,
           createdAt: t.createdAt,
         });
